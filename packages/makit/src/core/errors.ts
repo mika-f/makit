@@ -39,9 +39,12 @@ export class MakitConfigError extends MakitError {
   }
 
   static fromZodError(error: z.ZodError, source: string): MakitConfigError {
-    const details = z.prettifyError(error);
-    return new MakitConfigError(`Invalid configuration in ${source}:\n${details}`, {
+    return new MakitConfigError(`Invalid configuration in ${source}:\n${formatZodError(error)}`, {
       cause: error,
     });
   }
+}
+
+export function formatZodError(error: z.ZodError): string {
+  return z.prettifyError(error);
 }

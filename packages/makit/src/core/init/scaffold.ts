@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { MakitError } from "../errors.js";
+import { humanizeSlug } from "../text.js";
 import {
   gitignoreRequiredEntries,
   gitignoreTemplate,
@@ -93,11 +94,7 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
 
 function toDisplayTitle(dirName: string): string {
   if (dirName === "." || dirName === "" || dirName === "/") return "My Documentation";
-  return dirName
-    .split(/[-_]+/)
-    .filter(Boolean)
-    .map((part) => part[0]?.toUpperCase() + part.slice(1))
-    .join(" ");
+  return humanizeSlug(dirName);
 }
 
 async function mergeGitignore(targetDir: string): Promise<void> {
