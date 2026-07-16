@@ -52,6 +52,10 @@ export async function writeGeneratedData(
     theme: config.theme,
     seo: config.seo,
     styles: config.styles,
+    markdown: {
+      tableOfContents: config.markdown.tableOfContents,
+      code: config.markdown.code,
+    },
   };
   await writeJson(join(generatedDir, "site.json"), site);
 

@@ -1,4 +1,4 @@
 {
   "files": [],
-  "references": [{ "path": "./packages/makit" }]
+  "references": [{ "path": "./packages/makit" }, { "path": "./packages/makit-runtime" }]
 }

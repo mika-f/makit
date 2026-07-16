@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
 import type { MakitConfigParsed } from "../config/schema.js";
-import { generateFallbackPages, groupPagesByPageId } from "./i18n.js";
+import { generateFallbackPages, groupPagesByPageId, populateAlternates } from "./i18n.js";
 import { buildAllPages } from "./pages.js";
 
 let dir: string;
@@ -136,5 +136,59 @@ describe("generateFallbackPages", () => {
     const { pages } = await buildAllPages(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
+  });
+});
+
+describe("populateAlternates", () => {
+  it("cross-references real translations and adds an x-default entry", async () => {
+    await write("docs/en-us/index.md", "# Home EN");
+    await write("docs/ja-jp/index.md", "# Home JA");
+    const config = i18nConfig();
+    const { pages } = await buildAllPages(config);
+
+    const withAlternates = populateAlternates(pages, config);
+    const enPage = withAlternates.find((p) => p.locale === "en-us")!;
+    const jaPage = withAlternates.find((p) => p.locale === "ja-jp")!;
+
+    expect(enPage.metadata.alternates).toEqual([
+      { urlLocale: "ja-jp", hreflang: "ja-JP", href: "/ja-jp/" },
+      { urlLocale: "x-default", hreflang: "x-default", href: "/en-us/" },
+    ]);
+    expect(jaPage.metadata.alternates).toEqual([
+      { urlLocale: "en-us", hreflang: "en-US", href: "/en-us/" },
+      { urlLocale: "x-default", hreflang: "x-default", href: "/en-us/" },
+    ]);
+  });
+
+  it("leaves fallback pages with no alternates", async () => {
+    await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
+    const config = i18nConfig();
+    const { pages } = await buildAllPages(config);
+    const fallbackPages = generateFallbackPages(pages, config);
+
+    const withAlternates = populateAlternates([...pages, ...fallbackPages], config);
+    const fallback = withAlternates.find((p) => p.isFallback)!;
+    expect(fallback.metadata.alternates).toEqual([]);
+  });
+
+  it("is a no-op when i18n is disabled", async () => {
+    await write("docs/index.md", "# Home");
+    const config = resolveConfig(
+      { title: "Test" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages } = await buildAllPages(config);
+
+    const withAlternates = populateAlternates(pages, config);
+    expect(withAlternates[0]?.metadata.alternates).toEqual([]);
+  });
+
+  it("does not add alternates for a page with no translations at all", async () => {
+    await write("docs/en-us/only-here.md", "# Only Here");
+    const config = i18nConfig();
+    const { pages } = await buildAllPages(config);
+
+    const withAlternates = populateAlternates(pages, config);
+    expect(withAlternates[0]?.metadata.alternates).toEqual([]);
   });
 });

@@ -1,6 +1,6 @@
 import { defineCommand } from "citty";
 import { loadConfig } from "../../config/load.js";
-import { MakitError } from "../../core/errors.js";
+import { build } from "../../core/build.js";
 import { commonArgs } from "../common-args.js";
 import { createCliContext } from "../context.js";
 import { handleCliError } from "../error-handler.js";
@@ -22,10 +22,27 @@ export const buildCommand = defineCommand({
     try {
       const config = await loadConfig({ cwd: ctx.cwd, configPath: ctx.configPath });
       ctx.logger.success(`Loaded ${config.configPath}`);
-      throw new MakitError(
-        "not-implemented",
-        "`makit build` is not implemented yet — the content pipeline and Next.js build land in a later implementation phase.",
+
+      const started = args.profile ? performance.now() : undefined;
+
+      const result = await build(
+        config,
+        {
+          clean: args["no-clean"] ? false : args.clean,
+          strict: args.strict,
+          silent: args.silent,
+        },
+        ctx.logger,
       );
+
+      ctx.logger.raw("");
+      ctx.logger.success(
+        `Built ${result.pageCount} page(s) (${result.fallbackCount} fallback) across ${result.localeCount} locale(s)`,
+      );
+      ctx.logger.raw(`Output: ${result.outDir}`);
+      if (started !== undefined) {
+        ctx.logger.raw(`Build time: ${((performance.now() - started) / 1000).toFixed(2)}s`);
+      }
     } catch (error) {
       handleCliError(error, ctx.logger);
     }

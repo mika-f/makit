@@ -43,7 +43,14 @@
     "sirv": "^3.0.2",
     "picocolors": "^1.1.1",
     "fast-glob": "^3.3.3",
-    "vfile": "^6.0.3"
+    "vfile": "^6.0.3",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "makit-runtime": "workspace:*",
+    "tailwindcss": "^4.3.2",
+    "@tailwindcss/postcss": "^4.3.2",
+    "@tailwindcss/typography": "^0.5.20"
   },
   "devDependencies": {
     "@types/hast": "^3.0.5",

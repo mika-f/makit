@@ -38,6 +38,10 @@ export interface GeneratedPage {
   headings: GeneratedHeading[];
   draft: boolean;
   hidden: boolean;
+  /** Whether to render the page-level sidebar (front matter `sidebar`, spec §14). Defaults to `true`. */
+  sidebar: boolean;
+  /** Whether to render a table of contents for this page (front matter `tableOfContents`, spec §14, §26). Defaults to `true`. */
+  tableOfContents: boolean;
   /** Sort order among siblings in auto-generated navigation (spec §14.6). Internal — not part of the public API. */
   order?: number;
   /** Navigation-specific overrides from front matter (spec §14, `navigation.title`/`navigation.group`). Internal. */

@@ -1,4 +1,4 @@
-import type { GeneratedPage } from "../types/page.js";
+import type { GeneratedAlternate, GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
 import { buildRoute, detectDuplicateRoutes } from "./routes.js";
 
@@ -62,6 +62,8 @@ function buildFallbackPage(
     headings: isRedirect ? [] : sourcePage.headings,
     draft: sourcePage.draft,
     hidden: sourcePage.hidden,
+    sidebar: sourcePage.sidebar,
+    tableOfContents: sourcePage.tableOfContents,
     order: sourcePage.order,
     navigation: sourcePage.navigation,
     metadata: {
@@ -113,4 +115,49 @@ export function generateFallbackPages(
   detectDuplicateRoutes([...pages, ...fallbackPages]);
 
   return fallbackPages;
+}
+
+/**
+ * Fills in `metadata.alternates` (hreflang, spec §16.2, §24.5) by cross-
+ * referencing real translations within each pageId group. Fallback pages
+ * are excluded entirely — both from appearing as an alternate, and from
+ * having alternates of their own (spec §16.12: fallback pages are left out
+ * of hreflang, sitemaps, and translation listings).
+ */
+export function populateAlternates(
+  pages: readonly GeneratedPage[],
+  config: ResolvedConfig,
+): GeneratedPage[] {
+  if (!config.i18n.enabled) return [...pages];
+
+  const realPages = pages.filter((page) => !page.isFallback);
+  const groups = groupPagesByPageId(realPages);
+  const defaultLocale = config.i18n.locales.find(
+    (locale) => locale.locale === config.i18n.defaultLocale,
+  );
+
+  return pages.map((page) => {
+    if (page.isFallback) return page;
+
+    const group = groups.get(page.pageId);
+    // No point emitting hreflang for a page with no sibling translations at all.
+    if (!group || group.byLocale.size < 2) return page;
+
+    const alternates: GeneratedAlternate[] = [];
+    for (const [urlLocale, otherPage] of group.byLocale) {
+      if (urlLocale === page.locale) continue;
+      const localeConfig = config.i18n.locales.find((locale) => locale.urlLocale === urlLocale);
+      if (!localeConfig) continue;
+      alternates.push({ urlLocale, hreflang: localeConfig.locale, href: otherPage.route });
+    }
+
+    if (defaultLocale) {
+      const defaultPage = group.byLocale.get(defaultLocale.urlLocale);
+      if (defaultPage) {
+        alternates.push({ urlLocale: "x-default", hreflang: "x-default", href: defaultPage.route });
+      }
+    }
+
+    return { ...page, metadata: { ...page.metadata, alternates } };
+  });
 }

@@ -1,0 +1,14 @@
+{
+  "name": "makit-example-basic",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "makit dev",
+    "build": "makit build",
+    "preview": "makit preview"
+  },
+  "dependencies": {
+    "makit": "workspace:*"
+  }
+}
