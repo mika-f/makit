@@ -1,27 +1,33 @@
-# Makit 仕様書
+# Makit 階層型ドキュメント仕様
 
 ## 1. 文書情報
 
 * プロダクト名: Makit
-* 種別: オープンソースソフトウェア
+* 種別: Markdown to Static Documentation Generator
 * 形式: Node.js CLI アプリケーション
-* 想定ライセンス: MIT License
-* 仕様バージョン: 0.1
-* 想定ステータス: MVP設計
-* CLIコマンド: `makit`
+* 仕様バージョン: 0.2
 * 設定ファイル: `makit.config.ts`
+* CLI コマンド: `makit`
 
 ---
 
 # 2. 概要
 
-Makit は、Markdown ファイルから静的なドキュメントサイトを生成するための CLI アプリケーションである。
+Makit は、Markdown ファイルから静的なドキュメントサイトを生成する OSS の CLI アプリケーションである。
 
-利用者は Markdown ファイルと `makit.config.ts` を管理し、Next.js アプリケーションを直接作成・保守する必要はない。
+単一製品のドキュメントサイトだけでなく、Microsoft Learn や GitHub Docs のような、複数の製品、サービス、技術領域を横断する階層型ドキュメントポータルを構築できる。
 
-Makit はプロジェクト内の `.makit/` ディレクトリに内部用の Next.js アプリケーションを生成し、そのアプリケーションを利用して開発サーバーおよび静的ビルドを提供する。
+利用者は主に以下を管理する。
 
-主な技術構成は以下とする。
+* Markdown 本文
+* TypeScript メタデータ
+* `makit.config.ts`
+* 静的アセット
+* カスタム CSS
+
+Makit は `.makit/` に内部用 Next.js アプリケーションを生成し、開発サーバーと静的ビルドを提供する。
+
+主な技術構成:
 
 * Next.js App Router
 * Next.js Static Export
@@ -36,136 +42,222 @@ Makit はプロジェクト内の `.makit/` ディレクトリに内部用の Ne
 
 # 3. 目的
 
-Makit は次の目的を持つ。
+Makit は以下を目的とする。
 
-1. Markdown からドキュメントサイトを簡単に生成できること
-2. 利用者に Next.js 固有の構成を意識させないこと
-3. 静的ホスティング環境へ配置可能な成果物を生成すること
-4. ドキュメントの見た目や構成を設定ファイルに集約すること
-5. 多言語ドキュメントを標準機能として扱えること
-6. 既存ドキュメントサイトから段階的に移行できること
-7. プラグインやテーマによって将来的に拡張できること
-8. ドキュメントの不整合をビルド時に検出できること
+1. Markdown から静的ドキュメントサイトを生成する
+2. Next.js 固有の構成を利用者から隠蔽する
+3. 複数製品を横断する階層型サイトを構築できる
+4. サイト構造とメタデータを TypeScript で型安全に定義できる
+5. 多言語サイトと翻訳欠損時のフォールバックを提供する
+6. URL 階層とナビゲーション階層を独立して管理できる
+7. 静的ホスティングサービスごとの差異を Adapter で吸収する
+8. 設定やコンテンツの不整合をビルド時に検出する
+9. 小規模サイトから大規模ポータルへ段階的に拡張できる
 
 ---
 
 # 4. 非目標
 
-Makit は、少なくとも初期バージョンでは以下を目的としない。
+初期バージョンでは以下を目的としない。
 
-* 動的なWebアプリケーションの構築
+* 動的な Web アプリケーション
 * サーバーサイド認証
 * データベース接続
-* CMSとしての利用
-* Next.jsアプリケーションの汎用ラッパー
-* 任意のNext.js設定を完全に公開すること
-* Markdown編集用の管理画面
+* CMS 管理画面
+* ブラウザ上での Markdown 編集
+* 実行時のページ生成
 * ホスティングサービスの提供
-* ブラウザ上でのドキュメント編集
-* 実行時にページを生成すること
+* ユーザーによる任意の Next.js アプリケーション拡張
+* サーバーレス Function の自動生成
+* 学習進捗やクイズ機能
 
 ---
 
 # 5. 設計原則
 
-## 5.1 設定中心
+## 5.1 TypeScript 中心
 
-サイト構成、ナビゲーション、国際化、テーマ、Markdown処理、出力設定は、可能な限り `makit.config.ts` に集約する。
+サイト構造、Collection、ナビゲーション、カテゴリ、ページ情報などのメタデータは TypeScript で定義する。
 
-## 5.2 Next.jsの隠蔽
+YAML 形式の構造メタデータは採用しない。
 
-Next.js は内部レンダリング基盤として使用する。
+非対応ファイル:
+
+```text
+_collection.yml
+_navigation.yml
+_category.yml
+```
+
+TypeScript により以下を提供する。
+
+* エディター補完
+* 型検査
+* JSDoc
+* 列挙値の発見
+* 共通設定の再利用
+* リファクタリング
+* 非推奨設定の検出
+
+## 5.2 Markdown は本文を担当する
+
+Markdown は原則として本文の記述に専念する。
+
+ページタイトル、ID、slug、分類情報などは同名の `.meta.ts` で定義できる。
+
+メタデータが不要な単純なページは Markdown 単体でも作成できる。
+
+## 5.3 Next.js の隠蔽
 
 利用者に以下を要求しない。
 
-* `app/` ディレクトリの管理
-* `next.config.ts` の管理
-* Next.jsのルーティング実装
-* `generateStaticParams` の実装
-* Next.js用のTailwind設定
-* Next.js用のビルドスクリプト
+* `app/` ディレクトリ
+* `next.config.ts`
+* `generateStaticParams`
+* Next.js のルーティング
+* Next.js 用 Tailwind 設定
+* Static Export の構成
 
-## 5.3 静的出力
+## 5.4 静的出力
 
-本番成果物は静的HTML、CSS、JavaScriptおよびアセットとして出力する。
+成果物は Node.js ランタイムを必要としない静的ファイルとして生成する。
 
-成果物は以下のような環境へ配置可能であること。
+## 5.5 再生成可能性
 
-* GitHub Pages
-* Cloudflare Pages
-* Vercel
-* Netlify
-* Amazon S3
-* 任意の静的Webサーバー
+`.makit/` は Makit が再生成可能な中間ディレクトリとする。
 
-## 5.4 再生成可能性
+手動編集は保証しない。
 
-`.makit/` は Makit が完全に再生成できる中間ディレクトリとする。
+## 5.6 URL と情報構造の分離
 
-`.makit/` 内の手動編集は保証されず、次回実行時に上書きまたは削除される可能性がある。
+ナビゲーション上の階層と URL 階層は独立して定義できる。
 
-## 5.5 ビルド時処理
+## 5.7 明示的な Adapter
 
-Markdownの収集、解析、コードハイライト、リンク検証、フォールバック生成などは、原則としてビルド時または開発サーバー起動前に行う。
+Deployment Adapter はファクトリー関数を明示的に import して設定する。
 
-## 5.6 公開APIの安定性
-
-`makit.config.ts`、Front Matter、およびプラグインAPIは公開APIとして扱う。
-
-Next.js、remark、Shikiなどの内部APIをそのまま公開することは避け、Makit独自の安定した抽象化を提供する。
+環境による Adapter の自動選択は行わない。
 
 ---
 
-# 6. システム構成
+# 6. コンテンツモデル
 
-Makit は、概念上以下の層で構成する。
+Makit は以下の概念を扱う。
 
 ```text
-User Project
-    ↓
-Makit CLI
-    ↓
-Makit Core
-    ├── Config Loader
-    ├── Source Scanner
-    ├── Markdown Processor
-    ├── Route Generator
-    ├── I18n Resolver
-    ├── Navigation Generator
-    ├── Link Validator
-    └── Build Orchestrator
-    ↓
-Generated Data
-    ↓
-Makit Runtime
-    ↓
-Generated Next.js Application
-    ↓
-Static Output
+Site
+├── Global Navigation
+├── Home
+└── Collection
+    ├── Section
+    │   ├── Group
+    │   │   └── Page
+    │   └── Page
+    └── Page
+```
+
+すべての階層は必須ではない。
+
+以下も有効とする。
+
+```text
+Site
+└── Page
+```
+
+```text
+Site
+└── Collection
+    └── Page
+```
+
+```text
+Site
+└── Collection
+    └── Section
+        └── Page
 ```
 
 ---
 
-# 7. プロジェクト構成
+# 7. 用語
 
-標準的なプロジェクト構成は以下とする。
+## 7.1 Site
+
+Makit が生成するドキュメントサイト全体。
+
+## 7.2 Collection
+
+製品、サービス、ライブラリ、API、技術領域など、まとまりのあるドキュメント群。
+
+例:
+
+* Makit
+* Enduroq
+* Catalyst
+* GitHub Actions
+* REST API
+
+Collection は独自の URL、ナビゲーション、トップページ、説明を持てる。
+
+## 7.3 Section
+
+Collection 内の大分類。
+
+例:
+
+* Getting Started
+* Guides
+* Concepts
+* Reference
+* Troubleshooting
+
+ページを持つ場合と、ナビゲーション上だけに存在する場合がある。
+
+## 7.4 Group
+
+Section 内の小分類。
+
+原則としてナビゲーション整理用の論理ノードである。
+
+## 7.5 Page
+
+Markdown から生成されるコンテンツページ。
+
+## 7.6 Navigation Node
+
+Page、Section、Group、Collection、外部リンクを統一的に扱うナビゲーション要素。
+
+---
+
+# 8. 標準ディレクトリ構成
 
 ```text
 my-documentation/
 ├── docs/
 │   ├── en-us/
-│   │   ├── index.md
-│   │   ├── getting-started.md
-│   │   └── guides/
-│   │       └── configuration.md
+│   │   ├── makit/
+│   │   │   ├── collection.makit.ts
+│   │   │   ├── navigation.makit.ts
+│   │   │   ├── index.md
+│   │   │   ├── index.meta.ts
+│   │   │   ├── getting-started/
+│   │   │   │   ├── category.makit.ts
+│   │   │   │   ├── installation.md
+│   │   │   │   ├── installation.meta.ts
+│   │   │   │   ├── configuration.md
+│   │   │   │   └── configuration.meta.ts
+│   │   │   └── deployment/
+│   │   │       ├── category.makit.ts
+│   │   │       ├── github-pages.md
+│   │   │       └── github-pages.meta.ts
+│   │   └── enduroq/
+│   │       ├── collection.makit.ts
+│   │       └── index.md
 │   └── ja-jp/
-│       ├── index.md
-│       ├── getting-started.md
-│       └── guides/
-│           └── configuration.md
+│       ├── makit/
+│       └── enduroq/
 ├── public/
-│   ├── logo.svg
-│   └── images/
 ├── styles/
 │   └── custom.css
 ├── makit.config.ts
@@ -173,7 +265,7 @@ my-documentation/
 └── .gitignore
 ```
 
-Makit実行後は以下が生成される。
+生成後:
 
 ```text
 my-documentation/
@@ -187,516 +279,458 @@ my-documentation/
 │   ├── package.json
 │   └── tsconfig.json
 ├── dist/
-├── docs/
-├── public/
-├── styles/
-└── makit.config.ts
+└── ...
 ```
 
 ---
 
-# 8. 生成ディレクトリ
-
-## 8.1 `.makit/`
-
-Next.jsアプリケーションと中間生成物を格納する。
-
-`.gitignore` への追加を推奨し、`makit init` が自動的に追加する。
-
-## 8.2 `.makit/app/`
-
-Next.js App Router のエントリーポイントを格納する。
-
-概念構成:
-
-```text
-.makit/app/
-├── layout.tsx
-├── page.tsx
-├── not-found.tsx
-└── [locale]/
-    ├── layout.tsx
-    └── [[...slug]]/
-        └── page.tsx
-```
-
-国際化を使用しない場合も、内部的には単一ロケールとして処理できる構造とする。
-
-## 8.3 `.makit/generated/`
-
-Markdown、設定、ナビゲーションなどから生成されたデータを格納する。
-
-```text
-.makit/generated/
-├── manifest.json
-├── site.json
-├── locales.json
-├── navigation/
-│   ├── en-us.json
-│   └── ja-jp.json
-└── pages/
-    ├── en-us/
-    └── ja-jp/
-```
-
-## 8.4 `.makit/cache/`
-
-解析結果やコードハイライト結果などを格納する。
-
-## 8.5 `.makit/public/`
-
-利用者の `public/` と、Makitが生成した静的アセットを格納する。
-
-## 8.6 `dist/`
-
-最終的な静的ビルド成果物を格納する。
-
-出力先は設定で変更可能とする。
-
----
-
-# 9. CLI仕様
-
-## 9.1 共通形式
-
-```bash
-makit <command> [options]
-```
-
-共通オプション:
-
-```text
---config <path>       設定ファイルを指定
---cwd <path>          プロジェクトルートを指定
---verbose             詳細ログを表示
---silent              エラー以外を表示しない
---log-format <format> ログ形式を指定
---version             バージョンを表示
---help                ヘルプを表示
-```
-
-`--log-format` の候補:
-
-* `pretty`
-* `json`
-
-標準値は `pretty` とする。
-
----
-
-## 9.2 `makit init`
-
-新しいMakitプロジェクトを初期化する。
-
-```bash
-makit init
-```
-
-ディレクトリを指定できる。
-
-```bash
-makit init my-docs
-```
-
-生成内容:
-
-* `makit.config.ts`
-* `docs/`
-* `docs/index.md` またはロケール別トップページ
-* `public/`
-* `.gitignore`
-* 必要に応じて `package.json`
-
-オプション候補:
-
-```text
---locale <locale>
---package-manager <npm|pnpm|yarn|bun>
---force
---skip-install
-```
-
-既存ファイルを破壊する場合は、`--force` がない限りエラーとする。
-
----
-
-## 9.3 `makit dev`
-
-開発サーバーを起動する。
-
-```bash
-makit dev
-```
-
-処理:
-
-1. プロジェクトルートを解決
-2. 設定ファイルを読み込む
-3. 設定を検証
-4. Markdownを収集
-5. ページとルートを生成
-6. `.makit/` を生成または更新
-7. Next.js開発サーバーを起動
-8. 対象ファイルを監視
-9. 変更に応じて再生成
-
-オプション:
-
-```text
---port <number>
---host <hostname>
---open
---no-open
-```
-
-標準値:
-
-```text
-port: 3000
-host: localhost
-open: false
-```
-
-設定ファイル変更時は、原則として全ページを再解析する。
-
-Markdown変更時は、変更されたページと影響を受けるナビゲーション、リンク、検索索引のみを再生成することを目標とする。
-
-MVPでは全ページ再生成を許容する。
-
----
-
-## 9.4 `makit build`
-
-本番用の静的サイトを生成する。
-
-```bash
-makit build
-```
-
-処理:
-
-1. 設定ファイルを読み込む
-2. 設定を検証
-3. ソースを収集
-4. Markdownを解析
-5. 翻訳ページを対応付ける
-6. フォールバックページを生成
-7. ナビゲーションを生成
-8. 内部リンクを検証
-9. `.makit/` を生成
-10. Next.jsビルドを実行
-11. Static Exportを生成
-12. 成果物を `outDir` へ配置
-13. ビルド結果を報告
-
-オプション:
-
-```text
---clean
---no-clean
---strict
---profile
-```
-
-`--strict` 指定時は、一部の警告をエラーとして扱う。
-
----
-
-## 9.5 `makit preview`
-
-生成済みの静的サイトをローカルで配信する。
-
-```bash
-makit preview
-```
-
-対象は `outDir` とする。
-
-Next.js開発サーバーは使用せず、静的ファイルサーバーを使用する。
-
-オプション:
-
-```text
---port <number>
---host <hostname>
---open
-```
-
----
-
-## 9.6 `makit clean`
-
-生成物を削除する。
-
-```bash
-makit clean
-```
-
-標準削除対象:
-
-* `.makit/`
-* `outDir`
-
-オプション:
-
-```text
---cache-only
---generated-only
---all
-```
-
----
-
-## 9.7 `makit check`
-
-ビルドを行わず、設定およびドキュメントを検証する。
-
-```bash
-makit check
-```
-
-検証対象:
-
-* 設定ファイル
-* Front Matter
-* 重複ルート
-* 重複ページID
-* 内部リンク
-* ナビゲーション
-* 翻訳対応
-* 不明なコード言語
-* 必須アセット
-* SEO情報
-
-CIで利用可能な終了コードを返す。
-
----
-
-# 10. 設定ファイル
-
-設定ファイル名は標準で `makit.config.ts` とする。
-
-次の形式で記述する。
-
-```ts
-import { defineConfig } from "@natsuneko-laboratory/makit";
-
-export default defineConfig({
-  title: "My Documentation",
-});
-```
-
-`defineConfig` は型補完を提供し、設定値を返す関数とする。
-
-以下の設定ファイル候補を読み込み可能とする。
-
-```text
-makit.config.ts
-makit.config.mts
-makit.config.js
-makit.config.mjs
-```
-
-優先順位は上記の順とする。
-
-複数存在する場合はエラーまたは警告とする。
-
----
-
-# 11. 設定型
-
-```ts
-export interface MakitConfig {
-  title: string;
-  description?: string;
-  lang?: string;
-  siteUrl?: string;
-
-  sourceDir?: string;
-  publicDir?: string;
-  outDir?: string;
-  basePath?: string;
-
-  i18n?: MakitI18nConfig;
-
-  navigation?: NavigationConfig;
-  header?: HeaderConfig;
-  footer?: FooterConfig;
-
-  theme?: ThemeConfig;
-  markdown?: MarkdownConfig;
-  styles?: string[];
-
-  seo?: SeoConfig;
-  sitemap?: SitemapConfig;
-
-  build?: BuildConfig;
-  dev?: DevConfig;
-  preview?: PreviewConfig;
-
-  validation?: ValidationConfig;
-  experimental?: ExperimentalConfig;
-}
-```
-
----
-
-# 12. 基本設定
-
-```ts
-export default defineConfig({
-  title: "Makit Documentation",
-  description: "Documentation powered by Makit",
-  lang: "en-US",
-  siteUrl: "https://docs.example.com",
-
-  sourceDir: "docs",
-  publicDir: "public",
-  outDir: "dist",
-  basePath: "",
-});
-```
-
-初期値:
-
-```ts
-{
-  lang: "en",
-  sourceDir: "docs",
-  publicDir: "public",
-  outDir: "dist",
-  basePath: ""
-}
-```
-
-## 12.1 `title`
-
-サイト全体の名称。
-
-必須とする。
-
-## 12.2 `description`
-
-サイト全体の説明。
-
-SEO、OGP、トップページなどで使用する。
-
-## 12.3 `lang`
-
-国際化を使用しない場合のHTML `lang` 属性。
-
-## 12.4 `siteUrl`
-
-本番サイトの絶対URL。
-
-以下に使用する。
-
-* canonical URL
-* OGP
-* サイトマップ
-* RSS
-* `hreflang`
-* 絶対URL生成
-
-開発時は省略可能とする。
-
-## 12.5 `basePath`
-
-サブディレクトリ配信時の基底パス。
+# 9. メタデータファイル
+
+## 9.1 命名規則
+
+| 用途                    | ファイル名                 |
+| --------------------- | --------------------- |
+| サイト全体                 | `makit.config.ts`     |
+| Collection            | `collection.makit.ts` |
+| Collection Navigation | `navigation.makit.ts` |
+| Section / Group       | `category.makit.ts`   |
+| Page                  | `{filename}.meta.ts`  |
 
 例:
 
-```ts
-basePath: "/makit"
-```
-
-生成URL:
-
 ```text
-/makit/en-us/getting-started/
+github-pages.md
+github-pages.meta.ts
 ```
 
-先頭に `/` を付け、末尾には `/` を付けない形式へ正規化する。
+`.makit.ts` は Makit が探索する構造メタデータを示す。
+
+`.meta.ts` は対応する Markdown ページのメタデータを示す。
 
 ---
 
-# 13. Markdownソース
+# 10. 公開メタデータ API
 
-## 13.1 基本構造
-
-国際化を使用しない場合:
-
-```text
-docs/
-├── index.md
-├── getting-started.md
-└── guides/
-    └── configuration.md
-```
-
-国際化を使用する場合:
-
-```text
-docs/
-├── en-us/
-│   ├── index.md
-│   └── getting-started.md
-└── ja-jp/
-    ├── index.md
-    └── getting-started.md
-```
-
-## 13.2 対応拡張子
-
-MVPでは以下を対応対象とする。
-
-* `.md`
-* `.markdown`
-
-MDXは初期実装に含めない。
-
-## 13.3 除外規則
-
-以下を標準で無視する。
-
-* `node_modules`
-* `.git`
-* `.makit`
-* `outDir`
-* ファイル名が `.` で始まるファイル
-* 設定で除外されたパス
-
-将来的に `include` および `exclude` globを提供する。
-
----
-
-# 14. Front Matter
-
-YAML Front Matter を標準対応とする。
-
-```md
----
-id: getting-started
-title: Getting Started
-description: Learn how to use Makit.
-slug: getting-started
-order: 10
-draft: false
-sidebar: true
-tableOfContents: true
----
-
-# Getting Started
-```
-
-型:
+Makit は専用エントリーポイントから定義関数と型を公開する。
 
 ```ts
-export interface PageFrontMatter {
+import {
+  defineCollection,
+  defineNavigation,
+  defineCategory,
+  definePageMetadata,
+
+  type CollectionMetadata,
+  type NavigationMetadata,
+  type NavigationNode,
+  type CategoryMetadata,
+  type PageMetadata,
+} from "makit/metadata";
+```
+
+サイト全体の設定:
+
+```ts
+import { defineConfig } from "makit";
+```
+
+Deployment Adapter 用の型:
+
+```ts
+import type {
+  DeploymentAdapter,
+  DeploymentAdapterContext,
+} from "makit/adapter";
+```
+
+---
+
+# 11. Collection メタデータ
+
+## 11.1 定義例
+
+```ts
+import { defineCollection } from "makit/metadata";
+
+export default defineCollection({
+  id: "makit",
+  title: "Makit",
+  description:
+    "Markdownから静的ドキュメントを生成するツール",
+  path: "/makit",
+  icon: "/icons/makit.svg",
+  index: "index.md",
+});
+```
+
+## 11.2 型
+
+```ts
+export interface CollectionMetadata {
+  /**
+   * サイト内で一意なCollection識別子。
+   */
+  id: string;
+
+  /**
+   * Collectionの表示名。
+   */
+  title:
+    | string
+    | LocalizedValue<string>;
+
+  /**
+   * Collectionの説明。
+   */
+  description?:
+    | string
+    | LocalizedValue<string>;
+
+  /**
+   * ロケール接頭辞を除くURLプレフィックス。
+   */
+  path?: string;
+
+  /**
+   * Collectionトップページ。
+   *
+   * @default "index.md"
+   */
+  index?: string;
+
+  icon?: string;
+
+  hidden?: boolean;
+
+  seo?: CollectionSeoConfig;
+}
+```
+
+## 11.3 定義関数
+
+```ts
+export function defineCollection(
+  metadata: CollectionMetadata,
+): CollectionMetadata;
+```
+
+---
+
+# 12. Collection の検出
+
+`makit.config.ts` で探索方式を指定できる。
+
+```ts
+export default defineConfig({
+  collections: {
+    mode: "discover",
+  },
+});
+```
+
+Makit は各ロケールのソースディレクトリ配下から `collection.makit.ts` を探索する。
+
+```text
+docs/en-us/makit/collection.makit.ts
+docs/en-us/enduroq/collection.makit.ts
+docs/ja-jp/makit/collection.makit.ts
+```
+
+異なるロケールで同じ `id` を持つ Collection は、同一 Collection の翻訳として扱う。
+
+---
+
+# 13. Collection の明示定義
+
+通常の TypeScript モジュールとして import することもできる。
+
+```ts
+import { defineConfig } from "makit";
+
+import makitCollection from
+  "./metadata/collections/makit";
+import enduroqCollection from
+  "./metadata/collections/enduroq";
+
+export default defineConfig({
+  collections: [
+    makitCollection,
+    enduroqCollection,
+  ],
+});
+```
+
+`collections` 配列を指定した場合、自動探索は行わない。
+
+混在モードは MVP では提供しない。
+
+---
+
+# 14. Navigation メタデータ
+
+## 14.1 定義例
+
+```ts
+import { defineNavigation } from "makit/metadata";
+
+export default defineNavigation({
+  items: [
+    {
+      type: "page",
+      page: "makit-overview",
+    },
+    {
+      type: "section",
+      id: "getting-started",
+      title: "Getting Started",
+      items: [
+        {
+          type: "page",
+          page: "installation",
+        },
+        {
+          type: "page",
+          page: "configuration",
+        },
+      ],
+    },
+    {
+      type: "section",
+      id: "deployment",
+      title: "Deployment",
+      collapsible: true,
+      collapsed: false,
+      items: [
+        {
+          type: "page",
+          page: "deployment-cloudflare",
+        },
+        {
+          type: "page",
+          page: "deployment-github",
+        },
+      ],
+    },
+  ],
+});
+```
+
+## 14.2 型
+
+```ts
+export interface NavigationMetadata {
+  items: NavigationNode[];
+}
+```
+
+```ts
+export type NavigationNode =
+  | NavigationPageNode
+  | NavigationSectionNode
+  | NavigationGroupNode
+  | NavigationLinkNode
+  | NavigationCollectionNode;
+```
+
+### Page Node
+
+```ts
+export interface NavigationPageNode {
+  type: "page";
+
+  /**
+   * 対象ページのpageId。
+   */
+  page: string;
+
+  title?: string;
+  hidden?: boolean;
+}
+```
+
+### Section Node
+
+```ts
+export interface NavigationSectionNode {
+  type: "section";
+
+  id?: string;
+  title: string;
+
+  /**
+   * Section自体をクリック可能にするページID。
+   */
+  page?: string;
+
+  items: NavigationNode[];
+
+  collapsible?: boolean;
+  collapsed?: boolean;
+}
+```
+
+### Group Node
+
+```ts
+export interface NavigationGroupNode {
+  type: "group";
+
   id?: string;
   title?: string;
+
+  items: NavigationNode[];
+
+  collapsible?: boolean;
+  collapsed?: boolean;
+}
+```
+
+### Link Node
+
+```ts
+export interface NavigationLinkNode {
+  type: "link";
+
+  title: string;
+  href: string;
+
+  external?: boolean;
+}
+```
+
+### Collection Node
+
+```ts
+export interface NavigationCollectionNode {
+  type: "collection";
+
+  collection: string;
+  title?: string;
+}
+```
+
+---
+
+# 15. Category メタデータ
+
+## 15.1 定義例
+
+```ts
+import { defineCategory } from "makit/metadata";
+
+export default defineCategory({
+  id: "deployment",
+  title: "Deployment",
+  type: "section",
+  order: 30,
+  collapsible: true,
+  collapsed: false,
+  index: "index.md",
+});
+```
+
+## 15.2 型
+
+```ts
+export interface CategoryMetadata {
+  id?: string;
+
+  title?:
+    | string
+    | LocalizedValue<string>;
+
+  /**
+   * @default "section"
+   */
+  type?: "section" | "group";
+
+  order?: number;
+
+  hidden?: boolean;
+
+  collapsible?: boolean;
+  collapsed?: boolean;
+
+  index?: string;
+}
+```
+
+## 15.3 自動ナビゲーションでの利用
+
+`navigation.makit.ts` が存在せず、Collection の Navigation が `auto` の場合、ディレクトリ内の `category.makit.ts` を利用して階層を生成する。
+
+解決に使用する情報:
+
+* `type`
+* `title`
+* `order`
+* `hidden`
+* `collapsible`
+* `collapsed`
+* `index`
+
+---
+
+# 16. Page メタデータ
+
+## 16.1 定義例
+
+```ts
+import {
+  definePageMetadata,
+} from "makit/metadata";
+
+export default definePageMetadata({
+  id: "deployment-github-pages",
+  title: "GitHub Pages",
+  description:
+    "Deploy Makit documentation to GitHub Pages.",
+
+  slug: [
+    "deployment",
+    "github-pages",
+  ],
+
+  order: 20,
+
+  sidebar: true,
+  tableOfContents: true,
+
+  taxonomy: {
+    topics: [
+      "deployment",
+      "static-hosting",
+    ],
+    audiences: [
+      "developers",
+      "maintainers",
+    ],
+  },
+});
+```
+
+対応する Markdown:
+
+```md
+# GitHub Pages
+
+本文……
+```
+
+## 16.2 型
+
+```ts
+export interface PageMetadata {
+  /**
+   * 翻訳間で共通する安定したページ識別子。
+   */
+  id?: string;
+
+  title?: string;
   description?: string;
+
   slug?: string | string[];
+
   order?: number;
 
   draft?: boolean;
@@ -715,155 +749,712 @@ export interface PageFrontMatter {
 
   navigation?: {
     title?: string;
-    group?: string;
+
+    /**
+     * 同一ページが複数配置される場合の正規位置。
+     */
+    primary?: string[];
   };
+
+  taxonomy?: PageTaxonomy;
 }
 ```
 
-## 14.1 `id`
-
-翻訳間でページを対応付ける安定した識別子。
-
-同一ロケール内では一意でなければならない。
-
-異なるロケールで同じ `id` を持つページは、同一内容の翻訳として扱う。
-
-## 14.2 `title`
-
-ページタイトル。
-
-省略時は以下の順で推定する。
-
-1. 最初のH1
-2. ファイル名
-3. ページID
-
-## 14.3 `slug`
-
-URLを明示的に指定する。
-
-文字列またはセグメント配列を許可する。
-
-```yaml
-slug: getting-started
+```ts
+export interface PageTaxonomy {
+  topics?: string[];
+  products?: string[];
+  audiences?: string[];
+  tags?: string[];
+}
 ```
 
-```yaml
-slug:
-  - guides
-  - configuration
+## 16.3 定義関数
+
+```ts
+export function definePageMetadata(
+  metadata: PageMetadata,
+): PageMetadata;
 ```
-
-## 14.4 `draft`
-
-`true` のページは、本番ビルドから除外する。
-
-開発サーバーでは表示し、ドラフト表示であることを示す。
-
-## 14.5 `hidden`
-
-ページは生成するが、自動ナビゲーションには含めない。
-
-## 14.6 `order`
-
-自動ナビゲーションにおける並び順。
-
-数値が小さいものを先に表示する。
 
 ---
 
-# 15. ルーティング
+# 17. Page メタデータの解決
 
-## 15.1 基本変換
+ページメタデータは以下の順で解決する。
+
+1. `{filename}.meta.ts`
+2. Markdown の最初の H1
+3. ファイル名
+4. 自動生成値
+
+MVP では YAML Front Matter をページメタデータとして使用しない。
+
+Markdown 内の `---` ブロックは通常の本文として扱うか、明示的な設定でエラーとする。
+
+推奨設定:
+
+```ts
+validation: {
+  disallowFrontMatter: true,
+}
+```
+
+標準値は `true` とする。
+
+既存サイト移行用として、将来的に Front Matter 読み込み互換プラグインを提供できる。
+
+---
+
+# 18. Markdown 単体ページ
+
+`.meta.ts` は必須ではない。
 
 ```text
-docs/index.md
-→ /
+getting-started.md
+```
 
-docs/getting-started.md
-→ /getting-started/
+```md
+# Getting Started
 
-docs/guides/index.md
-→ /guides/
+本文……
+```
 
-docs/guides/configuration.md
-→ /guides/configuration/
+この場合:
+
+* `id`: 相対ファイルパスから生成
+* `title`: 最初の H1
+* `slug`: 相対ファイルパス
+* `order`: 未指定
+* `draft`: `false`
+* `hidden`: `false`
+
+生成される ID の例:
+
+```text
+guides/getting-started.md
+→ guides.getting-started
+```
+
+明示的な ID を推奨するが、小規模サイトでは自動 ID を利用できる。
+
+---
+
+# 19. TypeScript メタデータの共通化
+
+メタデータからローカル TypeScript モジュールを import できる。
+
+```ts
+import {
+  commonDeploymentItems,
+} from "../../../metadata/navigation";
+
+export default defineNavigation({
+  items: commonDeploymentItems,
+});
+```
+
+共通オプション:
+
+```ts
+import {
+  defineCategory,
+  type CategoryMetadata,
+} from "makit/metadata";
+
+const defaults = {
+  type: "section",
+  collapsible: true,
+  collapsed: true,
+} satisfies Partial<CategoryMetadata>;
+
+export default defineCategory({
+  ...defaults,
+  id: "deployment",
+  title: "Deployment",
+});
+```
+
+ローカル import の依存ファイルも監視対象に含める。
+
+---
+
+# 20. メタデータの実行制約
+
+メタデータファイルは Node.js 環境で実行する。
+
+以下を要件とする。
+
+* default export が存在する
+* 対応する `define*` 関数の戻り値を export する
+* 同期的に評価できる
+* Promise を返さない
+* シリアライズ可能なデータである
+* 循環参照を含まない
+* React 要素を含まない
+* DOM API に依存しない
+
+非対応例:
+
+```ts
+export default async function loadMetadata() {
+  const response = await fetch("https://example.com");
+
+  return defineCollection({
+    id: "makit",
+    title: await response.text(),
+  });
+}
+```
+
+MVP では非同期メタデータを許可しない。
+
+---
+
+# 21. 環境変数
+
+メタデータから `process.env` を参照することは技術的には可能だが、ビルド再現性を損なうため非推奨とする。
+
+環境変数を参照した場合、`makit check` は警告できる。
+
+```text
+Warning: collection.makit.ts depends on process.env.PRODUCT_NAME.
+Metadata output may differ between environments.
+```
+
+Deployment Adapter の認証情報や CI 固有情報は例外として、Adapter 内部で扱う。
+
+---
+
+# 22. TypeScript ローダー
+
+Makit は TypeScript 設定およびメタデータを内部ローダーで読み込む。
+
+実装候補:
+
+* `jiti`
+* `tsx`
+* esbuild
+* rolldown
+* Node.js の型除去機能
+
+ローダーは内部実装とし、利用者に追加設定を要求しない。
+
+キャッシュキーには以下を含める。
+
+* メタデータファイル内容
+* ローカル import の内容
+* Makit バージョン
+* ローダーバージョン
+* Node.js バージョン
+* 関連する設定値
+
+---
+
+# 23. サイト全体の設定
+
+```ts
+import { defineConfig } from "makit";
+import cloudflarePages from
+  "@makit/adapter-cloudflare-pages";
+
+export default defineConfig({
+  title: "Natsuneko Documentation",
+  description:
+    "Documentation for Natsuneko products and services",
+
+  siteUrl: "https://docs.natsuneko.com",
+
+  sourceDir: "docs",
+  publicDir: "public",
+  outDir: "dist",
+
+  collections: {
+    mode: "discover",
+  },
+
+  i18n: {
+    defaultLocale: "en-US",
+
+    locales: [
+      {
+        locale: "en-US",
+        label: "English",
+      },
+      {
+        locale: "ja-JP",
+        label: "日本語",
+      },
+    ],
+
+    fallback: {
+      enabled: true,
+      behavior: "render",
+      showNotice: true,
+    },
+
+    collectionFallback: {
+      behavior: "render",
+    },
+
+    root: {
+      behavior: "detect",
+    },
+  },
+
+  home: {
+    layout: "portal",
+
+    featuredCollections: [
+      "makit",
+      "enduroq",
+      "catalyst",
+    ],
+  },
+
+  deployment: {
+    adapter: cloudflarePages(),
+  },
+});
+```
+
+---
+
+# 24. `MakitConfig` 型
+
+```ts
+export interface MakitConfig {
+  title: string;
+  description?: string;
+  lang?: string;
+  siteUrl?: string;
+
+  sourceDir?: string;
+  publicDir?: string;
+  outDir?: string;
+  basePath?: string;
+
+  collections?:
+    | CollectionMetadata[]
+    | {
+        mode: "discover";
+      };
+
+  home?: HomeConfig;
+
+  i18n?: MakitI18nConfig;
+
+  navigation?: SiteNavigationConfig;
+
+  header?: HeaderConfig;
+  footer?: FooterConfig;
+
+  theme?: ThemeConfig;
+
+  markdown?: MarkdownConfig;
+  styles?: string[];
+
+  seo?: SeoConfig;
+  sitemap?: SitemapConfig;
+
+  redirects?: RedirectConfig[];
+  headers?: HeaderRuleConfig[];
+
+  deployment?: DeploymentConfig;
+
+  build?: BuildConfig;
+  dev?: DevConfig;
+  preview?: PreviewConfig;
+
+  validation?: ValidationConfig;
+  experimental?: ExperimentalConfig;
+}
+```
+
+---
+
+# 25. Collection Navigation
+
+Collection ごとに以下から選択できる。
+
+```ts
+export type CollectionNavigationConfig =
+  | {
+      mode: "auto";
+      includeFallbackPages?: boolean;
+    }
+  | {
+      mode: "manual";
+      items: NavigationNode[];
+    };
+```
+
+`navigation.makit.ts` が存在する場合は manual navigation として扱う。
+
+優先順位:
+
+1. `makit.config.ts` から import された明示設定
+2. `navigation.makit.ts`
+3. 自動生成
+
+複数方式が競合した場合はエラーとする。
+
+---
+
+# 26. Global Navigation
+
+サイト全体の主要領域を定義する。
+
+```ts
+navigation: {
+  global: [
+    {
+      title: "Products",
+      items: [
+        {
+          title: "Makit",
+          collection: "makit",
+        },
+        {
+          title: "Enduroq",
+          collection: "enduroq",
+        },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        {
+          title: "GitHub",
+          href: "https://github.com/example",
+          external: true,
+        },
+      ],
+    },
+  ],
+}
+```
+
+型:
+
+```ts
+export interface GlobalNavigationGroup {
+  title?: string;
+  items: GlobalNavigationItem[];
+}
+
+export interface GlobalNavigationItem {
+  title: string;
+
+  href?: string;
+  collection?: string;
+
+  external?: boolean;
+
+  items?: GlobalNavigationItem[];
+}
+```
+
+`href` と `collection` は同時指定できない。
+
+---
+
+# 27. 自動ナビゲーション
+
+自動生成では以下を使用する。
+
+* ディレクトリ階層
+* `category.makit.ts`
+* Page Metadata
+* Collection Metadata
+* `index.md`
+* `order`
+* `hidden`
+* ページタイトル
+
+並び順:
+
+1. `order` の昇順
+2. タイトルのロケール順
+3. ファイル名
+
+`order` が同一の場合は安定した並びを保証する。
+
+---
+
+# 28. URL ルーティング
+
+## 28.1 Collection URL
+
+Collection の `path` を URL プレフィックスとして使用する。
+
+```ts
+defineCollection({
+  id: "makit",
+  title: "Makit",
+  path: "/makit",
+});
+```
+
+生成例:
+
+```text
+/makit/
+/makit/getting-started/
+/makit/deployment/github-pages/
 ```
 
 国際化使用時:
 
 ```text
-docs/en-us/index.md
-→ /en-us/
-
-docs/en-us/getting-started.md
-→ /en-us/getting-started/
+/en-us/makit/
+/ja-jp/makit/
+/en-us/makit/deployment/github-pages/
 ```
 
-## 15.2 末尾スラッシュ
+## 28.2 slug
 
-標準では末尾スラッシュを有効とする。
-
-```text
-/getting-started/
-```
-
-設定:
+Page Metadata で URL を明示できる。
 
 ```ts
-build: {
-  trailingSlash: true,
-}
+export default definePageMetadata({
+  id: "deployment-github-pages",
+  title: "GitHub Pages",
+  slug: [
+    "deploy",
+    "github",
+  ],
+});
 ```
 
-## 15.3 重複ルート
-
-以下のような重複はビルドエラーとする。
+生成 URL:
 
 ```text
-docs/guides.md
-docs/guides/index.md
+/en-us/makit/deploy/github/
 ```
 
-両方が `/guides/` を生成するためである。
+## 28.3 URL と Navigation の分離
 
-## 15.4 動的ルート
+ナビゲーション:
 
-利用者が動的ルートを定義する機能は提供しない。
+```text
+Makit
+└── Guides
+    └── Deployment
+        └── GitHub Pages
+```
 
-すべてのページURLはビルド時に確定しなければならない。
+URL:
+
+```text
+/en-us/makit/deploy/github/
+```
+
+両者は一致する必要がない。
 
 ---
 
-# 16. 国際化
+# 29. ページ ID
 
-## 16.1 基本要件
+Page ID は翻訳、ナビゲーション参照、関連ページ、言語切り替えに使用する安定した識別子である。
 
-Makit は以下を標準対応する。
+英語:
 
-* ロケール接頭辞付きURL
-* ロケール別ソースディレクトリ
-* デフォルトロケール
-* 翻訳欠損時のフォールバック
-* 言語切り替え
-* ロケール別ナビゲーション
-* `lang` および `dir`
-* canonical URL
-* `hreflang`
-* ロケール別サイトマップ
-* ブラウザ言語検出
-* ページIDによる翻訳対応
+```ts
+definePageMetadata({
+  id: "deployment-github-pages",
+  title: "GitHub Pages",
+});
+```
 
-URL例:
+日本語:
+
+```ts
+definePageMetadata({
+  id: "deployment-github-pages",
+  title: "GitHub Pages へのデプロイ",
+});
+```
+
+同じ ID を持つページは同一ページの翻訳として扱う。
+
+同一ロケールかつ同一 Collection 内での重複はエラーとする。
+
+---
+
+# 30. 同一ページの複数配置
+
+同じ Page ID をナビゲーション内で複数回参照できる。
+
+```text
+Makit
+├── Getting Started
+│   └── Configuration
+└── Reference
+    └── Configuration
+```
+
+ページの実体と canonical URL は1つとする。
+
+正規ナビゲーション位置:
+
+```ts
+definePageMetadata({
+  id: "configuration",
+
+  navigation: {
+    primary: [
+      "getting-started",
+      "configuration",
+    ],
+  },
+});
+```
+
+未指定の場合、最初に出現した位置を正規位置とする。
+
+複数配置されている場合は警告を出せる。
+
+---
+
+# 31. パンくずリスト
+
+解決順:
+
+1. Site
+2. Collection
+3. Section
+4. Group
+5. Page
+
+例:
+
+```text
+Home
+> Makit
+> Deployment
+> Hosting Providers
+> GitHub Pages
+```
+
+URL を持たない Section や Group はリンクなしラベルとして表示する。
+
+---
+
+# 32. 前後ページ
+
+前後ページはファイル順ではなく、解決済み Navigation の順序から決定する。
+
+```ts
+navigation: {
+  pagination: {
+    enabled: true,
+    crossSection: true,
+  },
+}
+```
+
+`crossSection: false` の場合は同一 Section 内に限定する。
+
+ページが複数位置に存在する場合は正規ナビゲーション位置を使用する。
+
+---
+
+# 33. サイトトップ
+
+## 33.1 Page Layout
+
+Markdown ページをトップとして使用する。
+
+```ts
+home: {
+  layout: "page",
+  page: "site-home",
+}
+```
+
+## 33.2 Portal Layout
+
+複数 Collection への入口を表示する。
+
+```ts
+home: {
+  layout: "portal",
+
+  featuredCollections: [
+    "makit",
+    "enduroq",
+  ],
+
+  sections: [
+    {
+      title: {
+        "en-US": "Developer Tools",
+        "ja-JP": "開発者向けツール",
+      },
+
+      collections: [
+        "makit",
+        "enduroq",
+      ],
+    },
+  ],
+}
+```
+
+型:
+
+```ts
+export interface HomeConfig {
+  layout?: "page" | "portal";
+
+  page?: string;
+
+  featuredCollections?: string[];
+
+  sections?: HomeSectionConfig[];
+}
+```
+
+---
+
+# 34. Collection トップ
+
+標準では Collection ディレクトリの `index.md` を使用する。
+
+```text
+docs/en-us/makit/index.md
+docs/en-us/makit/index.meta.ts
+```
+
+Collection Metadata の `index` で変更できる。
+
+トップページが存在しない場合、Makit は以下から自動ページを生成できる。
+
+* Collection タイトル
+* 説明
+* 主要 Section
+* 注目ページ
+* ページ数
+* 関連 Collection
+
+---
+
+# 35. 国際化
+
+## 35.1 URL
 
 ```text
 /ja-jp/
-/ja-jp/getting-started/
+/ja-jp/makit/
+/ja-jp/makit/getting-started/
+
 /en-us/
-/en-us/getting-started/
+/en-us/makit/
+/en-us/makit/getting-started/
 ```
 
-## 16.2 設定
+## 35.2 設定
 
 ```ts
 i18n: {
@@ -886,392 +1477,70 @@ i18n: {
     showNotice: true,
   },
 
+  collectionFallback: {
+    behavior: "render",
+  },
+
   root: {
     behavior: "detect",
   },
-
-  localeSwitcher: {
-    missingPage: "fallback",
-  },
 }
 ```
 
-型:
-
-```ts
-export interface MakitI18nConfig {
-  defaultLocale: string;
-  locales: MakitLocaleConfig[];
-
-  fallback?: boolean | MakitLocaleFallbackConfig;
-
-  root?: {
-    behavior?: "default" | "detect" | "select";
-    locale?: string;
-  };
-
-  localeSwitcher?: {
-    missingPage?: "fallback" | "locale-root" | "disabled";
-  };
-
-  messages?: Record<string, Partial<MakitMessages>>;
-}
-```
-
-ロケール型:
-
-```ts
-export interface MakitLocaleConfig {
-  locale: string;
-  label?: string;
-  lang?: string;
-  dir?: "ltr" | "rtl";
-  sourceDir?: string;
-}
-```
-
-## 16.3 ロケール正規化
-
-設定ではBCP 47形式を推奨する。
+## 35.3 ロケール正規化
 
 ```text
-ja-JP
-en-US
-zh-Hant-TW
-```
-
-URLでは小文字へ正規化する。
-
-```text
-ja-JP → ja-jp
 en-US → en-us
+ja-JP → ja-jp
 zh-Hant-TW → zh-hant-tw
 ```
 
-正規化後に重複するロケールはエラーとする。
+設定値では BCP 47 形式を保持し、URL では小文字化する。
 
-## 16.4 デフォルトロケール
+## 35.4 Page フォールバック
 
-`defaultLocale` は必ず `locales` に含まれていなければならない。
+対象ロケールにページがない場合、デフォルトロケールのページをビルド時に複製して静的ルートを生成する。
 
-翻訳欠損時の標準フォールバック元として使用する。
+方式:
 
-## 16.5 ソースディレクトリ
+* `render`
+* `redirect`
+* `not-found`
 
-標準規則:
+標準値は `render`。
 
-```text
-{sourceDir}/{normalizedLocale}/
-```
+## 35.5 Collection フォールバック
 
-ロケール単位で上書き可能とする。
+Collection 全体が対象ロケールにない場合:
 
-```ts
-locales: [
-  {
-    locale: "en-US",
-    sourceDir: "documentation/en",
-  },
-  {
-    locale: "ja-JP",
-    sourceDir: "documentation/ja",
-  },
-]
-```
+* `render`
+* `redirect`
+* `hidden`
+* `not-found`
 
-## 16.6 ページ対応
+から選択する。
 
-翻訳ページは以下の優先順位で対応付ける。
+## 35.6 言語切り替え
 
-1. Front Matterの `id`
-2. 正規化された相対ルート
-3. ソースディレクトリからの相対ファイルパス
+同じ Page ID の翻訳へ移動する。
 
-`id` の使用を推奨する。
+翻訳がない場合:
 
-英語:
+1. フォールバックページ
+2. 同じ Section のトップ
+3. Collection トップ
+4. ロケールのサイトトップ
 
-```md
----
-id: configuration
-slug: configuration
-title: Configuration
----
-```
-
-日本語:
-
-```md
----
-id: configuration
-slug: settings
-title: 設定
----
-```
-
-生成URL:
-
-```text
-/en-us/configuration/
-/ja-jp/settings/
-```
-
-## 16.7 フォールバック
-
-翻訳が存在しない場合、デフォルトロケールのコンテンツを利用できる。
-
-英語版のみ存在する場合:
-
-```text
-docs/en-us/guides/deployment.md
-```
-
-フォールバック有効時は以下も生成する。
-
-```text
-/ja-jp/guides/deployment/
-```
-
-フォールバックは実行時ではなくビルド時に解決する。
-
-## 16.8 フォールバック方式
-
-### `render`
-
-要求されたロケールのURLを維持し、デフォルトロケールの本文を表示する。
-
-```text
-/ja-jp/guides/deployment/
-```
-
-URLは日本語のまま、内容は英語版となる。
-
-標準動作とする。
-
-### `redirect`
-
-デフォルトロケールのページへ遷移する静的ページを生成する。
-
-```text
-/ja-jp/guides/deployment/
-→ /en-us/guides/deployment/
-```
-
-HTTPリダイレクトではなく、静的HTML上の遷移となる。
-
-### `not-found`
-
-翻訳が存在しないURLを生成しない。
-
-## 16.9 フォールバック通知
-
-`render` の場合、別言語を表示していることを通知できる。
-
-例:
-
-```text
-このページは日本語に翻訳されていないため、英語版を表示しています。
-```
-
-メッセージはロケール別に上書き可能とする。
-
-## 16.10 ルートURL
-
-`/` の動作は以下から選択する。
-
-### `default`
-
-デフォルトロケールへ静的遷移する。
-
-```text
-/ → /en-us/
-```
-
-### `detect`
-
-ブラウザの言語設定をクライアント側で検出する。
-
-判定順:
-
-1. 保存済み言語
-2. `navigator.languages` の完全一致
-3. 言語部分の一致
-4. デフォルトロケール
-
-### `select`
-
-言語選択ページを表示する。
-
-JavaScriptが無効な場合でも、手動選択リンクを表示する。
-
-## 16.11 言語切り替え
-
-同一ページIDを持つ翻訳が存在する場合、そのページへ移動する。
-
-翻訳が存在しない場合の動作:
-
-* `fallback`
-* `locale-root`
-* `disabled`
-
-## 16.12 フォールバックページのSEO
-
-フォールバックページのcanonical URLは、実際のコンテンツ元へ向ける。
-
-例:
-
-```text
-表示URL:
-/ja-jp/guides/deployment/
-
-canonical:
-/en-us/guides/deployment/
-```
-
-フォールバックページは標準では以下から除外する。
-
-* `hreflang`
-* サイトマップ
-* 検索エンジン向け翻訳ページ一覧
+の順で解決する。
 
 ---
 
-# 17. ナビゲーション
+# 36. Markdown 処理
 
-## 17.1 自動生成
-
-```ts
-navigation: {
-  mode: "auto",
-}
-```
-
-以下を基に生成する。
-
-* ディレクトリ構造
-* Front Matterの `title`
-* Front Matterの `order`
-* Front Matterの `hidden`
-* ページタイトル
-* ロケール
-
-## 17.2 明示定義
-
-```ts
-navigation: {
-  mode: "manual",
-
-  locales: {
-    "en-US": [
-      {
-        title: "Introduction",
-        items: [
-          {
-            title: "Getting Started",
-            href: "/getting-started",
-          },
-        ],
-      },
-    ],
-
-    "ja-JP": [
-      {
-        title: "はじめに",
-        items: [
-          {
-            title: "導入方法",
-            href: "/getting-started",
-          },
-        ],
-      },
-    ],
-  },
-}
-```
-
-ローカルリンクの `href` にはロケールを含めない。
-
-Makitが現在のロケールを付与する。
-
-## 17.3 型
-
-```ts
-export interface NavigationGroup {
-  title?: string;
-  items: NavigationItem[];
-}
-
-export interface NavigationItem {
-  title: string;
-  href?: string;
-  external?: boolean;
-  items?: NavigationItem[];
-}
-```
-
-## 17.4 フォールバックページ
-
-自動ナビゲーションへフォールバックページを含めるか設定可能とする。
-
-```ts
-navigation: {
-  mode: "auto",
-  includeFallbackPages: true,
-}
-```
-
-標準値は `true` とする。
-
----
-
-# 18. ヘッダーとフッター
-
-## 18.1 ヘッダー
-
-```ts
-header: {
-  logo: "/logo.svg",
-  title: "Makit",
-  links: [
-    {
-      label: "Guide",
-      href: "/getting-started",
-    },
-    {
-      label: "GitHub",
-      href: "https://github.com/example/makit",
-      external: true,
-    },
-  ],
-}
-```
-
-## 18.2 フッター
-
-```ts
-footer: {
-  copyright: "© 2026 Makit contributors",
-  links: [
-    {
-      label: "GitHub",
-      href: "https://github.com/example/makit",
-    },
-  ],
-}
-```
-
-ヘッダーおよびフッターの文字列は、将来的にロケール別設定を許可する。
-
----
-
-# 19. Markdown処理
-
-## 19.1 処理パイプライン
+処理パイプライン:
 
 ```text
 Markdown source
-    ↓
-Front Matter extraction
     ↓
 remark parse
     ↓
@@ -1279,26 +1548,20 @@ built-in remark plugins
     ↓
 user remark plugins
     ↓
-mdast validation
-    ↓
 remark-rehype
     ↓
 built-in rehype plugins
     ↓
 user rehype plugins
     ↓
-Shiki highlighting
-    ↓
-HTML AST transformation
+Shiki
     ↓
 HTML serialization
     ↓
 Generated page data
 ```
 
-## 19.2 標準対応
-
-MVPでは以下を標準対応する。
+標準対応:
 
 * CommonMark
 * GitHub Flavored Markdown
@@ -1306,280 +1569,74 @@ MVPでは以下を標準対応する。
 * タスクリスト
 * 取り消し線
 * 脚注
-* 見出しID
+* 見出し ID
 * 見出しアンカー
-* 外部リンク処理
 * コードブロック
 * インラインコード
 * 画像
 * 引用
-* 水平線
+* 外部リンク
 
-## 19.3 設定
+---
+
+# 37. Shiki
 
 ```ts
 markdown: {
-  gfm: true,
-  headingIds: true,
-
-  externalLinks: {
-    target: "_blank",
-    rel: "noopener noreferrer",
-  },
-
-  code: {
-    copyButton: true,
-    lineNumbers: false,
-  },
-
   shiki: {
     themes: {
       light: "github-light",
       dark: "github-dark",
     },
+
     unknownLanguage: "warning",
   },
 }
 ```
 
-## 19.4 remark / rehypeプラグイン
-
-```ts
-import remarkGfm from "remark-gfm";
-
-export default defineConfig({
-  markdown: {
-    remarkPlugins: [
-      remarkGfm,
-    ],
-  },
-});
-```
-
-オプション付き:
-
-```ts
-remarkPlugins: [
-  [plugin, {
-    option: true,
-  }],
-]
-```
-
-内部プラグインとユーザープラグインの順序を明確に定義する。
-
-ユーザープラグインがMakitの必須処理を破壊しないよう、一部の内部処理はユーザープラグイン実行後に再適用する。
-
-## 19.5 生HTML
-
-Markdown内の生HTMLは標準では無効とする。
-
-理由:
-
-* セキュリティ
-* レイアウト破壊防止
-* 静的解析の一貫性
-* 移植性
-
-設定で有効化可能とする場合は、明示的な危険設定として扱う。
-
-```ts
-markdown: {
-  allowDangerousHtml: false,
-}
-```
-
----
-
-# 20. Shiki
-
-## 20.1 ハイライト方式
-
-コードブロックはビルド時にShikiでハイライトする。
-
-クライアント側での再ハイライトは行わない。
-
-## 20.2 テーマ
-
-単一テーマ:
-
-```ts
-shiki: {
-  theme: "github-dark",
-}
-```
-
-ライト・ダーク:
-
-```ts
-shiki: {
-  themes: {
-    light: "github-light",
-    dark: "github-dark",
-  },
-}
-```
-
-## 20.3 言語
-
-コードブロックから使用言語を収集し、必要な言語のみ読み込むことを推奨する。
-
-明示指定も可能とする。
-
-```ts
-shiki: {
-  languages: [
-    "typescript",
-    "javascript",
-    "json",
-    "bash",
-  ],
-}
-```
-
-## 20.4 不明な言語
-
-```ts
-unknownLanguage: "warning"
-```
-
-選択肢:
+不明言語:
 
 * `error`
 * `warning`
 * `plain-text`
 
-標準値は `warning` とする。
+標準値は `warning`。
 
-## 20.5 コードブロックメタデータ
-
-将来的に以下の記法を対応可能とする。
-
-````md
-```ts title="makit.config.ts" {2,4-6}
-const value = true;
-```
-````
-
-想定機能:
-
-* ファイル名
-* 行ハイライト
-* 行番号
-* 差分表示
-* コードコピー
-* フォーカス行
+コードハイライトはビルド時に行い、ブラウザ上で再実行しない。
 
 ---
 
-# 21. テーマとスタイル
+# 38. テーマ要件
 
-## 21.1 標準テーマ
+標準テーマは以下を提供する。
 
-Makitは標準テーマを1つ提供する。
-
-標準テーマは以下を含む。
-
-* ヘッダー
-* サイドバー
-* モバイルナビゲーション
-* 本文レイアウト
+* Global Header
+* Collection Switcher
+* Collection Sidebar
+* 多段階ナビゲーション
+* 折りたたみ Section / Group
+* パンくずリスト
 * ページ内目次
-* 前後ページリンク
+* 前後ページ
+* Collection トップ
+* Portal トップ
 * 言語切り替え
 * ライト・ダークモード
-* コードブロック
 * フォールバック通知
-* 404ページ
+* モバイルナビゲーション
+* 404 ページ
 
-## 21.2 Tailwind CSS
-
-Tailwind CSSはMakit内部で管理する。
-
-利用者にTailwind設定ファイルの作成を要求しない。
-
-## 21.3 テーマ設定
-
-```ts
-theme: {
-  colorScheme: "system",
-  accentColor: "violet",
-  radius: "medium",
-
-  codeTheme: {
-    light: "github-light",
-    dark: "github-dark",
-  },
-}
-```
-
-型:
-
-```ts
-export interface ThemeConfig {
-  colorScheme?: "light" | "dark" | "system";
-  accentColor?: string;
-  radius?: "none" | "small" | "medium" | "large";
-
-  codeTheme?:
-    | string
-    | {
-        light: string;
-        dark: string;
-      };
-}
-```
-
-## 21.4 CSS Variables
-
-テーマ値はCSS Variablesとして公開する。
-
-例:
-
-```css
-:root {
-  --makit-color-accent: ...;
-  --makit-color-background: ...;
-  --makit-color-foreground: ...;
-  --makit-radius: ...;
-}
-```
-
-## 21.5 カスタムCSS
-
-```ts
-styles: [
-  "./styles/custom.css",
-]
-```
-
-指定されたCSSは標準テーマの後に読み込む。
+現在ページの祖先ノードは自動展開する。
 
 ---
 
-# 22. 静的アセット
-
-プロジェクトの `publicDir` を `.makit/public/` へ同期する。
-
-Markdownからはルート相対パスで参照する。
-
-```md
-![Logo](/logo.svg)
-```
-
-`basePath` がある場合、Makitランタイムが内部リンクおよびアセットURLへ適切に付加する。
-
-存在しないローカル画像は警告またはエラーにできる。
-
----
-
-# 23. ページデータ
-
-生成ページは概念上以下のデータを持つ。
+# 39. Generated Page
 
 ```ts
 export interface GeneratedPage {
   pageId: string;
+
+  collectionId?: string;
 
   route: string;
   segments: string[];
@@ -1588,6 +1645,7 @@ export interface GeneratedPage {
   contentLocale: string;
 
   sourcePath: string;
+  metadataPath?: string;
 
   isFallback: boolean;
   fallbackSource?: string;
@@ -1599,6 +1657,12 @@ export interface GeneratedPage {
 
   headings: GeneratedHeading[];
 
+  hierarchy: PageHierarchyNode[];
+  breadcrumbs: GeneratedBreadcrumb[];
+
+  navigationPosition?:
+    GeneratedNavigationPosition;
+
   draft: boolean;
   hidden: boolean;
 
@@ -1606,393 +1670,57 @@ export interface GeneratedPage {
 }
 ```
 
-見出し:
-
-```ts
-export interface GeneratedHeading {
-  id: string;
-  depth: number;
-  text: string;
-}
-```
-
 ---
 
-# 24. SEO
+# 40. 生成データ
 
-## 24.1 基本メタデータ
-
-各ページへ以下を生成する。
-
-* `<title>`
-* description
-* canonical URL
-* robots
-* Open Graph
-* Twitter Card
-* `lang`
-* `dir`
-* `hreflang`
-
-## 24.2 タイトル形式
-
-標準形式:
+大規模サイト向けにロケールと Collection 単位で分割する。
 
 ```text
-{pageTitle} | {siteTitle}
+.makit/generated/
+├── site.json
+├── locales.json
+├── collections.json
+├── navigation/
+│   ├── en-us/
+│   │   ├── global.json
+│   │   ├── makit.json
+│   │   └── enduroq.json
+│   └── ja-jp/
+│       ├── global.json
+│       └── makit.json
+├── pages/
+│   ├── en-us/
+│   │   ├── makit/
+│   │   └── enduroq/
+│   └── ja-jp/
+│       └── makit/
+└── indexes/
+    ├── page-map.json
+    ├── route-map.json
+    ├── collection-map.json
+    └── translation-map.json
 ```
-
-設定可能とする。
-
-```ts
-seo: {
-  titleTemplate: "%s | Makit",
-}
-```
-
-## 24.3 OGP画像
-
-優先順位:
-
-1. ページFront Matterの `image`
-2. ロケール別デフォルト画像
-3. サイト全体のデフォルト画像
-4. 画像なし
-
-## 24.4 robots
-
-Front Matter:
-
-```yaml
-noindex: true
-nofollow: true
-```
-
-ドラフトページは本番出力しないため、robots設定の対象外となる。
-
-## 24.5 `hreflang`
-
-実在する翻訳ページのみをalternateとして出力する。
-
-```html
-<link
-  rel="alternate"
-  hreflang="en-US"
-  href="https://example.com/en-us/getting-started/"
->
-```
-
-`x-default` はデフォルトロケールへ向ける。
 
 ---
 
-# 25. サイトマップ
+# 41. Next.js ルーティング
 
-サイトマップを自動生成する。
-
-設定:
-
-```ts
-sitemap: {
-  enabled: true,
-  includeFallbackPages: false,
-}
-```
-
-標準では以下を除外する。
-
-* ドラフト
-* `noindex`
-* フォールバックページ
-* 明示的に除外されたページ
-
-多言語ページはalternate URLとして関連付ける。
-
----
-
-# 26. ページ内目次
-
-見出しからページ内目次を生成する。
-
-標準対象:
-
-* H2
-* H3
-
-設定例:
-
-```ts
-markdown: {
-  tableOfContents: {
-    minDepth: 2,
-    maxDepth: 3,
-  },
-}
-```
-
-Front Matterでページ単位に無効化できる。
-
-```yaml
-tableOfContents: false
-```
-
-見出しIDが重複する場合は連番を付加する。
+内部構成:
 
 ```text
-configuration
-configuration-1
-configuration-2
-```
-
----
-
-# 27. 内部リンク
-
-## 27.1 Markdownリンク
-
-Markdownファイルへのリンクをサイト内URLへ変換する。
-
-```md
-[Configuration](./guides/configuration.md)
-```
-
-変換:
-
-```text
-/guides/configuration/
-```
-
-## 27.2 ロケール
-
-ロケール内の相対リンクは、同じロケールのページへ解決する。
-
-翻訳先が存在しない場合はフォールバック設定に従う。
-
-## 27.3 リンク検証
-
-以下を検証する。
-
-* 存在しないページ
-* 存在しないアンカー
-* 存在しない画像
-* ドラフトページへの本番リンク
-* 無効な外部URL形式
-* ロケールを跨ぐ不正な相対リンク
-
-外部URLのHTTP疎通確認は標準では行わない。
-
----
-
-# 28. 検索
-
-組み込み全文検索はMVPの必須範囲外とする。
-
-ただし、将来的な検索実装に備え、検索用データを生成可能な内部構造とする。
-
-```text
-.makit/generated/search/
-├── en-us.json
-└── ja-jp.json
-```
-
-検索索引には以下を含める。
-
-* ページタイトル
-* 見出し
-* 本文プレーンテキスト
-* URL
-* ロケール
-* ページID
-
----
-
-# 29. キャッシュ
-
-## 29.1 目的
-
-* 開発サーバー起動高速化
-* Markdown再変換の削減
-* Shiki処理の削減
-* 大規模ドキュメントのビルド高速化
-
-## 29.2 キャッシュキー
-
-以下を含む。
-
-* ソース本文のハッシュ
-* Front Matter
-* Makitバージョン
-* 設定ファイルのハッシュ
-* Markdownプラグイン設定
-* Shiki設定
-* テーマ設定
-* ロケール設定
-* レンダリングランタイムのバージョン
-
-## 29.3 無効化
-
-設定ファイル変更時は、影響範囲が特定できない場合に全キャッシュを無効化する。
-
-`makit clean --cache-only` で削除可能とする。
-
----
-
-# 30. ファイル監視
-
-`makit dev` では以下を監視する。
-
-* Markdownソース
-* `makit.config.*`
-* `publicDir`
-* カスタムCSS
-* 設定から参照されるローカルファイル
-
-変更時の想定処理:
-
-| 変更対象         | 処理                   |
-| ------------ | -------------------- |
-| Markdown本文   | 対象ページ再生成             |
-| Front Matter | 対象ページ、ルート、ナビゲーション再生成 |
-| 設定ファイル       | 全体再生成                |
-| CSS          | スタイル再読み込み            |
-| public       | アセット再同期              |
-| ページ追加・削除     | ルート、ナビゲーション、リンク再生成   |
-
----
-
-# 31. エラーハンドリング
-
-## 31.1 エラー
-
-以下はビルドを停止する。
-
-* 設定ファイルを読み込めない
-* 設定値が不正
-* `defaultLocale` が存在しない
-* ロケール正規化後の重複
-* 同一ロケール内の重複ルート
-* 同一ロケール内の重複ページID
-* Front Matterの解析失敗
-* Markdown処理失敗
-* 必須ナビゲーション先の不存在
-* Next.jsビルド失敗
-* 出力先への書き込み失敗
-
-例:
-
-```text
-Error: Duplicate route "/guides/"
-
-  docs/en-us/guides.md
-  docs/en-us/guides/index.md
-```
-
-## 31.2 警告
-
-以下は標準では警告とする。
-
-* ページタイトルがない
-* 翻訳が存在しない
-* 不明なShiki言語
-* ナビゲーションに含まれないページ
-* 存在しない内部リンク
-* 存在しないアンカー
-* サイトURLが設定されていない
-* OGP画像が存在しない
-* デフォルトロケールにのみ存在するページ
-* 翻訳ロケールにのみ存在するページ
-* フォールバックページが多い
-
-## 31.3 Strict Mode
-
-```ts
-validation: {
-  strict: true,
-}
-```
-
-Strict Modeでは指定された警告をエラーへ昇格する。
-
-```ts
-validation: {
-  failOn: [
-    "broken-link",
-    "missing-title",
-    "missing-translation",
-  ],
-}
-```
-
----
-
-# 32. ログ
-
-通常出力例:
-
-```text
-Makit v0.1.0
-
-✓ Loaded makit.config.ts
-✓ Found 2 locales
-
-  en-US   42 pages
-  ja-JP   35 pages
-          7 fallback pages
-
-✓ Validated internal links
-✓ Generated 84 static routes
-✓ Built static site
-
-Output: dist/
-```
-
-詳細ログでは以下を表示する。
-
-* 対象ファイル
-* キャッシュヒット
-* ページ生成時間
-* Shiki処理時間
-* Next.jsビルド出力
-* ルート一覧
-* 警告詳細
-
-JSONログはCI統合向けに提供する。
-
----
-
-# 33. Next.jsアプリケーション生成
-
-## 33.1 責務
-
-生成されるNext.jsアプリケーションは以下に専念する。
-
-* 生成済みページデータの読込
-* ページレイアウト
-* メタデータ生成
-* 静的ルート列挙
-* UIコンポーネントの描画
-* Static Export
-
-Markdownの探索や解析は原則として行わない。
-
-## 33.2 ルート構成
-
-```text
-app/
+.makit/app/
 ├── layout.tsx
 ├── page.tsx
 ├── not-found.tsx
 └── [locale]/
-    ├── layout.tsx
     └── [[...slug]]/
         └── page.tsx
 ```
 
-## 33.3 静的パラメータ
+Collection 専用の Next.js Route は作成しない。
 
-Makitが生成したページマニフェストから、すべてのロケールとslugを列挙する。
-
-概念例:
+Makit Core が生成した route map からページを解決する。
 
 ```ts
 export function generateStaticParams() {
@@ -2003,120 +1731,483 @@ export function generateStaticParams() {
 }
 ```
 
-## 33.4 Next.js設定
+---
 
-内部生成される設定の概念:
+# 42. CLI
 
-```ts
-const nextConfig = {
-  output: "export",
-  trailingSlash: true,
-  images: {
-    unoptimized: true,
-  },
-};
-```
+## `makit init`
 
-利用者には任意のNext.js設定マージを初期実装では許可しない。
+プロジェクトを初期化する。
+
+## `makit dev`
+
+開発サーバーを起動し、Markdown と TypeScript メタデータを監視する。
+
+## `makit build`
+
+静的サイトを生成する。
+
+## `makit preview`
+
+`outDir` を静的サーバーで配信する。
+
+## `makit clean`
+
+`.makit/` と出力ディレクトリを削除する。
+
+## `makit check`
+
+以下を検証する。
+
+* 設定
+* TypeScript メタデータ
+* Collection
+* Navigation
+* Page ID
+* Route
+* 翻訳
+* 内部リンク
+* Deployment Adapter
+
+## `makit adapter generate`
+
+設定済み Adapter の固有ファイルを生成する。
 
 ---
 
-# 34. パッケージ構成
+# 43. ファイル監視
 
-初期段階では以下のモノレポ構成を推奨する。
+`makit dev` は以下を監視する。
+
+* Markdown
+* `.meta.ts`
+* `collection.makit.ts`
+* `navigation.makit.ts`
+* `category.makit.ts`
+* `makit.config.ts`
+* メタデータから import されたローカルファイル
+* `publicDir`
+* カスタム CSS
+
+変更時の処理:
+
+| 対象                  | 処理                        |
+| ------------------- | ------------------------- |
+| Markdown            | 対象ページ再生成                  |
+| Page Metadata       | ページ、Route、Navigation 再生成  |
+| Category Metadata   | 対象階層と Navigation 再生成      |
+| Navigation Metadata | Collection Navigation 再生成 |
+| Collection Metadata | Collection 全体再生成          |
+| Config              | サイト全体再生成                  |
+| import 依存ファイル       | 参照元メタデータ再評価               |
+| CSS                 | スタイル再読込                   |
+| Public Asset        | アセット再同期                   |
+
+---
+
+# 44. Deployment Adapter
+
+Adapter はファクトリー関数で指定する。
+
+```ts
+import cloudflarePages from
+  "@makit/adapter-cloudflare-pages";
+
+export default defineConfig({
+  deployment: {
+    adapter: cloudflarePages(),
+  },
+});
+```
+
+サードパーティー:
+
+```ts
+import customAdapter from
+  "@example/makit-adapter";
+
+export default defineConfig({
+  deployment: {
+    adapter: customAdapter({
+      option: true,
+    }),
+  },
+});
+```
+
+文字列指定は提供しない。
+
+```ts
+// 非対応
+adapter: "netlify"
+```
+
+初期公式 Adapter:
+
+* `@makit/adapter-cloudflare-pages`
+* `@makit/adapter-github-pages`
+* `@makit/adapter-netlify`
+* `@makit/adapter-vercel`
+
+Adapter は以下のフェーズを持つ。
+
+1. `resolve`
+2. `validate`
+3. `generate`
+
+---
+
+# 45. エラー
+
+以下はビルドを停止する。
+
+* TypeScript メタデータを評価できない
+* default export がない
+* 不正な定義関数を使用している
+* 非同期メタデータ
+* シリアライズ不能な値
+* 循環参照
+* Collection ID 重複
+* Collection path 重複
+* Page ID 重複
+* Route 重複
+* Navigation の循環参照
+* 存在しない Page ID の参照
+* 存在しない Collection の参照
+* 正規ナビゲーション位置が存在しない
+* locale 正規化後の重複
+* `defaultLocale` が存在しない
+* Adapter Resolve / Validate エラー
+* Next.js ビルド失敗
+
+---
+
+# 46. 警告
+
+以下は標準では警告とする。
+
+* `.meta.ts` がないページ
+* H1 がないページ
+* 自動生成された Page ID
+* Navigation に含まれないページ
+* ページの複数配置に正規位置がない
+* 深すぎる Navigation
+* 空の Section / Group
+* 翻訳が存在しない
+* Collection 全体のフォールバック
+* 不明な Shiki 言語
+* 壊れた内部リンク
+* メタデータ内の環境変数参照
+* プロジェクト外ファイルの import
+* メタデータ評価時間が長い
+* 非推奨フィールド
+* Deployment Target の非対応機能
+
+---
+
+# 47. Strict Mode
+
+```ts
+validation: {
+  strict: true,
+
+  failOn: [
+    "missing-page-metadata",
+    "generated-page-id",
+    "broken-link",
+    "missing-translation",
+  ],
+}
+```
+
+警告コード単位でエラーへ昇格できる。
+
+---
+
+# 48. 後方互換性
+
+## 48.1 Collection を省略したサイト
+
+```ts
+export default defineConfig({
+  title: "Makit Documentation",
+  sourceDir: "docs",
+});
+```
+
+内部的に暗黙の Collection を生成する。
+
+```ts
+{
+  id: "default",
+  title: config.title,
+  path: "",
+  sourceDir: config.sourceDir,
+}
+```
+
+## 48.2 Markdown 単体
+
+以下は引き続き動作する。
+
+```text
+docs/
+├── index.md
+├── getting-started.md
+└── guides/
+    └── configuration.md
+```
+
+構造メタデータがない場合はディレクトリと Markdown から自動生成する。
+
+## 48.3 YAML Front Matter
+
+MVP の標準仕様では非対応とする。
+
+既存サイト移行向けに、将来以下のような互換プラグインを提供可能とする。
+
+```ts
+import frontMatterCompat from
+  "@makit/plugin-frontmatter";
+
+export default defineConfig({
+  plugins: [
+    frontMatterCompat(),
+  ],
+});
+```
+
+---
+
+# 49. パッケージ構成
 
 ```text
 packages/
 ├── makit/
 ├── cli/
 ├── core/
+├── metadata/
 ├── markdown/
 ├── runtime/
-└── theme-default/
+├── theme-default/
+├── adapter-cloudflare-pages/
+├── adapter-github-pages/
+├── adapter-netlify/
+└── adapter-vercel/
 ```
 
-## 34.1 `makit`
+## `metadata`
 
-利用者向け統合パッケージ。
+責務:
 
-提供物:
-
-* `defineConfig`
-* 公開型
-* CLIへの依存
-* 標準設定
-
-## 34.2 `cli`
-
-* コマンド解析
-* ログ
-* 終了コード
-* プロセス管理
-* 開発サーバー管理
-
-## 34.3 `core`
-
-* 設定読込
-* ファイル収集
-* ページモデル
-* ルート生成
-* 国際化
-* ナビゲーション
+* TypeScript メタデータ読込
+* `define*` API
+* 型
+* import 依存追跡
+* シリアライズ検証
 * キャッシュ
-* 検証
-* ビルド制御
-
-## 34.4 `markdown`
-
-* remark
-* rehype
-* Front Matter
-* Shiki
-* 見出し
-* リンク変換
-* HTML生成
-
-## 34.5 `runtime`
-
-* Next.jsページ
-* Reactコンポーネント
-* メタデータ生成
-* 言語切り替え
-* テーマ切り替え
-
-## 34.6 `theme-default`
-
-* Tailwind CSS
-* CSS Variables
-* 標準レイアウト
-* 標準UI
-
-実装初期は以下の3パッケージまで統合してもよい。
-
-```text
-packages/
-├── makit
-├── makit-cli
-└── makit-runtime
-```
+* 診断
 
 ---
 
-# 35. 設定例
+# 50. MVP 対象
+
+## 基盤
+
+* Next.js App Router
+* Static Export
+* `.makit/`
+* TypeScript 設定読込
+* キャッシュ
+* ファイル監視
+
+## メタデータ
+
+* `makit.config.ts`
+* `collection.makit.ts`
+* `navigation.makit.ts`
+* `category.makit.ts`
+* `{page}.meta.ts`
+* `defineConfig`
+* `defineCollection`
+* `defineNavigation`
+* `defineCategory`
+* `definePageMetadata`
+* ローカル TypeScript import
+* import 依存監視
+* JSDoc と型補完
+* 同期メタデータ
+* シリアライズ検証
+
+## 階層構造
+
+* 複数 Collection
+* 暗黙 Collection
+* Section
+* Group
+* Page
+* Global Navigation
+* Collection Navigation
+* Collection Top
+* Portal Home
+* Breadcrumbs
+* 前後ページ
+* URL と Navigation の分離
+* Page の複数配置
+* 正規 Navigation 位置
+
+## 国際化
+
+* ロケール URL
+* Page フォールバック
+* Collection フォールバック
+* 言語切り替え
+* `lang`
+* `dir`
+* canonical
+* `hreflang`
+* ロケール別 Navigation
+* ロケール別 Sitemap
+
+## Markdown
+
+* remark
+* rehype
+* GFM
+* Shiki
+* 見出しアンカー
+* ページ内目次
+* コードコピー
+
+## Deployment
+
+* Adapter Factory
+* Cloudflare Pages
+* GitHub Pages
+* Netlify
+* Vercel
+* Redirect
+* Headers
+* GitHub Actions Workflow
+* `.nojekyll`
+* `CNAME`
+
+---
+
+# 51. MVP 対象外
+
+* 非同期メタデータ
+* YAML 構造メタデータ
+* YAML Front Matter
+* MDX
+* ユーザー定義 React コンポーネント
+* Collection ごとの独立テーマ
+* Collection ごとの独立ドメイン
+* Collection ごとの独立ビルド
+* Collection ごとの Adapter
+* 複数リポジトリ統合
+* リモート Collection
+* バージョニング
+* 組み込み全文検索 UI
+* OpenAPI 自動生成
+* TypeDoc 自動生成
+* Mermaid
+* 数式
+* PDF
+* Edge Function
+* Makit CLI からの直接デプロイ
+
+---
+
+# 52. 受け入れ基準
+
+1. `makit.config.ts` を TypeScript で記述できる
+2. Collection Metadata を TypeScript で記述できる
+3. Navigation Metadata を TypeScript で記述できる
+4. Category Metadata を TypeScript で記述できる
+5. Page Metadata を TypeScript で記述できる
+6. 各メタデータのキーと列挙値が補完される
+7. JSDoc から説明と初期値を確認できる
+8. メタデータ間で共通 TypeScript モジュールを再利用できる
+9. import されたローカルファイルの変更が `makit dev` に反映される
+10. 非同期または不正なメタデータを検出できる
+11. Markdown 単体のページも生成できる
+12. メタデータがないページ情報を H1 やファイル名から推定できる
+13. 複数 Collection を構築できる
+14. Collection ごとに URL と Navigation を持てる
+15. Section と Group を入れ子にできる
+16. Navigation 階層と URL 階層を分離できる
+17. 同じ Page を複数の Navigation 位置へ配置できる
+18. Page ID で翻訳を対応付けられる
+19. 存在しない翻訳をデフォルトロケールへフォールバックできる
+20. Portal 型トップページを生成できる
+21. Breadcrumbs を生成できる
+22. Navigation 順に前後ページを解決できる
+23. Deployment Adapter をファクトリー関数で指定できる
+24. Adapter 未指定でも汎用静的サイトを生成できる
+25. `.makit/` を削除して再生成できる
+26. `dist/` のみで静的配信できる
+27. CI で `makit check` を非対話実行できる
+
+---
+
+# 53. 完全な設定例
 
 ```ts
-import { defineConfig } from "@natsuneko-laboratory/makit";
-import remarkGfm from "remark-gfm";
+import { defineConfig } from "makit";
+
+import cloudflarePages from
+  "@makit/adapter-cloudflare-pages";
 
 export default defineConfig({
-  title: "Makit Documentation",
-  description: "Markdown to documentation.",
+  title: "Natsuneko Documentation",
 
-  siteUrl: "https://makit.example.com",
+  description:
+    "Documentation for Natsuneko products and services",
+
+  siteUrl: "https://docs.natsuneko.com",
 
   sourceDir: "docs",
   publicDir: "public",
   outDir: "dist",
+
+  collections: {
+    mode: "discover",
+  },
+
+  home: {
+    layout: "portal",
+
+    featuredCollections: [
+      "makit",
+      "enduroq",
+      "catalyst",
+    ],
+
+    sections: [
+      {
+        title: {
+          "en-US": "Developer Tools",
+          "ja-JP": "開発者向けツール",
+        },
+
+        collections: [
+          "makit",
+          "enduroq",
+        ],
+      },
+      {
+        title: {
+          "en-US": "Services",
+          "ja-JP": "サービス",
+        },
+
+        collections: [
+          "catalyst",
+        ],
+      },
+    ],
+  },
 
   i18n: {
     defaultLocale: "en-US",
@@ -2138,6 +2229,10 @@ export default defineConfig({
       showNotice: true,
     },
 
+    collectionFallback: {
+      behavior: "render",
+    },
+
     root: {
       behavior: "detect",
     },
@@ -2145,36 +2240,54 @@ export default defineConfig({
     localeSwitcher: {
       missingPage: "fallback",
     },
-
-    messages: {
-      "ja-JP": {
-        fallbackNotice:
-          "このページは日本語に翻訳されていないため、英語版を表示しています。",
-      },
-    },
   },
 
   navigation: {
-    mode: "auto",
-    includeFallbackPages: true,
-  },
-
-  header: {
-    logo: "/logo.svg",
-
-    links: [
+    global: [
       {
-        label: "GitHub",
-        href: "https://github.com/example/makit",
-        external: true,
+        title: "Products",
+        items: [
+          {
+            title: "Makit",
+            collection: "makit",
+          },
+          {
+            title: "Enduroq",
+            collection: "enduroq",
+          },
+          {
+            title: "Catalyst",
+            collection: "catalyst",
+          },
+        ],
+      },
+      {
+        title: "Resources",
+        items: [
+          {
+            title: "GitHub",
+            href:
+              "https://github.com/example",
+            external: true,
+          },
+        ],
       },
     ],
+
+    pagination: {
+      enabled: true,
+      crossSection: true,
+    },
   },
 
   theme: {
     colorScheme: "system",
-    accentColor: "violet",
-    radius: "medium",
+
+    breadcrumbs: {
+      enabled: true,
+      showHome: true,
+      showCurrentPage: true,
+    },
 
     codeTheme: {
       light: "github-light",
@@ -2185,15 +2298,6 @@ export default defineConfig({
   markdown: {
     gfm: true,
     headingIds: true,
-
-    remarkPlugins: [
-      remarkGfm,
-    ],
-
-    externalLinks: {
-      target: "_blank",
-      rel: "noopener noreferrer",
-    },
 
     tableOfContents: {
       minDepth: 2,
@@ -2219,14 +2323,23 @@ export default defineConfig({
     "./styles/custom.css",
   ],
 
-  seo: {
-    titleTemplate: "%s | Makit",
-    defaultImage: "/og-default.png",
-  },
-
   sitemap: {
     enabled: true,
     includeFallbackPages: false,
+  },
+
+  deployment: {
+    adapter: cloudflarePages({
+      projectName: "natsuneko-documentation",
+
+      redirects: {
+        mode: "native",
+      },
+
+      headers: {
+        enabled: true,
+      },
+    }),
   },
 
   build: {
@@ -2242,6 +2355,7 @@ export default defineConfig({
 
   validation: {
     strict: false,
+    disallowFrontMatter: true,
 
     failOn: [
       "duplicate-route",
@@ -2250,193 +2364,3 @@ export default defineConfig({
   },
 });
 ```
-
----
-
-# 36. MVP対象範囲
-
-MVPでは以下を実装する。
-
-## CLI
-
-* `makit init`
-* `makit dev`
-* `makit build`
-* `makit preview`
-* `makit clean`
-* `makit check`
-
-## コンテンツ
-
-* Markdown
-* YAML Front Matter
-* GFM
-* remark / rehype
-* Shiki
-* 見出しアンカー
-* ページ内目次
-* コードコピー
-* コードテーマ
-* 静的画像
-
-## サイト
-
-* Next.js App Router
-* Static Export
-* 標準テーマ
-* サイドバー
-* ヘッダー
-* フッター
-* モバイル表示
-* ライト・ダークモード
-* 前後ページリンク
-* 404ページ
-
-## 国際化
-
-* ロケール接頭辞URL
-* デフォルトロケール
-* ロケール別ディレクトリ
-* ロケール別任意ソースディレクトリ
-* ページIDによる翻訳対応
-* 翻訳欠損フォールバック
-* フォールバック通知
-* 言語切り替え
-* ブラウザ言語検出
-* `lang`
-* `dir`
-* `hreflang`
-* canonical
-* ロケール別ナビゲーション
-* ロケール別サイトマップ
-
-## 品質
-
-* 設定検証
-* 重複ルート検出
-* 重複ページID検出
-* 内部リンク検証
-* 不明なコード言語の検出
-* キャッシュ
-* ファイル監視
-* CI向け終了コード
-
----
-
-# 37. MVP対象外
-
-以下は初期実装から除外する。
-
-* MDX
-* ユーザー定義Reactコンポーネント
-* 複数テーマパッケージ
-* ドキュメントのバージョニング
-* サーバーサイド機能
-* 認証
-* CMS連携
-* 外部検索サービス
-* 組み込み全文検索UI
-* PDF出力
-* RSS
-* OpenAPI自動生成
-* TypeDoc自動生成
-* Mermaid
-* 数式レンダリング
-* ドメイン別ロケール
-* 複数段階フォールバック
-* 機械翻訳
-* Next.js設定の自由な上書き
-* ホスティングサービス固有のリダイレクト生成
-* プラグインマーケットプレイス
-
----
-
-# 38. 将来拡張
-
-将来的に以下を検討する。
-
-* MDX
-* カスタムコンポーネント
-* Mermaid
-* KaTeX / MathJax
-* OpenAPIページ生成
-* TypeDoc連携
-* Rustdoc連携
-* ローカル全文検索
-* Algolia連携
-* ドキュメントバージョニング
-* 翻訳進捗レポート
-* 翻訳差分検出
-* 翻訳更新期限の警告
-* 多段フォールバック
-* 複数テーマ
-* テーマパッケージ
-* プラグインAPI
-* RSS
-* PDF出力
-* GitHub Pages設定生成
-* Cloudflare Pages設定生成
-* Netlifyリダイレクト生成
-* Vercel設定生成
-* 編集リンク
-* Git履歴を利用した最終更新日時
-* コントリビューター表示
-
----
-
-# 39. 受け入れ基準
-
-MVPは、以下を満たした場合に完成とみなす。
-
-1. `makit init` で実行可能なプロジェクトを生成できる
-2. `makit dev` でMarkdownの変更をプレビューできる
-3. `makit build` で静的サイトを生成できる
-4. `dist/` のみを静的サーバーへ配置して閲覧できる
-5. `/en-us/` と `/ja-jp/` のようなロケールURLを生成できる
-6. 翻訳がないページでデフォルトロケールへフォールバックできる
-7. フォールバックページで元言語を判別できる
-8. 言語切り替えが同一ページ間で機能する
-9. ファイル名が異なる翻訳をページIDで対応付けられる
-10. remarkプラグインを設定から追加できる
-11. Shikiでコードをビルド時にハイライトできる
-12. ライト・ダークテーマを切り替えられる
-13. 自動ナビゲーションを生成できる
-14. 重複ルートをビルド時に検出できる
-15. 壊れた内部リンクを検出できる
-16. canonicalおよび`hreflang`を生成できる
-17. フォールバックページをサイトマップから除外できる
-18. `.makit/` を削除しても再生成できる
-19. 利用者がNext.jsファイルを直接編集せずに運用できる
-20. CI環境で非対話的にビルドおよび検証できる
-
----
-
-# 40. 実装上の決定事項
-
-## 40.1 `.makit/` の位置付け
-
-`.makit/` は利用者のアプリケーションを配置する場所ではなく、Makitが生成する再現可能なNext.jsアプリケーションである。
-
-## 40.2 Markdown処理の位置
-
-Markdown処理はNext.jsページコンポーネント内ではなく、Makit Coreで事前実行する。
-
-Next.jsランタイムは生成済みデータの表示へ専念する。
-
-## 40.3 国際化フォールバック
-
-フォールバックはリクエスト時ではなく、ビルド時に静的ページとして生成する。
-
-## 40.4 ページの同一性
-
-URLやファイル名ではなく、Front Matterの `id` をページの安定した識別子として使用できる。
-
-## 40.5 Next.js依存
-
-Next.js固有の設定はMakit内部へ閉じ込める。
-
-利用者へ公開する設定は、Makitが長期的に互換性を保証できる範囲に限定する。
-
-## 40.6 出力の可搬性
-
-生成された `dist/` は、Node.jsランタイムやMakit本体を必要とせず配信できなければならない。
