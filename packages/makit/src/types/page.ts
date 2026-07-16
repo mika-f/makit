@@ -38,6 +38,8 @@ export interface GeneratedPage {
   headings: GeneratedHeading[];
   draft: boolean;
   hidden: boolean;
+  /** Where `title` came from — tier 4 (filename/pageId) means the author never gave this page a real title (spec §14.2, §31.2 `missing-title`). Internal. */
+  titleSource: "frontmatter" | "heading" | "filename" | "pageId";
   /** Whether to render the page-level sidebar (front matter `sidebar`, spec §14). Defaults to `true`. */
   sidebar: boolean;
   /** Whether to render a table of contents for this page (front matter `tableOfContents`, spec §14, §26). Defaults to `true`. */

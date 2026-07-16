@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import type { NavigationGroup } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { buildSearchIndex } from "./search-index.js";
 
 export interface WriteGeneratedDataResult {
   generatedDir: string;
@@ -24,6 +25,7 @@ export async function writeGeneratedData(
   const generatedDir = join(config.root, ".makit", "generated");
   const pagesDir = join(generatedDir, "pages");
   const navigationDir = join(generatedDir, "navigation");
+  const searchDir = join(generatedDir, "search");
 
   await mkdir(generatedDir, { recursive: true });
 
@@ -71,6 +73,14 @@ export async function writeGeneratedData(
     await mkdir(navigationDir, { recursive: true });
     for (const [locale, navigation] of Object.entries(navigationByLocale)) {
       await writeJson(join(navigationDir, `${locale}.json`), navigation);
+    }
+  }
+
+  const searchByLocale = buildSearchIndex(pages);
+  if (Object.keys(searchByLocale).length > 0) {
+    await mkdir(searchDir, { recursive: true });
+    for (const [locale, entries] of Object.entries(searchByLocale)) {
+      await writeJson(join(searchDir, `${locale}.json`), entries);
     }
   }
 

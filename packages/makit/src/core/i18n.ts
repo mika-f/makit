@@ -52,6 +52,7 @@ function buildFallbackPage(
     isFallback: true,
     fallbackSource: sourcePage.route,
     title: sourcePage.title,
+    titleSource: sourcePage.titleSource,
     description: sourcePage.description,
     // "render" shows the default-locale content as-is; "redirect" is a static
     // transitional page — the real `<meta refresh>` mechanics belong to the

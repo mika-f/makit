@@ -11,6 +11,8 @@ import type { Logger } from "./logger.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 import { generateSitemapXml } from "./sitemap.js";
+import type { Diagnostic } from "./validation.js";
+import { selectPromotedDiagnostics, validatePages } from "./validation.js";
 
 export interface BuildOptions {
   clean?: boolean;
@@ -23,6 +25,7 @@ export interface BuildResult {
   localeCount: number;
   fallbackCount: number;
   warnings: string[];
+  diagnostics: Diagnostic[];
   outDir: string;
 }
 
@@ -85,10 +88,21 @@ export async function build(
     logger.warn(warning);
   }
 
-  if (strict && warnings.length > 0) {
+  const diagnostics = validatePages(allPages, config, { navigationByLocale });
+  for (const diagnostic of diagnostics) {
+    logger.warn(
+      diagnostic.sourcePath
+        ? `${diagnostic.sourcePath}: ${diagnostic.message}`
+        : diagnostic.message,
+      diagnostic.code,
+    );
+  }
+
+  const promoted = selectPromotedDiagnostics(diagnostics, { ...config.validation, strict });
+  if (promoted.length > 0 || (strict && warnings.length > 0)) {
     throw new MakitError(
       "markdown-processing-failed",
-      `Strict mode: ${warnings.length} warning(s) treated as errors (see above).`,
+      `Strict mode: ${warnings.length + promoted.length} warning(s) treated as errors (see above).`,
     );
   }
 
@@ -116,6 +130,7 @@ export async function build(
     localeCount: config.i18n.locales.length,
     fallbackCount: fallbackPages.length,
     warnings,
+    diagnostics,
     outDir: outDirAbsolute,
   };
 }
