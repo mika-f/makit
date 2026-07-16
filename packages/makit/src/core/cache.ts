@@ -17,7 +17,7 @@ function sha256(input: string): string {
 }
 
 function getMakitVersion(): string {
-  const root = resolvePackageRoot("makit");
+  const root = resolvePackageRoot("@natsuneko-laboratory/makit");
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8")) as { version: string };
   return pkg.version;
 }

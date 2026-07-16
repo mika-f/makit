@@ -1,4 +1,4 @@
-import { defineConfig } from "makit";
+import { defineConfig } from "@natsuneko-laboratory/makit";
 
 export default defineConfig({
   title: "Makit E2E Test",

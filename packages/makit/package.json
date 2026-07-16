@@ -1,5 +1,5 @@
 {
-  "name": "makit",
+  "name": "@natsuneko-laboratory/makit",
   "version": "0.1.0",
   "description": "Generate static documentation sites from Markdown, powered by Next.js.",
   "license": "MIT",
@@ -29,6 +29,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@natsuneko-laboratory/makit-runtime": "workspace:*",
     "@tailwindcss/postcss": "^4.3.2",
     "@tailwindcss/typography": "^0.5.20",
     "chokidar": "^5.0.0",
@@ -37,7 +38,6 @@
     "gray-matter": "^4.0.3",
     "hast-util-to-string": "^3.0.1",
     "jiti": "^2.7.0",
-    "makit-runtime": "workspace:*",
     "next": "^16.2.10",
     "picocolors": "^1.1.1",
     "react": "^19.2.7",

@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { DeploymentAdapterContext } from "makit/adapter";
+import type { DeploymentAdapterContext } from "@natsuneko-laboratory/makit/adapter";
 import netlify from "./index.js";
 
 let root: string | undefined;

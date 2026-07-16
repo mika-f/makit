@@ -9,6 +9,6 @@
     "preview": "makit preview"
   },
   "dependencies": {
-    "makit": "workspace:*"
+    "@natsuneko-laboratory/makit": "workspace:*"
   }
 }

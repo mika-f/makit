@@ -1,6 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { DeploymentAdapter, GeneratedHeaderRule, GeneratedRedirect } from "makit/adapter";
+import type {
+  DeploymentAdapter,
+  GeneratedHeaderRule,
+  GeneratedRedirect,
+} from "@natsuneko-laboratory/makit/adapter";
 
 export interface NetlifyOptions {
   generateConfig?: boolean;
@@ -108,7 +112,7 @@ export default function netlify(options: NetlifyOptions = {}): DeploymentAdapter
   const generateConfig = options.generateConfig ?? true;
   const configPath = options.configPath ?? "netlify.toml";
   return {
-    name: "@makit/adapter-netlify",
+    name: "@natsuneko-laboratory/makit-adapter-netlify",
     version: "0.1.0",
     capabilities: {
       nativeRedirects: true,

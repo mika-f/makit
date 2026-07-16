@@ -479,7 +479,7 @@ CIで利用可能な終了コードを返す。
 次の形式で記述する。
 
 ```ts
-import { defineConfig } from "makit";
+import { defineConfig } from "@natsuneko-laboratory/makit";
 
 export default defineConfig({
   title: "My Documentation",
@@ -2105,7 +2105,7 @@ packages/
 # 35. 設定例
 
 ```ts
-import { defineConfig } from "makit";
+import { defineConfig } from "@natsuneko-laboratory/makit";
 import remarkGfm from "remark-gfm";
 
 export default defineConfig({

@@ -68,7 +68,8 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
     );
   }
 
-  const makitRuntimeRoot = runtimePackageRoots[RUNTIME_PACKAGES.indexOf("makit-runtime")]!;
+  const makitRuntimeRoot =
+    runtimePackageRoots[RUNTIME_PACKAGES.indexOf("@natsuneko-laboratory/makit-runtime")]!;
   const makitRuntimeDistPath = join(makitRuntimeRoot, "dist");
   const customStyleImports = config.styles.map((entry) =>
     customStyleImportPath(config, stylesDir, entry),

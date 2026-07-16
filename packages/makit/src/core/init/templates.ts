@@ -1,5 +1,5 @@
 export function makitConfigTemplate(title: string, lang: string): string {
-  return `import { defineConfig } from "makit";
+  return `import { defineConfig } from "@natsuneko-laboratory/makit";
 
 export default defineConfig({
   title: ${JSON.stringify(title)},
@@ -45,7 +45,7 @@ export function packageJsonTemplate(projectName: string, makitVersion: string): 
       preview: "makit preview",
     },
     devDependencies: {
-      makit: `^${makitVersion}`,
+      "@natsuneko-laboratory/makit": `^${makitVersion}`,
     },
   };
   return `${JSON.stringify(pkg, null, 2)}\n`;

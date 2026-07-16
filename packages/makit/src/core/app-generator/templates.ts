@@ -2,7 +2,7 @@ import type { ResolvedConfig } from "../../types/resolved-config.js";
 
 export function rootLayoutTemplate(): string {
   return `import "../styles/globals.css";
-import { ThemeScript, ThemeVariables, getSiteData } from "makit-runtime";
+import { ThemeScript, ThemeVariables, getSiteData } from "@natsuneko-laboratory/makit-runtime";
 
 export default async function RootLayout({ children }) {
   const site = await getSiteData();
@@ -22,7 +22,7 @@ export default async function RootLayout({ children }) {
 }
 
 export function notFoundTemplate(): string {
-  return `import { NotFoundPage } from "makit-runtime";
+  return `import { NotFoundPage } from "@natsuneko-laboratory/makit-runtime";
 
 export default function NotFound() {
   return <NotFoundPage />;
@@ -31,7 +31,7 @@ export default function NotFound() {
 }
 
 export function rootPageTemplate(): string {
-  return `import { getLocalesData, getManifest, getSiteData, RootPage } from "makit-runtime";
+  return `import { getLocalesData, getManifest, getSiteData, RootPage } from "@natsuneko-laboratory/makit-runtime";
 
 export default async function Page() {
   const [i18n, manifest, site] = await Promise.all([getLocalesData(), getManifest(), getSiteData()]);
@@ -70,7 +70,7 @@ import {
   getNavigation,
   getPageForRoute,
   getSiteData,
-} from "makit-runtime";
+} from "@natsuneko-laboratory/makit-runtime";
 
 export async function generateStaticParams() {
   ${localeExpression === "params.locale" ? "return getAllStaticParams();" : "const params = await getAllStaticParams();\n  return params.map((param) => ({ slug: param.slug }));"}

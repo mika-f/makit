@@ -26,18 +26,18 @@ importers:
 
   examples/basic:
     dependencies:
-      makit:
+      '@natsuneko-laboratory/makit':
         specifier: workspace:*
         version: link:../../packages/makit
 
   packages/adapter-cloudflare-pages:
     devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
-      makit:
-        specifier: workspace:*
-        version: link:../makit
       tsdown:
         specifier: ^0.22.8
         version: 0.22.8(typescript@7.0.2)
@@ -50,12 +50,12 @@ importers:
 
   packages/adapter-github-pages:
     devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
-      makit:
-        specifier: workspace:*
-        version: link:../makit
       tsdown:
         specifier: ^0.22.8
         version: 0.22.8(typescript@7.0.2)
@@ -68,12 +68,12 @@ importers:
 
   packages/adapter-netlify:
     devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
-      makit:
-        specifier: workspace:*
-        version: link:../makit
       tsdown:
         specifier: ^0.22.8
         version: 0.22.8(typescript@7.0.2)
@@ -86,12 +86,12 @@ importers:
 
   packages/adapter-vercel:
     devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
       '@types/node':
         specifier: ^26.1.1
         version: 26.1.1
-      makit:
-        specifier: workspace:*
-        version: link:../makit
       tsdown:
         specifier: ^0.22.8
         version: 0.22.8(typescript@7.0.2)
@@ -104,6 +104,9 @@ importers:
 
   packages/makit:
     dependencies:
+      '@natsuneko-laboratory/makit-runtime':
+        specifier: workspace:*
+        version: link:../makit-runtime
       '@tailwindcss/postcss':
         specifier: ^4.3.2
         version: 4.3.2
@@ -128,9 +131,6 @@ importers:
       jiti:
         specifier: ^2.7.0
         version: 2.7.0
-      makit-runtime:
-        specifier: workspace:*
-        version: link:../makit-runtime
       next:
         specifier: ^16.2.10
         version: 16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)

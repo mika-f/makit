@@ -4,7 +4,7 @@ import type {
   GeneratedDeploymentFile,
   GeneratedHeaderRule,
   GeneratedRedirect,
-} from "makit/adapter";
+} from "@natsuneko-laboratory/makit/adapter";
 
 export interface CloudflarePagesOptions {
   projectName?: string;
@@ -42,7 +42,7 @@ export default function cloudflarePages(options: CloudflarePagesOptions = {}): D
   const redirectMode = options.redirects?.mode ?? "native";
   const headersEnabled = options.headers?.enabled ?? true;
   return {
-    name: "@makit/adapter-cloudflare-pages",
+    name: "@natsuneko-laboratory/makit-adapter-cloudflare-pages",
     version: "0.1.0",
     capabilities: {
       nativeRedirects: true,

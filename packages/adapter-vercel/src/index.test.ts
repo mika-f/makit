@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DeploymentAdapterContext } from "makit/adapter";
+import type { DeploymentAdapterContext } from "@natsuneko-laboratory/makit/adapter";
 import vercel from "./index.js";
 
 describe("vercel", () => {

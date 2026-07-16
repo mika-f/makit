@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { DeploymentAdapter, DeploymentDiagnostic } from "makit/adapter";
+import type { DeploymentAdapter, DeploymentDiagnostic } from "@natsuneko-laboratory/makit/adapter";
 
 export interface VercelOptions {
   generateConfig?: boolean;
@@ -30,7 +30,7 @@ export default function vercel(options: VercelOptions = {}): DeploymentAdapter {
   const generateConfig = options.generateConfig ?? true;
   const configPath = options.configPath ?? "vercel.json";
   return {
-    name: "@makit/adapter-vercel",
+    name: "@natsuneko-laboratory/makit-adapter-vercel",
     version: "0.1.0",
     capabilities: {
       nativeRedirects: true,

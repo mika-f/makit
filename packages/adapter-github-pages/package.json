@@ -1,5 +1,5 @@
 {
-  "name": "@makit/adapter-github-pages",
+  "name": "@natsuneko-laboratory/makit-adapter-github-pages",
   "version": "0.1.0",
   "files": [
     "dist"
@@ -19,13 +19,13 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@natsuneko-laboratory/makit": "workspace:*",
     "@types/node": "^26.1.1",
-    "makit": "workspace:*",
     "tsdown": "^0.22.8",
     "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {
-    "makit": "^0.1.0"
+    "@natsuneko-laboratory/makit": "^0.1.0"
   }
 }

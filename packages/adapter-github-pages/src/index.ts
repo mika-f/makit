@@ -4,7 +4,7 @@ import type {
   DeploymentAdapter,
   DeploymentDiagnostic,
   GeneratedDeploymentFile,
-} from "makit/adapter";
+} from "@natsuneko-laboratory/makit/adapter";
 
 export interface GitHubPagesOptions {
   repository?: string | "auto";
@@ -92,7 +92,7 @@ export default function githubPages(options: GitHubPagesOptions = {}): Deploymen
   let repository: string | undefined;
   const siteType = options.siteType ?? "project";
   return {
-    name: "@makit/adapter-github-pages",
+    name: "@natsuneko-laboratory/makit-adapter-github-pages",
     version: "0.1.0",
     capabilities: {
       nativeRedirects: false,
