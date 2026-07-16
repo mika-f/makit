@@ -1,5 +1,11 @@
 export { defineConfig } from "./config/define-config.js";
 export type {
+  DeploymentConfig,
+  DeploymentConfigFileMode,
+  GeneratedHeaderRule,
+  GeneratedRedirect,
+} from "./types/adapter.js";
+export type {
   BuildConfig,
   CodeBlockConfig,
   DevConfig,

@@ -1,3 +1,5 @@
+import type { DeploymentConfig, GeneratedHeaderRule, GeneratedRedirect } from "./adapter.js";
+
 export interface MakitConfig {
   title: string;
   description?: string;
@@ -20,6 +22,9 @@ export interface MakitConfig {
   dev?: DevConfig;
   preview?: PreviewConfig;
   validation?: ValidationConfig;
+  deployment?: DeploymentConfig;
+  redirects?: Array<Omit<GeneratedRedirect, "source"> & { source?: GeneratedRedirect["source"] }>;
+  headers?: GeneratedHeaderRule[];
   experimental?: ExperimentalConfig;
 }
 

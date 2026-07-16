@@ -4,6 +4,12 @@ import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 import type { Diagnostic } from "./validation.js";
 import { validatePages } from "./validation.js";
+import type { DeploymentDiagnostic } from "../types/adapter.js";
+import {
+  generateDeploymentAdapter,
+  prepareDeploymentAdapter,
+  writeDeploymentFiles,
+} from "./deployment.js";
 
 export interface CheckResult {
   pageCount: number;
@@ -12,6 +18,8 @@ export interface CheckResult {
   pipelineWarnings: string[];
   /** Typed, code-bearing diagnostics from document-level validation (spec §31.2). */
   diagnostics: Diagnostic[];
+  deploymentDiagnostics: DeploymentDiagnostic[];
+  outdatedDeploymentFiles: string[];
 }
 
 /**
@@ -31,11 +39,16 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
   );
 
   const diagnostics = validatePages(allPages, config, { navigationByLocale });
+  const preparedDeployment = await prepareDeploymentAdapter(config, allPages);
+  const deployment = await generateDeploymentAdapter(config, preparedDeployment);
+  const deploymentFiles = await writeDeploymentFiles(config, deployment.files, { check: true });
 
   return {
     pageCount: allPages.length,
     localeCount: config.i18n.locales.length,
     pipelineWarnings: [...pipelineWarnings, ...navigationWarnings],
     diagnostics,
+    deploymentDiagnostics: deployment.diagnostics,
+    outdatedDeploymentFiles: deploymentFiles.changed,
   };
 }

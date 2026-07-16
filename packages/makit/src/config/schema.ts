@@ -183,6 +183,44 @@ const validationConfigSchema = z.strictObject({
   failOn: z.array(failOnCodeSchema).optional(),
 });
 
+const deploymentConfigSchema = z.strictObject({
+  adapter: z.unknown().optional(),
+  configFile: z
+    .strictObject({
+      mode: z.enum(["generated", "merge", "manual"]).optional(),
+    })
+    .optional(),
+  redirects: z.boolean().optional(),
+  headers: z.boolean().optional(),
+  cleanUrls: z.boolean().optional(),
+  customDomain: z.string().min(1).optional(),
+  generateCi: z.boolean().optional(),
+  preview: z
+    .strictObject({
+      enabled: z.boolean().optional(),
+    })
+    .optional(),
+});
+
+const redirectSchema = z.strictObject({
+  from: z.string().min(1),
+  to: z.string().min(1),
+  status: z.union([z.literal(301), z.literal(302), z.literal(307), z.literal(308)]),
+  conditions: z
+    .strictObject({
+      language: z.array(z.string()).optional(),
+      country: z.array(z.string()).optional(),
+    })
+    .optional(),
+  force: z.boolean().optional(),
+  source: z.enum(["user", "i18n-root", "i18n-fallback", "clean-url", "migration"]).optional(),
+});
+
+const headerRuleSchema = z.strictObject({
+  path: z.string().min(1),
+  headers: z.record(z.string(), z.string()),
+});
+
 const experimentalConfigSchema = z.record(z.string(), z.unknown());
 
 export const makitConfigSchema = z.strictObject({
@@ -207,6 +245,9 @@ export const makitConfigSchema = z.strictObject({
   dev: devConfigSchema.optional(),
   preview: previewConfigSchema.optional(),
   validation: validationConfigSchema.optional(),
+  deployment: deploymentConfigSchema.optional(),
+  redirects: z.array(redirectSchema).optional(),
+  headers: z.array(headerRuleSchema).optional(),
   experimental: experimentalConfigSchema.optional(),
 });
 

@@ -1,6 +1,7 @@
 import { dirname, resolve as resolvePath } from "node:path";
 import { createJiti } from "jiti";
 import { MakitConfigError, MakitError } from "../core/errors.js";
+import { resolveDeployment } from "../core/deployment.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { discoverConfigFile } from "./discover.js";
 import { resolveConfig } from "./normalize.js";
@@ -38,8 +39,9 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Resol
     throw MakitConfigError.fromZodError(parseResult.error, configPath);
   }
 
-  return resolveConfig(parseResult.data, {
+  const config = resolveConfig(parseResult.data, {
     root: dirname(configPath),
     configPath,
   });
+  return resolveDeployment(config);
 }

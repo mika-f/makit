@@ -35,11 +35,29 @@ export const checkCommand = defineCommand({
           diagnostic.code,
         );
       }
+      for (const diagnostic of result.deploymentDiagnostics) {
+        const message = diagnostic.file
+          ? `${diagnostic.file}: ${diagnostic.message}`
+          : diagnostic.message;
+        if (diagnostic.level === "error") ctx.logger.error(message, diagnostic.code);
+        else if (diagnostic.level === "warning") ctx.logger.warn(message, diagnostic.code);
+        else ctx.logger.info(message);
+      }
+      for (const path of result.outdatedDeploymentFiles) {
+        ctx.logger.error(
+          `Generated deployment file is outdated: ${path}`,
+          "adapter-files-outdated",
+        );
+      }
 
       const promoted = selectPromotedDiagnostics(result.diagnostics, config.validation);
       const strictPipelineFailure = config.validation.strict && result.pipelineWarnings.length > 0;
 
-      if (promoted.length > 0 || strictPipelineFailure) {
+      if (
+        promoted.length > 0 ||
+        strictPipelineFailure ||
+        result.outdatedDeploymentFiles.length > 0
+      ) {
         ctx.logger.error(
           `${promoted.length + (strictPipelineFailure ? result.pipelineWarnings.length : 0)} warning(s) promoted to errors (validation.strict/failOn)`,
         );
@@ -48,7 +66,7 @@ export const checkCommand = defineCommand({
       }
 
       ctx.logger.success(
-        `No issues found (${result.pipelineWarnings.length + result.diagnostics.length} warning(s))`,
+        `No issues found (${result.pipelineWarnings.length + result.diagnostics.length + result.deploymentDiagnostics.filter((item) => item.level === "warning").length} warning(s))`,
       );
     } catch (error) {
       handleCliError(error, ctx.logger);

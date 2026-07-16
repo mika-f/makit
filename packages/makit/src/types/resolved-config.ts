@@ -14,6 +14,11 @@ import type {
   ShikiUnknownLanguageBehavior,
   UnifiedPluginEntry,
 } from "./config.js";
+import type {
+  GeneratedHeaderRule,
+  GeneratedRedirect,
+  ResolvedDeploymentConfig,
+} from "./adapter.js";
 
 /** A locale as declared in `makit.config.ts`, resolved with all defaults applied. */
 export interface ResolvedLocaleConfig {
@@ -132,5 +137,8 @@ export interface ResolvedConfig {
   dev: ResolvedDevConfig;
   preview: ResolvedPreviewConfig;
   validation: ResolvedValidationConfig;
+  deployment: ResolvedDeploymentConfig;
+  redirects: GeneratedRedirect[];
+  headers: GeneratedHeaderRule[];
   experimental: Record<string, unknown>;
 }

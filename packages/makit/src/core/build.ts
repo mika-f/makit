@@ -13,6 +13,11 @@ import { buildAllPages } from "./pages.js";
 import { generateSitemapXml } from "./sitemap.js";
 import type { Diagnostic } from "./validation.js";
 import { selectPromotedDiagnostics, validatePages } from "./validation.js";
+import {
+  generateDeploymentAdapter,
+  prepareDeploymentAdapter,
+  writeDeploymentFiles,
+} from "./deployment.js";
 
 export interface BuildOptions {
   clean?: boolean;
@@ -106,6 +111,12 @@ export async function build(
     );
   }
 
+  const deployment = await prepareDeploymentAdapter(config, allPages);
+  for (const diagnostic of deployment.diagnostics) {
+    if (diagnostic.level === "warning") logger.warn(diagnostic.message, diagnostic.code);
+    else logger.info(diagnostic.message);
+  }
+
   await writeGeneratedData(config, allPages, navigationByLocale);
   logger.success("Wrote .makit/generated/");
 
@@ -123,6 +134,17 @@ export async function build(
   const sitemapXml = generateSitemapXml(allPages, config);
   if (sitemapXml) {
     await writeFile(join(outDirAbsolute, "sitemap.xml"), sitemapXml, "utf-8");
+  }
+
+  const deploymentResult = await generateDeploymentAdapter(config, deployment);
+  const written = await writeDeploymentFiles(config, deploymentResult.files);
+  if (config.deployment.adapter) {
+    logger.success(`Deployment adapter: ${config.deployment.adapter.name}`);
+    for (const path of written.changed) logger.success(`Generated ${path}`);
+    for (const path of written.skipped) logger.info(`Manual deployment file: ${path}`);
+    for (const diagnostic of deploymentResult.diagnostics.slice(deployment.diagnostics.length)) {
+      if (diagnostic.level === "warning") logger.warn(diagnostic.message, diagnostic.code);
+    }
   }
 
   return {

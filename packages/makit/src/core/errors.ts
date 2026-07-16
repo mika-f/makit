@@ -18,6 +18,12 @@ export type MakitErrorCode =
   | "markdown-processing-failed"
   | "missing-navigation-target"
   | "next-build-failed"
+  | "adapter-invalid"
+  | "adapter-validation-failed"
+  | "adapter-invalid-file"
+  | "adapter-file-conflict"
+  | "adapter-not-configured"
+  | "adapter-files-outdated"
   | "output-write-failed"
   | "project-exists"
   | "not-implemented";

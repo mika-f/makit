@@ -227,6 +227,25 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       strict: parsed.validation?.strict ?? false,
       failOn: parsed.validation?.failOn ?? [],
     },
+    deployment: {
+      adapter: parsed.deployment?.adapter as ResolvedConfig["deployment"]["adapter"],
+      configFile: {
+        mode: parsed.deployment?.configFile?.mode ?? "generated",
+      },
+      redirects: parsed.deployment?.redirects ?? true,
+      headers: parsed.deployment?.headers ?? false,
+      cleanUrls: parsed.deployment?.cleanUrls ?? false,
+      customDomain: parsed.deployment?.customDomain,
+      generateCi: parsed.deployment?.generateCi ?? false,
+      preview: {
+        enabled: parsed.deployment?.preview?.enabled ?? false,
+      },
+    },
+    redirects: (parsed.redirects ?? []).map((redirect) => ({
+      ...redirect,
+      source: redirect.source ?? "user",
+    })),
+    headers: parsed.headers ?? [],
     experimental: parsed.experimental ?? {},
   };
 }
