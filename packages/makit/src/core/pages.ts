@@ -65,6 +65,8 @@ export async function buildPage(
     headings: processed.headings,
     draft: frontMatter.draft ?? false,
     hidden: frontMatter.hidden ?? false,
+    order: frontMatter.order,
+    navigation: frontMatter.navigation,
     metadata: {
       canonical: frontMatter.canonical,
       noindex: frontMatter.noindex ?? false,

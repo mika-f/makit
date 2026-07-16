@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
 import { writeGeneratedData } from "./generate.js";
+import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 
 let dir: string;
@@ -84,5 +85,38 @@ describe("writeGeneratedData", () => {
     };
     expect(enIndex.locale).toBe("en-us");
     expect(jaIndex.locale).toBe("ja-jp");
+  });
+
+  it("writes one navigation JSON file per locale when navigation data is given", async () => {
+    await write("docs/en-us/index.md", "# Home\n");
+    await write("docs/ja-jp/index.md", "# ホーム\n");
+
+    const config = resolveConfig(
+      {
+        title: "My Docs",
+        i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
+      },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages } = await buildAllPages(config);
+    const { byLocale } = generateAllNavigation(pages, config);
+    const { generatedDir } = await writeGeneratedData(config, pages, byLocale);
+
+    const enNav = (await readJson(join(generatedDir, "navigation", "en-us.json"))) as unknown[];
+    const jaNav = (await readJson(join(generatedDir, "navigation", "ja-jp.json"))) as unknown[];
+    expect(enNav.length).toBeGreaterThan(0);
+    expect(jaNav.length).toBeGreaterThan(0);
+  });
+
+  it("skips the navigation directory entirely when no navigation data is given", async () => {
+    await write("docs/index.md", "# Home\n");
+    const config = resolveConfig(
+      { title: "My Docs" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages } = await buildAllPages(config);
+    const { generatedDir } = await writeGeneratedData(config, pages);
+
+    await expect(readJson(join(generatedDir, "navigation", "en.json"))).rejects.toThrow();
   });
 });

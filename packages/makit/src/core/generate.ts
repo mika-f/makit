@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { NavigationGroup } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 
@@ -18,9 +19,11 @@ async function writeJson(path: string, data: unknown): Promise<void> {
 export async function writeGeneratedData(
   config: ResolvedConfig,
   pages: readonly GeneratedPage[],
+  navigationByLocale: Readonly<Record<string, NavigationGroup[]>> = {},
 ): Promise<WriteGeneratedDataResult> {
   const generatedDir = join(config.root, ".makit", "generated");
   const pagesDir = join(generatedDir, "pages");
+  const navigationDir = join(generatedDir, "navigation");
 
   await mkdir(generatedDir, { recursive: true });
 
@@ -58,6 +61,13 @@ export async function writeGeneratedData(
     const pagePath = join(pagesDir, page.locale, `${page.pageId}.json`);
     await mkdir(dirname(pagePath), { recursive: true });
     await writeJson(pagePath, page);
+  }
+
+  if (Object.keys(navigationByLocale).length > 0) {
+    await mkdir(navigationDir, { recursive: true });
+    for (const [locale, navigation] of Object.entries(navigationByLocale)) {
+      await writeJson(join(navigationDir, `${locale}.json`), navigation);
+    }
   }
 
   return { generatedDir };
