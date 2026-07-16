@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.makit/
+*.log
+.DS_Store
+.turbo/
+coverage/
+*.tsbuildinfo
