@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { RootBehavior, RootLocaleOption } from "../data/types.js";
 import { RootDetect } from "./root-detect.js";
 
@@ -21,9 +22,9 @@ export function RootPage({ behavior, locales, defaultHref, siteTitle }: RootPage
         <ul className="flex flex-col gap-2 text-center">
           {locales.map((locale) => (
             <li key={locale.urlLocale}>
-              <a href={locale.href} className="text-[var(--makit-color-accent)] hover:underline">
+              <Link href={locale.href} className="text-[var(--makit-color-accent)] hover:underline">
                 {locale.label}
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
@@ -39,9 +40,9 @@ export function RootPage({ behavior, locales, defaultHref, siteTitle }: RootPage
       <meta httpEquiv="refresh" content={`0;url=${defaultHref}`} />
       <p className="flex min-h-screen items-center justify-center text-[var(--makit-color-foreground)]">
         Redirecting to{" "}
-        <a href={defaultHref} className="ml-1 text-[var(--makit-color-accent)] hover:underline">
+        <Link href={defaultHref} className="ml-1 text-[var(--makit-color-accent)] hover:underline">
           {defaultHref}
-        </a>
+        </Link>
         …
       </p>
     </>

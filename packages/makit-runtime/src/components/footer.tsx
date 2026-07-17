@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { FooterData } from "../data/types.js";
 
 export function Footer({ footer }: { footer: FooterData }) {
@@ -8,17 +9,27 @@ export function Footer({ footer }: { footer: FooterData }) {
       <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-3">
         {footer.copyright && <span>{footer.copyright}</span>}
         <nav className="flex gap-4" aria-label="Footer links">
-          {(footer.links ?? []).map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target={link.external ? "_blank" : undefined}
-              rel={link.external ? "noopener noreferrer" : undefined}
-              className="transition hover:text-[var(--makit-color-foreground)]"
-            >
-              {link.label}
-            </a>
-          ))}
+          {(footer.links ?? []).map((link) =>
+            link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="transition hover:text-[var(--makit-color-foreground)]"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition hover:text-[var(--makit-color-foreground)]"
+              >
+                {link.label}
+              </Link>
+            ),
+          )}
         </nav>
       </div>
     </footer>

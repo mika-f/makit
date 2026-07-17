@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import type { SearchEntry } from "../data/types.js";
 
 interface PagefindResultData {
@@ -194,7 +195,7 @@ export function SearchDialog({
                 <ul>
                   {results.map((entry) => (
                     <li key={entry.route}>
-                      <a
+                      <Link
                         href={entry.route}
                         className="group flex items-center justify-between gap-4 rounded-xl px-3 py-3 transition hover:bg-[var(--makit-color-muted)]"
                       >
@@ -209,7 +210,7 @@ export function SearchDialog({
                         <span className="text-[var(--makit-color-subtle)] transition group-hover:translate-x-0.5 group-hover:text-[var(--makit-color-accent)]">
                           →
                         </span>
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>

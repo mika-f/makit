@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getHomeRoute, getPageMap } from "../data/loaders.js";
 import type { GeneratedPage, LocaleData, MissingPageBehavior } from "../data/types.js";
 
@@ -36,7 +37,7 @@ export async function LocaleSwitcher({
   return (
     <div className="hidden items-center gap-1 text-sm sm:flex">
       {links.map(({ locale, href }) => (
-        <a
+        <Link
           key={locale.urlLocale}
           href={href}
           aria-current={locale.urlLocale === page.locale ? "true" : undefined}
@@ -47,7 +48,7 @@ export async function LocaleSwitcher({
           }
         >
           {locale.label}
-        </a>
+        </Link>
       ))}
     </div>
   );

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
 import type { I18nData, PortalCollectionCard, PortalHomeData, SiteData } from "../data/types.js";
 import { Footer } from "./footer.js";
@@ -7,7 +8,7 @@ import { ThemeToggle } from "./theme-toggle.js";
 
 function CollectionCard({ card }: { card: PortalCollectionCard }) {
   return (
-    <a
+    <Link
       href={card.href}
       className="group block rounded-2xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--makit-color-border-strong)] hover:shadow-lg"
     >
@@ -24,7 +25,7 @@ function CollectionCard({ card }: { card: PortalCollectionCard }) {
           {card.description}
         </p>
       )}
-    </a>
+    </Link>
   );
 }
 
@@ -74,7 +75,7 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
       {localeLinks.length > 1 && (
         <div className="flex items-center gap-1 text-sm">
           {localeLinks.map(({ locale: candidate, href }) => (
-            <a
+            <Link
               key={candidate.urlLocale}
               href={href}
               aria-current={candidate.urlLocale === locale ? "true" : undefined}
@@ -85,7 +86,7 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
               }
             >
               {candidate.label}
-            </a>
+            </Link>
           ))}
         </div>
       )}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "../data/types.js";
 
 function containsRoute(node: ResolvedNavNode, currentRoute: string): boolean {
@@ -24,11 +25,11 @@ function ItemLink({
     );
   }
   const isActive = href === currentRoute;
-  return (
+  return external ? (
     <a
       href={href}
-      target={external ? "_blank" : undefined}
-      rel={external ? "noopener noreferrer" : undefined}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-current={isActive ? "page" : undefined}
       className={
         isActive
@@ -38,6 +39,18 @@ function ItemLink({
     >
       {title}
     </a>
+  ) : (
+    <Link
+      href={href}
+      aria-current={isActive ? "page" : undefined}
+      className={
+        isActive
+          ? "block rounded-lg bg-[var(--makit-color-muted)] px-2.5 py-1.5 text-sm font-medium text-[var(--makit-color-foreground)]"
+          : "block rounded-lg px-2.5 py-1.5 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
+      }
+    >
+      {title}
+    </Link>
   );
 }
 

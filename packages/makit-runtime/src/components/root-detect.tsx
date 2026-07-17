@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import type { RootLocaleOption } from "../data/types.js";
 
 const LOCALE_STORAGE_KEY = "makit-locale";
@@ -52,9 +53,9 @@ export function RootDetect({
   return (
     <p className="flex min-h-screen items-center justify-center text-[var(--makit-color-foreground)]">
       Redirecting… If you are not redirected automatically,{" "}
-      <a href={defaultHref} className="ml-1 text-[var(--makit-color-accent)] hover:underline">
+      <Link href={defaultHref} className="ml-1 text-[var(--makit-color-accent)] hover:underline">
         click here
-      </a>
+      </Link>
       .
     </p>
   );

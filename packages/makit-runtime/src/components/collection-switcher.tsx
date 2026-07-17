@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { CollectionData } from "../data/types.js";
 
 /** Switches between collections in the current locale (spec §38 Collection Switcher). */
@@ -24,7 +25,7 @@ export function CollectionSwitcher({
       </summary>
       <div className="absolute right-0 z-20 mt-2 min-w-44 rounded-xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-1.5 shadow-xl">
         {visible.map((collection) => (
-          <a
+          <Link
             key={collection.id}
             href={collection.locales[locale]!.rootRoute}
             aria-current={collection.id === currentCollectionId ? "page" : undefined}
@@ -35,7 +36,7 @@ export function CollectionSwitcher({
             }
           >
             {collection.locales[locale]!.title}
-          </a>
+          </Link>
         ))}
       </div>
     </details>

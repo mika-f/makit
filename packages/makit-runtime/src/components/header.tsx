@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import type { GlobalNavigationGroup, GlobalNavigationItem, HeaderData } from "../data/types.js";
 
@@ -9,30 +10,47 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
           {item.title}
         </summary>
         <div className="absolute z-20 mt-2 min-w-44 rounded-xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-1.5 shadow-xl">
-          {item.items.map((child) => (
-            <a
-              key={child.title}
-              href={child.href ?? "#"}
-              target={child.external ? "_blank" : undefined}
-              rel={child.external ? "noopener noreferrer" : undefined}
-              className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
-            >
-              {child.title}
-            </a>
-          ))}
+          {item.items.map((child) =>
+            child.external ? (
+              <a
+                key={child.title}
+                href={child.href ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
+              >
+                {child.title}
+              </a>
+            ) : (
+              <Link
+                key={child.title}
+                href={child.href ?? "#"}
+                className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
+              >
+                {child.title}
+              </Link>
+            ),
+          )}
         </div>
       </details>
     );
   }
-  return (
+  return item.external ? (
     <a
       href={item.href ?? "#"}
-      target={item.external ? "_blank" : undefined}
-      rel={item.external ? "noopener noreferrer" : undefined}
+      target="_blank"
+      rel="noopener noreferrer"
       className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
     >
       {item.title}
     </a>
+  ) : (
+    <Link
+      href={item.href ?? "#"}
+      className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
+    >
+      {item.title}
+    </Link>
   );
 }
 
@@ -69,7 +87,7 @@ export function Header({
     <header className="sticky top-0 z-40 border-b border-[var(--makit-color-border)] bg-[color-mix(in_srgb,var(--makit-color-background)_88%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-7">
-          <a
+          <Link
             href={homeHref}
             className="flex min-w-0 items-center gap-2.5 font-semibold tracking-[-0.02em] text-[var(--makit-color-foreground)]"
           >
@@ -81,22 +99,32 @@ export function Header({
               </span>
             )}
             <span className="truncate">{header.title ?? siteTitle}</span>
-          </a>
+          </Link>
           {hasGlobalNav ? (
             <GlobalNav groups={globalNavigation!} />
           ) : (
             <nav className="hidden items-center gap-5 md:flex" aria-label="Header links">
-              {(header.links ?? []).map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target={link.external ? "_blank" : undefined}
-                  rel={link.external ? "noopener noreferrer" : undefined}
-                  className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {(header.links ?? []).map((link) =>
+                link.external ? (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
+                  >
+                    {link.label}
+                  </Link>
+                ),
+              )}
             </nav>
           )}
         </div>
