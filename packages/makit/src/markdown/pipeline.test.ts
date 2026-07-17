@@ -37,6 +37,24 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toContain("data-footnote-ref");
   });
 
+  it.each(["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"])(
+    "renders GitHub %s alerts as labelled asides",
+    async (type) => {
+      const result = await render(`> [!${type}]\n> Read this carefully.\n`);
+      const normalizedType = type.toLowerCase();
+      expect(result.html).toContain(`<aside class="makit-alert makit-alert-${normalizedType}"`);
+      expect(result.html).toContain(`<p class="makit-alert-title">${normalizedType}</p>`);
+      expect(result.html).toContain("Read this carefully.");
+      expect(result.html).not.toContain(`[!${type}]`);
+    },
+  );
+
+  it("keeps ordinary blockquotes unchanged", async () => {
+    const result = await render("> A normal quotation.\n");
+    expect(result.html).toContain("<blockquote>");
+    expect(result.html).not.toContain("makit-alert");
+  });
+
   it("adds target/rel to external links using markdown.externalLinks config", async () => {
     const result = await render("[external](https://example.com)");
     expect(result.html).toContain('target="_blank"');

@@ -16,7 +16,7 @@ export interface CachedMarkdownResult {
 // necessarily changing the user's source or config. This also keeps local
 // workspace builds from serving stale page HTML while the package version is
 // unchanged during development.
-const MARKDOWN_CACHE_VERSION = "2";
+const MARKDOWN_CACHE_VERSION = "3";
 
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");

@@ -66,6 +66,15 @@ const value = true; // [!code highlight]
 ```
 ````
 
+## GitHub 形式のアラート
+
+重要な内容を目立たせるには、GitHub 形式のアラート記法を使えます。`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` に対応しており、種別ごとに見分けやすい表示になります。
+
+```markdown
+> [!IMPORTANT]
+> このアドオンを導入・使用する前に、[セキュリティガイド](/security-guides)を一読してください。
+```
+
 ## サイトの階層
 
 サイトは次のような階層で考えます。

@@ -10,6 +10,7 @@ import type { ResolvedConfig } from "../types/resolved-config.js";
 import type { GeneratedHeading } from "../types/page.js";
 import { rehypeCollectHeadings } from "./rehype/collect-headings.js";
 import { rehypeExternalLinks } from "./rehype/external-links.js";
+import { rehypeGitHubAlerts } from "./rehype/github-alerts.js";
 import { rehypeRewriteMarkdownLinks, type LinkRewriteContext } from "./rehype/rewrite-links.js";
 import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
@@ -77,6 +78,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   processor.use(rehypeCollectHeadings);
   processor.use(rehypeExternalLinks, config.markdown.externalLinks);
   processor.use(rehypeRewriteMarkdownLinks);
+  processor.use(rehypeGitHubAlerts);
 
   applyUnifiedPlugins(processor, config.markdown.rehypePlugins);
 

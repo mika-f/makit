@@ -47,6 +47,15 @@ const removed = false; // [!code --]
 ```
 ````
 
+## GitHub-style alerts
+
+Use GitHub's alert syntax to call attention to important content. Makit supports `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, and `CAUTION`; each has a distinct, accessible visual treatment.
+
+```markdown
+> [!IMPORTANT]
+> Read the [security guide](/security-guides) before installing or using this add-on.
+```
+
 ## Site hierarchy
 
 Think of a site as the following hierarchy:
