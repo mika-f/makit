@@ -165,6 +165,11 @@ const paginationConfigSchema = z.strictObject({
   crossSection: z.boolean().optional(),
 });
 
+const autoNavigationConfigSchema = z.strictObject({
+  numericPrefixes: z.boolean().optional(),
+  unorderedPosition: z.enum(["first", "last"]).optional(),
+});
+
 const navigationConfigSchema = z.strictObject({
   mode: z.enum(["auto", "manual"]).optional(),
   includeFallbackPages: z.boolean().optional(),
@@ -172,6 +177,7 @@ const navigationConfigSchema = z.strictObject({
   collections: z.record(z.string(), collectionNavigationConfigSchema).optional(),
   global: z.array(globalNavigationGroupSchema).optional(),
   pagination: paginationConfigSchema.optional(),
+  auto: autoNavigationConfigSchema.optional(),
 });
 
 const headerLinkSchema = z.strictObject({
@@ -308,6 +314,7 @@ const warningCodeSchema = z.enum([
   "env-var-in-metadata",
   "out-of-project-import",
   "slow-metadata-eval",
+  "duplicate-navigation-order",
 ]);
 
 const failOnCodeSchema = z.union([

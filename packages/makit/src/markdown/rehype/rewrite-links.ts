@@ -12,6 +12,8 @@ export interface LinkRewriteContext {
   /** The collection's URL prefix segments (spec §28.1). */
   collectionSegments?: readonly string[];
   trailingSlash: boolean;
+  /** Whether numeric ordering prefixes are stripped when resolving `.md` links (ORDER-PREFIX §18, §21). */
+  numericPrefixes?: boolean;
 }
 
 // Matches a relative (non-absolute, non-scheme, non-anchor-only) link ending in .md/.markdown,
@@ -31,7 +33,7 @@ export function rewriteMarkdownLinkHref(href: string, ctx: LinkRewriteContext): 
     // Leave the href untouched; link validation (a later phase) reports it.
     return undefined;
   }
-  const segments = filePathToSegments(resolved);
+  const segments = filePathToSegments(resolved, { numericPrefixes: ctx.numericPrefixes });
   const route = buildRoute(segments, {
     basePath: ctx.basePath,
     localePrefix: ctx.localePrefix,

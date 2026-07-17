@@ -78,6 +78,7 @@ function buildFallbackPage(
     sidebar: sourcePage.sidebar,
     tableOfContents: sourcePage.tableOfContents,
     order: sourcePage.order,
+    filenameOrder: sourcePage.filenameOrder,
     navigation: sourcePage.navigation,
     taxonomy: sourcePage.taxonomy,
     hierarchy: [],

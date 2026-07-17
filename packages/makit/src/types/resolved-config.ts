@@ -19,6 +19,7 @@ import type {
   NavigationMode,
   ShikiUnknownLanguageBehavior,
   UnifiedPluginEntry,
+  UnorderedPosition,
 } from "./config.js";
 import type {
   GeneratedHeaderRule,
@@ -133,6 +134,10 @@ export interface ResolvedNavigationConfig {
   pagination: {
     enabled: boolean;
     crossSection: boolean;
+  };
+  auto: {
+    numericPrefixes: boolean;
+    unorderedPosition: UnorderedPosition;
   };
 }
 

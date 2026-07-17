@@ -5,6 +5,7 @@ import {
   derivePageId,
   detectDuplicatePageIds,
   detectDuplicateRoutes,
+  fileNameOrder,
   filePathToSegments,
   resolveSlugSegments,
 } from "./routes.js";
@@ -28,6 +29,48 @@ describe("filePathToSegments", () => {
       "guides",
       "configuration",
     ]);
+  });
+
+  it("strips numeric ordering prefixes per segment (ORDER-PREFIX §4)", () => {
+    expect(filePathToSegments("02-getting-started/01-installation.md")).toEqual([
+      "getting-started",
+      "installation",
+    ]);
+  });
+
+  it("handles a prefixed index file the same as index.md (ORDER-PREFIX §11)", () => {
+    expect(filePathToSegments("02-getting-started/01-index.md")).toEqual(["getting-started"]);
+    expect(filePathToSegments("02-getting-started/index.md")).toEqual(["getting-started"]);
+  });
+
+  it("renaming only the prefix leaves segments unchanged (ORDER-PREFIX §6)", () => {
+    expect(filePathToSegments("01-installation.md")).toEqual(
+      filePathToSegments("05-installation.md"),
+    );
+  });
+
+  it("leaves prefixes in place when numericPrefixes is disabled (ORDER-PREFIX §18)", () => {
+    expect(
+      filePathToSegments("02-getting-started/01-installation.md", { numericPrefixes: false }),
+    ).toEqual(["02-getting-started", "01-installation"]);
+  });
+});
+
+describe("fileNameOrder", () => {
+  it("parses the file's own numeric prefix", () => {
+    expect(fileNameOrder("02-getting-started/01-installation.md")).toBe(1);
+  });
+
+  it("returns undefined when there is no prefix", () => {
+    expect(fileNameOrder("guides/configuration.md")).toBeUndefined();
+  });
+
+  it("returns undefined when disabled, without throwing on an otherwise-invalid name", () => {
+    expect(fileNameOrder("01-.md", { numericPrefixes: false })).toBeUndefined();
+  });
+
+  it("still applies to an index file's own name (ORDER-PREFIX §11)", () => {
+    expect(fileNameOrder("02-getting-started/01-index.md")).toBe(1);
   });
 });
 

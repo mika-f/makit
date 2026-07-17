@@ -161,6 +161,27 @@ export type CollectionNavigationConfig =
       items: NavigationNode[];
     };
 
+/** Where items without a numeric ordering prefix are placed among prefixed siblings (spec §9, ORDER-PREFIX §9). */
+export type UnorderedPosition = "first" | "last";
+
+/** Numeric filename/directory ordering prefix behavior for automatic navigation (ORDER-PREFIX §18). */
+export interface AutoNavigationConfig {
+  /**
+   * Whether a leading `NN-` on filenames/directories controls automatic
+   * navigation order (ORDER-PREFIX §2, §18).
+   *
+   * @default true
+   */
+  numericPrefixes?: boolean;
+  /**
+   * Where items without a numeric prefix are placed relative to prefixed
+   * siblings (ORDER-PREFIX §9).
+   *
+   * @default "last"
+   */
+  unorderedPosition?: UnorderedPosition;
+}
+
 export interface NavigationConfig {
   mode?: NavigationMode;
   includeFallbackPages?: boolean;
@@ -169,6 +190,8 @@ export interface NavigationConfig {
   collections?: Record<string, CollectionNavigationConfig>;
   global?: GlobalNavigationGroup[];
   pagination?: PaginationConfig;
+  /** Numeric filename/directory ordering prefix behavior (ORDER-PREFIX §18). */
+  auto?: AutoNavigationConfig;
 }
 
 // #endregion
@@ -341,7 +364,8 @@ export type MakitWarningCode =
   | "out-of-project-import"
   | "slow-metadata-eval"
   | "front-matter-too-deep"
-  | "front-matter-invalid-value";
+  | "front-matter-invalid-value"
+  | "duplicate-navigation-order";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,

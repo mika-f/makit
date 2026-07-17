@@ -89,6 +89,8 @@ export interface GeneratedPage {
   tableOfContents: boolean;
   /** Sort order among siblings in auto-generated navigation (spec §16, §27). Internal — not part of the public API. */
   order?: number;
+  /** Numeric filename ordering prefix, when the page has one (ORDER-PREFIX §19 `filenameOrder`). Falls back below `order`. Internal. */
+  filenameOrder?: number;
   /** Navigation-specific overrides from `.meta.ts` (`navigation.title`/`navigation.primary`, spec §16, §30). Internal. */
   navigation?: {
     title?: string;

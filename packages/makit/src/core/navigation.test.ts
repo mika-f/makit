@@ -165,6 +165,137 @@ describe("generateNavigation (auto mode)", () => {
     expect(titles(navigation)).toEqual(["B", "A", "C"]);
   });
 
+  it("orders siblings by numeric filename prefix (ORDER-PREFIX §1)", async () => {
+    await write("docs/02-b.md", "# B");
+    await write("docs/01-a.md", "# A");
+    await write("docs/03-c.md", "# C");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    expect(titles(navigation)).toEqual(["A", "B", "C"]);
+  });
+
+  it("compares prefixes numerically, not lexicographically, across digit widths (ORDER-PREFIX §2, §3)", async () => {
+    await write("docs/2-b.md", "# B");
+    await write("docs/10-c.md", "# C");
+    await write("docs/100-d.md", "# D");
+    await write("docs/1-a.md", "# A");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    expect(titles(navigation)).toEqual(["A", "B", "C", "D"]);
+  });
+
+  it("orders a subdirectory by its own numeric prefix (ORDER-PREFIX §8)", async () => {
+    await write("docs/02-guides/config.md", "# Config");
+    await writeCategory("docs/02-guides", { title: "Guides" });
+    await write("docs/01-overview.md", "# Overview");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    expect(titles(navigation)).toEqual(["Overview", "Guides"]);
+  });
+
+  it("explicit order beats a numeric filename prefix (ORDER-PREFIX §9)", async () => {
+    await write("docs/02-b.md", "# B");
+    await write("docs/01-a.md", "# A");
+    await writeMeta("docs/01-a.md", { order: 5 });
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    expect(titles(navigation)).toEqual(["B", "A"]);
+  });
+
+  it("places unprefixed items last by default, or first with unorderedPosition (ORDER-PREFIX §9)", async () => {
+    await write("docs/01-a.md", "# A");
+    await write("docs/plain.md", "# Plain");
+    const configLast = makeConfig({ title: "Test" });
+    const { pages: pagesLast, collections: collectionsLast } = await buildPagesForTest(configLast);
+    expect(titles(await navFor(pagesLast, configLast, collectionsLast))).toEqual(["A", "Plain"]);
+
+    const configFirst = makeConfig({
+      title: "Test",
+      navigation: { auto: { unorderedPosition: "first" } },
+    });
+    const { pages: pagesFirst, collections: collectionsFirst } =
+      await buildPagesForTest(configFirst);
+    expect(titles(await navFor(pagesFirst, configFirst, collectionsFirst))).toEqual(["Plain", "A"]);
+  });
+
+  it("warns on duplicate navigation order from colliding prefixes (ORDER-PREFIX §10)", async () => {
+    await write("docs/01-a.md", "# A");
+    await write("docs/01-b.md", "# B");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const { diagnostics } = await generateNavigation(
+      pages,
+      config.i18n.locales[0]!,
+      config,
+      collections[0]!,
+      collections,
+      createMetadataJiti(),
+    );
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({ code: "duplicate-navigation-order" }),
+    );
+  });
+
+  it("still finds category.makit.ts under a numerically prefixed directory (ORDER-PREFIX §12)", async () => {
+    await write("docs/02-guides/config.md", "# Config");
+    await writeCategory("docs/02-guides", { title: "All Guides", order: 5 });
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    expect(titles(navigation)).toEqual(["All Guides"]);
+    const section = navigation.find(
+      (n): n is ResolvedNavContainerNode => n.type === "section" || n.type === "group",
+    );
+    expect(section?.id).toBe("guides");
+  });
+
+  it("throws MakitError('duplicate-normalized-directory') when two directories normalize to the same name (ORDER-PREFIX §22)", async () => {
+    await write("docs/02-guides/a.md", "# A");
+    await write("docs/2-guides/b.md", "# B");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    await expect(navFor(pages, config, collections)).rejects.toMatchObject({
+      code: "duplicate-normalized-directory",
+    });
+  });
+
+  it("treats index.md and a prefixed 01-index.md the same way (ORDER-PREFIX §11)", async () => {
+    await write("docs/02-guides/01-index.md", "# Guides");
+    await write("docs/02-guides/config.md", "# Config");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    const section = navigation.find((n): n is ResolvedNavContainerNode => n.type === "section");
+    expect(section?.href).toBe("/guides/");
+    expect(titles(section?.items ?? [])).toEqual(["Guides", "Config"]);
+  });
+
+  it("treats prefixes as literal filename text when numericPrefixes is disabled (ORDER-PREFIX §18)", async () => {
+    await write("docs/02-b.md", "# B");
+    await write("docs/01-a.md", "# A");
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { numericPrefixes: false } },
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    // No order info survives, so siblings fall back to title order.
+    expect(titles(navigation)).toEqual(["A", "B"]);
+  });
+
   it("uses navigation.title as a label override", async () => {
     await write("docs/getting-started.md", "# Getting Started");
     await writeMeta("docs/getting-started.md", {

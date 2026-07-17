@@ -63,6 +63,42 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toContain('href="/guides/other/"');
   });
 
+  it("strips numeric ordering prefixes when rewriting links (ORDER-PREFIX §21)", async () => {
+    const result = await render("[Installation](./01-installation.md)", makeConfig(), "index.md");
+    expect(result.html).toContain('href="/installation/"');
+  });
+
+  it("resolves a prefix-less link the same as its prefixed physical path (ORDER-PREFIX §21)", async () => {
+    const withPrefix = await render(
+      "[Installation](./01-installation.md)",
+      makeConfig(),
+      "index.md",
+    );
+    const withoutPrefix = await render(
+      "[Installation](./installation.md)",
+      makeConfig(),
+      "index.md",
+    );
+    expect(withoutPrefix.html).toContain(
+      withPrefix.html.match(/href="[^"]+"/)?.[0] ?? "href=UNMATCHED",
+    );
+  });
+
+  it("keeps the prefix literal in rewritten links when numericPrefixes is disabled", async () => {
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { numericPrefixes: false } },
+    });
+    const processor = createMarkdownProcessor(config);
+    const result = await processMarkdown(
+      processor,
+      "[Installation](./01-installation.md)",
+      config,
+      { currentRelativePath: "index.md" },
+    );
+    expect(result.html).toContain('href="/01-installation/"');
+  });
+
   it("prefixes rewritten links with the locale when i18n is enabled", async () => {
     const config = makeConfig({
       title: "Test",

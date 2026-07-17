@@ -119,4 +119,20 @@ describe("synthesizeCollectionTopPages (spec §34)", () => {
     expect(tops.find((p) => p.locale === "en-us")?.title).toBe("Makit");
     expect(tops.find((p) => p.locale === "ja-jp")?.title).toBe("メイキット");
   });
+
+  it("lists pages by numeric filename prefix when no explicit order is set (ORDER-PREFIX §3)", async () => {
+    await write("docs/makit/02-configuration.md", "# Configuration");
+    await write("docs/makit/01-installation.md", "# Installation");
+    const config = makeConfig({
+      title: "Docs",
+      collections: [{ id: "makit", title: "Makit", path: "/makit" }],
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const [top] = synthesizeCollectionTopPages(pages, config, collections);
+    const installationIndex = top?.html.indexOf("Installation") ?? -1;
+    const configurationIndex = top?.html.indexOf("Configuration") ?? -1;
+    expect(installationIndex).toBeGreaterThanOrEqual(0);
+    expect(installationIndex).toBeLessThan(configurationIndex);
+  });
 });

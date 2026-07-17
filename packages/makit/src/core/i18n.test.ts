@@ -73,6 +73,19 @@ describe("groupPagesByPageId", () => {
     expect(groups.size).toBe(1);
     expect(groups.get("default:deploy")?.byLocale.size).toBe(2);
   });
+
+  it("pairs pages by auto pageId even with differing numeric prefixes across locales (ORDER-PREFIX §6, §14)", async () => {
+    await write("docs/en-us/01-getting-started.md", "# Getting Started");
+    await write("docs/ja-jp/03-getting-started.md", "# はじめに");
+    const config = i18nConfig();
+    const { pages } = await buildPagesForTest(config);
+
+    const groups = groupPagesByPageId(pages);
+    expect(groups.size).toBe(1);
+    const group = groups.get("default:getting-started")!;
+    expect(group.byLocale.get("en-us")?.locale).toBe("en-us");
+    expect(group.byLocale.get("ja-jp")?.locale).toBe("ja-jp");
+  });
 });
 
 describe("generateFallbackPages", () => {

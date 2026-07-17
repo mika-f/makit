@@ -84,6 +84,45 @@ describe("buildAllPages", () => {
     expect(pages[0]?.pageId).toBe("guides.configuration");
   });
 
+  it("strips numeric ordering prefixes from the route and auto pageId (ORDER-PREFIX §4, §5)", async () => {
+    await write("docs/02-getting-started/01-installation.md", "content");
+    const { pages } = await buildPagesForTest(configFor(dir));
+    expect(pages[0]?.route).toBe("/getting-started/installation/");
+    expect(pages[0]?.pageId).toBe("getting-started.installation");
+  });
+
+  it("renaming only the prefix does not change the route or pageId (ORDER-PREFIX §6, §7)", async () => {
+    await write("docs/01-installation.md", "content");
+    const before = await buildPagesForTest(configFor(dir));
+    await rm(join(dir, "docs/01-installation.md"));
+    await write("docs/05-installation.md", "content");
+    const after = await buildPagesForTest(configFor(dir));
+    expect(after.pages[0]?.route).toBe(before.pages[0]?.route);
+    expect(after.pages[0]?.pageId).toBe(before.pages[0]?.pageId);
+  });
+
+  it("populates filenameOrder from the file's own numeric prefix", async () => {
+    await write("docs/01-installation.md", "content");
+    const { pages } = await buildPagesForTest(configFor(dir));
+    expect(pages[0]?.filenameOrder).toBe(1);
+  });
+
+  it("strips the prefix from the humanized filename title fallback (ORDER-PREFIX §15)", async () => {
+    await write("docs/02-getting-started.md", "Just a paragraph, no heading.\n");
+    const { pages } = await buildPagesForTest(configFor(dir));
+    expect(pages[0]?.title).toBe("Getting Started");
+  });
+
+  it("keeps prefixes literal when navigation.auto.numericPrefixes is false", async () => {
+    await write("docs/01-installation.md", "content");
+    const { pages } = await buildPagesForTest(
+      configFor(dir, { navigation: { auto: { numericPrefixes: false } } }),
+    );
+    expect(pages[0]?.route).toBe("/01-installation/");
+    expect(pages[0]?.pageId).toBe("01-installation");
+    expect(pages[0]?.filenameOrder).toBeUndefined();
+  });
+
   it("carries draft and hidden flags from .meta.ts", async () => {
     await write("docs/index.md", "content");
     await writeMeta("docs/index.md", { draft: true, hidden: true });

@@ -161,4 +161,23 @@ describe("resolveConfig defaults", () => {
     const resolved = resolveConfig({ title: "My Docs", seo: { titleTemplate: "%s :: Docs" } }, ctx);
     expect(resolved.seo.titleTemplate).toBe("%s :: Docs");
   });
+
+  it("defaults navigation.auto to numericPrefixes enabled and unorderedPosition last (ORDER-PREFIX §18)", () => {
+    const resolved = resolveConfig({ title: "My Docs" }, ctx);
+    expect(resolved.navigation.auto).toEqual({ numericPrefixes: true, unorderedPosition: "last" });
+  });
+
+  it("honors navigation.auto overrides", () => {
+    const resolved = resolveConfig(
+      {
+        title: "My Docs",
+        navigation: { auto: { numericPrefixes: false, unorderedPosition: "first" } },
+      },
+      ctx,
+    );
+    expect(resolved.navigation.auto).toEqual({
+      numericPrefixes: false,
+      unorderedPosition: "first",
+    });
+  });
 });

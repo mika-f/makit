@@ -12,6 +12,7 @@ import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "./nav-nodes.js";
+import { parseOrderedSegment } from "./order-prefix.js";
 import { buildRoute } from "./routes.js";
 import { humanizeSlug } from "./text.js";
 import type { Diagnostic } from "./validation.js";
@@ -176,11 +177,21 @@ interface CategoryEntry {
   metadataPath: string;
 }
 
+/** Normalizes a raw (possibly prefixed) directory path into the tree's dirKey (ORDER-PREFIX §4, §12). */
+function normalizeDirKey(rawDirPath: string, numericPrefixes: boolean, sourcePath: string): string {
+  const rawParts = rawDirPath.split("/").filter((part) => part.length > 0);
+  const parts = numericPrefixes
+    ? rawParts.map((part) => parseOrderedSegment(part, sourcePath).name)
+    : rawParts;
+  return parts.join("/");
+}
+
 async function scanCategories(
   dir: string,
   projectRoot: string,
   jiti: Jiti,
   metadataCache: MetadataCache | undefined,
+  numericPrefixes: boolean,
 ): Promise<{ byDir: Map<string, CategoryEntry>; diagnostics: Diagnostic[] }> {
   const byDir = new Map<string, CategoryEntry>();
   const diagnostics: Diagnostic[] = [];
@@ -195,10 +206,52 @@ async function scanCategories(
       cache: metadataCache,
     });
     diagnostics.push(...metadataLoadDiagnostics(loaded));
-    const dirKey = relPath.split("/").slice(0, -1).join("/");
+    const rawDirPath = relPath.split("/").slice(0, -1).join("/");
+    const dirKey = normalizeDirKey(rawDirPath, numericPrefixes, metadataPath);
     byDir.set(dirKey, { metadata: loaded.value, metadataPath });
   }
   return { byDir, diagnostics };
+}
+
+/**
+ * Lists every directory under `dir` and maps its normalized dirKey to the
+ * numeric ordering prefix on its own (deepest) segment, for use as a
+ * directory's navigation order fallback (ORDER-PREFIX §12, §19). Two raw
+ * directory paths that normalize to the same dirKey are a build error
+ * (ORDER-PREFIX §22) — they would otherwise silently merge into one
+ * navigation node.
+ */
+async function scanDirectoryOrders(
+  dir: string,
+  numericPrefixes: boolean,
+): Promise<Map<string, number>> {
+  const orders = new Map<string, number>();
+  if (!numericPrefixes || !existsSync(dir)) return orders;
+
+  const rawDirPaths: string[] = await fg("**", { cwd: dir, onlyDirectories: true, dot: false });
+  const seenRawByKey = new Map<string, string>();
+
+  for (const rawDirPath of rawDirPaths.sort()) {
+    const sourcePath = join(dir, rawDirPath);
+    const rawParts = rawDirPath.split("/").filter((part) => part.length > 0);
+    const parsedParts = rawParts.map((part) => parseOrderedSegment(part, sourcePath));
+    const dirKey = parsedParts.map((part) => part.name).join("/");
+
+    const existingRaw = seenRawByKey.get(dirKey);
+    if (existingRaw !== undefined && existingRaw !== rawDirPath) {
+      throw new MakitError(
+        "duplicate-normalized-directory",
+        `Directories "${existingRaw}" and "${rawDirPath}" under "${dir}" both normalize to ` +
+          `"${dirKey}" (ORDER-PREFIX §22).`,
+      );
+    }
+    seenRawByKey.set(dirKey, rawDirPath);
+
+    const ownOrder = parsedParts[parsedParts.length - 1]?.order;
+    if (ownOrder !== undefined) orders.set(dirKey, ownOrder);
+  }
+
+  return orders;
 }
 
 interface TreeNode {
@@ -221,10 +274,21 @@ function insertIntoTree(root: TreeNode, segments: readonly string[], page: Gener
 
 interface AutoContext extends ResolveNavigationContext {
   categories: Map<string, CategoryEntry>;
+  /** Numeric ordering prefix on each directory's own name, keyed by normalized dirKey (ORDER-PREFIX §12). */
+  directoryOrders: Map<string, number>;
+  /** Mutated in place by `sortEntries` to collect duplicate-order warnings (ORDER-PREFIX §10). */
+  diagnostics: Diagnostic[];
 }
 
 function categoryFor(dirKey: string, ctx: AutoContext): CategoryMetadata | undefined {
   return ctx.categories.get(dirKey)?.metadata;
+}
+
+/** The tier-3 fallback rank for items with no explicit order or numeric prefix (ORDER-PREFIX §9). */
+function unorderedRank(ctx: AutoContext): number {
+  return ctx.config.navigation.auto.unorderedPosition === "first"
+    ? Number.NEGATIVE_INFINITY
+    : Number.POSITIVE_INFINITY;
 }
 
 function sortEntries(
@@ -232,13 +296,25 @@ function sortEntries(
   parentKey: string,
   ctx: AutoContext,
 ): [string, TreeNode][] {
+  const numericPrefixes = ctx.config.navigation.auto.numericPrefixes;
+
+  // Priority chain (ORDER-PREFIX §7): explicit metadata order -> numeric
+  // filename/directory prefix -> localized title -> stripped name -> path.
   const orderOf = ([segment, node]: [string, TreeNode]): number => {
+    const dirKey = parentKey === "" ? segment : `${parentKey}/${segment}`;
     if (node.children.size > 0) {
-      const dirKey = parentKey === "" ? segment : `${parentKey}/${segment}`;
       const category = categoryFor(dirKey, ctx);
-      if (category?.order !== undefined) return category.order;
+      const explicit = category?.order ?? node.page?.order;
+      if (explicit !== undefined) return explicit;
+      if (numericPrefixes) {
+        const prefixOrder = ctx.directoryOrders.get(dirKey) ?? node.page?.filenameOrder;
+        if (prefixOrder !== undefined) return prefixOrder;
+      }
+      return unorderedRank(ctx);
     }
-    return node.page?.order ?? Number.POSITIVE_INFINITY;
+    if (node.page?.order !== undefined) return node.page.order;
+    if (numericPrefixes && node.page?.filenameOrder !== undefined) return node.page.filenameOrder;
+    return unorderedRank(ctx);
   };
   const titleOf = ([segment, node]: [string, TreeNode]): string => {
     if (node.children.size > 0) {
@@ -249,11 +325,31 @@ function sortEntries(
     return node.page ? navTitle(node.page) : humanizeSlug(segment);
   };
 
+  const withOrder = entries.map((entry, index) => ({ entry, index, order: orderOf(entry) }));
+
+  // Duplicate finite order values among siblings are a warning, not an
+  // error — the stable sort below still produces a deterministic order
+  // (ORDER-PREFIX §10).
+  const seenOrders = new Map<number, string>();
+  for (const { entry, order } of withOrder) {
+    if (!Number.isFinite(order)) continue;
+    const existing = seenOrders.get(order);
+    if (existing !== undefined) {
+      ctx.diagnostics.push({
+        code: "duplicate-navigation-order",
+        message:
+          `Duplicate navigation order ${order} in "${parentKey || "/"}": ` +
+          `"${existing}" and "${entry[0]}" (ORDER-PREFIX §10).`,
+      });
+    } else {
+      seenOrders.set(order, entry[0]);
+    }
+  }
+
   // Stable sort: order asc -> localized title -> file/directory name (spec §27).
-  return entries
-    .map((entry, index) => ({ entry, index }))
+  return withOrder
     .sort((a, b) => {
-      const orderDiff = orderOf(a.entry) - orderOf(b.entry);
+      const orderDiff = a.order - b.order;
       if (orderDiff !== 0) return orderDiff;
       const titleDiff = titleOf(a.entry).localeCompare(titleOf(b.entry), ctx.locale.lang);
       if (titleDiff !== 0) return titleDiff;
@@ -341,10 +437,20 @@ export async function resolveAutoNavigation(
         ""
     ];
 
+  const numericPrefixes = ctx.config.navigation.auto.numericPrefixes;
   const { byDir: categories, diagnostics } = collectionLocale
-    ? await scanCategories(collectionLocale.dir, ctx.config.root, ctx.jiti, ctx.metadataCache)
+    ? await scanCategories(
+        collectionLocale.dir,
+        ctx.config.root,
+        ctx.jiti,
+        ctx.metadataCache,
+        numericPrefixes,
+      )
     : { byDir: new Map<string, CategoryEntry>(), diagnostics: [] as Diagnostic[] };
-  const autoCtx: AutoContext = { ...ctx, categories };
+  const directoryOrders = collectionLocale
+    ? await scanDirectoryOrders(collectionLocale.dir, numericPrefixes)
+    : new Map<string, number>();
+  const autoCtx: AutoContext = { ...ctx, categories, directoryOrders, diagnostics: [] };
 
   const localePages = ctx.pages.filter(
     (page) =>
@@ -372,7 +478,7 @@ export async function resolveAutoNavigation(
   return {
     items,
     metadataPaths: [...categories.values()].map((entry) => entry.metadataPath),
-    diagnostics,
+    diagnostics: [...diagnostics, ...autoCtx.diagnostics],
   };
 }
 

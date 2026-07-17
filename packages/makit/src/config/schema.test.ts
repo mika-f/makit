@@ -89,4 +89,28 @@ describe("makitConfigSchema", () => {
     });
     expect(result.success).toBe(true);
   });
+
+  it("accepts navigation.auto (ORDER-PREFIX §18)", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      navigation: { auto: { numericPrefixes: false, unorderedPosition: "first" } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an invalid navigation.auto.unorderedPosition", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      navigation: { auto: { unorderedPosition: "middle" } },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts duplicate-navigation-order in validation.failOn", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      validation: { failOn: ["duplicate-navigation-order"] },
+    });
+    expect(result.success).toBe(true);
+  });
 });

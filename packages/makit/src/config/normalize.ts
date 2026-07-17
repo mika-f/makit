@@ -180,6 +180,10 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
         enabled: parsed.navigation?.pagination?.enabled ?? true,
         crossSection: parsed.navigation?.pagination?.crossSection ?? true,
       },
+      auto: {
+        numericPrefixes: parsed.navigation?.auto?.numericPrefixes ?? true,
+        unorderedPosition: parsed.navigation?.auto?.unorderedPosition ?? "last",
+      },
     },
     header: parsed.header ?? {},
     footer: parsed.footer ?? {},

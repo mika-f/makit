@@ -14,11 +14,13 @@ import type { ResolvedConfig } from "../types/resolved-config.js";
 import { BuildCache, MetadataCache } from "./cache.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
+import { parseOrderedSegment } from "./order-prefix.js";
 import {
   buildRoute,
   derivePageId,
   detectDuplicatePageIds,
   detectDuplicateRoutes,
+  fileNameOrder,
   filePathToSegments,
   resolveSlugSegments,
 } from "./routes.js";
@@ -111,7 +113,9 @@ export async function buildPage(
     metadataCache,
   );
 
-  const pathSegments = filePathToSegments(file.relativePath);
+  const numericPrefixes = config.navigation.auto.numericPrefixes;
+  const pathSegments = filePathToSegments(file.relativePath, { numericPrefixes });
+  const filenameOrder = fileNameOrder(file.relativePath, { numericPrefixes });
   const slugSegments = resolveSlugSegments(metadata.slug, pathSegments);
   // Full URL segments below the locale prefix: collection path, then slug (spec §28.1).
   const segments = [...file.collection.pathSegments, ...slugSegments];
@@ -141,7 +145,13 @@ export async function buildPage(
 
   // Title resolution chain (spec §17): .meta.ts -> first H1 -> filename -> pageId.
   const firstH1 = processed.headings.find((heading) => heading.depth === 1)?.text;
-  const filenameTitle = humanizeSlug(basename(file.relativePath, extname(file.relativePath)));
+  const rawBasename = basename(file.relativePath, extname(file.relativePath));
+  // Strip the ordering prefix so a title fallback for "02-getting-started.md"
+  // reads "Getting Started", not "02 Getting Started" (ORDER-PREFIX §15).
+  const basenameForTitle = numericPrefixes
+    ? parseOrderedSegment(rawBasename, file.relativePath).name
+    : rawBasename;
+  const filenameTitle = humanizeSlug(basenameForTitle);
   const title = metadata.title ?? firstH1 ?? filenameTitle ?? pageId;
   const titleSource: GeneratedPage["titleSource"] = metadata.title
     ? "metadata"
@@ -173,6 +183,7 @@ export async function buildPage(
     sidebar: metadata.sidebar ?? true,
     tableOfContents: metadata.tableOfContents ?? true,
     order: metadata.order,
+    filenameOrder,
     navigation: metadata.navigation,
     taxonomy: metadata.taxonomy,
     // Filled by the navigation engine (nav-decorate) after nav resolution.

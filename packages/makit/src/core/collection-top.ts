@@ -67,7 +67,8 @@ export function synthesizeCollectionTopPages(
         .filter((page) => !page.hidden && !page.draft)
         .sort(
           (a, b) =>
-            (a.order ?? Number.POSITIVE_INFINITY) - (b.order ?? Number.POSITIVE_INFINITY) ||
+            (a.order ?? a.filenameOrder ?? Number.POSITIVE_INFINITY) -
+              (b.order ?? b.filenameOrder ?? Number.POSITIVE_INFINITY) ||
             a.title.localeCompare(b.title, locale.lang),
         );
 

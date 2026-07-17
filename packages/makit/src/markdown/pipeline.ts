@@ -99,6 +99,7 @@ export async function processMarkdown(
     localePrefix: context.localePrefix,
     collectionSegments: context.collectionSegments,
     trailingSlash: config.build.trailingSlash,
+    numericPrefixes: config.navigation.auto.numericPrefixes,
   } satisfies LinkRewriteContext;
 
   const result = await processor.process(file);

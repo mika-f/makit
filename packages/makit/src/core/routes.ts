@@ -1,15 +1,51 @@
 import { MakitError } from "./errors.js";
+import { parseOrderedSegment } from "./order-prefix.js";
 
 const MARKDOWN_EXTENSION_RE = /\.(md|markdown)$/i;
 
-/** Converts a source-relative file path into route segments (spec §15.1). */
-export function filePathToSegments(relativePath: string): string[] {
+export interface SegmentParseOptions {
+  /** Whether a leading `NN-` on a segment is stripped as an ordering prefix (ORDER-PREFIX §18). @default true */
+  numericPrefixes?: boolean;
+}
+
+/**
+ * Converts a source-relative file path into route segments (spec §15.1).
+ * Numeric ordering prefixes (`01-installation` -> `installation`) are
+ * stripped per segment before the trailing `index` segment is dropped, so
+ * both `index.md` and `01-index.md` resolve the same way (ORDER-PREFIX §4,
+ * §11).
+ */
+export function filePathToSegments(
+  relativePath: string,
+  options: SegmentParseOptions = {},
+): string[] {
+  const numericPrefixes = options.numericPrefixes ?? true;
   const withoutExt = relativePath.replace(MARKDOWN_EXTENSION_RE, "");
-  const parts = withoutExt.split("/").filter((part) => part.length > 0);
+  const rawParts = withoutExt.split("/").filter((part) => part.length > 0);
+  const parts = numericPrefixes
+    ? rawParts.map((part) => parseOrderedSegment(part, relativePath).name)
+    : rawParts;
   if (parts.length > 0 && parts[parts.length - 1] === "index") {
     parts.pop();
   }
   return parts;
+}
+
+/**
+ * The numeric ordering prefix on a file's own name, independent of any
+ * directory prefixes and of whether the file is dropped as an `index`
+ * segment (ORDER-PREFIX §19 `filenameOrder`). Returns `undefined` when
+ * disabled, without attempting to parse the name at all.
+ */
+export function fileNameOrder(
+  relativePath: string,
+  options: SegmentParseOptions = {},
+): number | undefined {
+  if (!(options.numericPrefixes ?? true)) return undefined;
+  const withoutExt = relativePath.replace(MARKDOWN_EXTENSION_RE, "");
+  const base = withoutExt.split("/").pop();
+  if (!base) return undefined;
+  return parseOrderedSegment(base, relativePath).order;
 }
 
 /** A `slug` in `.meta.ts` replaces the file-path-derived segments entirely (spec §28.2). */
