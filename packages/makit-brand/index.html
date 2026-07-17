@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Makit brand assets</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-makit-blue: #1e3a8a;
+        --color-makit-teal: #14b8a6;
+        --color-makit-purple: #6366f1;
+        --color-makit-ink: #0f172a;
+        --color-makit-slate: #475569;
+        --color-makit-cloud: #e5e7eb;
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 font-sans text-makit-ink antialiased">
+    <main class="mx-auto max-w-6xl px-6 py-12 sm:py-20">
+      <header class="border-b border-slate-200 pb-12 sm:flex sm:items-center sm:gap-14">
+        <img src="/src/makit-mark.svg" alt="Makit" class="mx-auto h-40 w-40 shrink-0 sm:mx-0" />
+        <div class="mt-8 text-center sm:mt-0 sm:text-left">
+          <img src="/src/makit-lockup.svg" alt="Makit — Markdown-based static site generator and documentation platform" class="mx-auto w-full max-w-2xl sm:mx-0" />
+          <p class="mt-5 text-sm font-medium tracking-[0.14em] text-slate-500 uppercase">Brand asset reference · v1.0</p>
+        </div>
+      </header>
+
+      <section class="grid divide-y divide-slate-200 border-b border-slate-200 md:grid-cols-3 md:divide-x md:divide-y-0">
+        <article class="py-10 text-center md:px-8">
+          <h2 class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Icon only</h2>
+          <img src="/src/makit-mark.svg" alt="Makit mark" class="mx-auto mt-7 h-32 w-32" />
+        </article>
+        <article class="py-10 text-center md:px-8">
+          <h2 class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Monochrome version</h2>
+          <img src="/src/makit-monochrome.svg" alt="Makit monochrome logo" class="mx-auto mt-10 h-16 max-w-full text-slate-950" />
+        </article>
+        <article class="py-10 text-center md:px-8">
+          <h2 class="text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Icon on light background</h2>
+          <div class="mx-auto mt-7 grid h-36 w-36 place-items-center rounded-[2rem] bg-white shadow-xl shadow-slate-200/80"><img src="/src/makit-mark.svg" alt="Makit mark" class="h-24 w-24" /></div>
+        </article>
+      </section>
+
+      <section class="pt-10">
+        <h2 class="text-center text-xs font-semibold tracking-[0.14em] text-slate-500 uppercase">Color palette</h2>
+        <div class="mt-7 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6">
+          <div><div class="h-14 rounded-lg bg-makit-blue shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#1E3A8A</p></div>
+          <div><div class="h-14 rounded-lg bg-makit-teal shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#14B8A6</p></div>
+          <div><div class="h-14 rounded-lg bg-makit-purple shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#6366F1</p></div>
+          <div><div class="h-14 rounded-lg bg-makit-ink shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#0F172A</p></div>
+          <div><div class="h-14 rounded-lg bg-makit-slate shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#475569</p></div>
+          <div><div class="h-14 rounded-lg bg-makit-cloud shadow-sm"></div><p class="mt-3 text-center text-sm font-medium text-slate-600">#E5E7EB</p></div>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
