@@ -149,6 +149,32 @@ function mergeCollectionSources(
 }
 
 /**
+ * The collection's title/description/etc. for a locale, honoring
+ * `collectionFallback` (spec §35.5): the locale's own entry when present,
+ * else the default locale's entry when the fallback behavior still renders
+ * content (`"render"`/`"redirect"`), else `undefined` — the collection has
+ * no presence in this locale at all (`"hidden"`/`"not-found"`, or the
+ * default locale itself has no entry to fall back to). Used anywhere a
+ * collection needs to be *displayed* (portal cards, the collection
+ * switcher) for a locale it has no native metadata in.
+ */
+export function resolveCollectionLocale(
+  collection: ResolvedCollection,
+  locale: ResolvedLocaleConfig,
+  config: ResolvedConfig,
+): ResolvedCollectionLocale | undefined {
+  const own = collection.locales[locale.urlLocale];
+  if (own) return own;
+
+  const behavior = config.i18n.collectionFallback.behavior;
+  if (behavior === "hidden" || behavior === "not-found") return undefined;
+
+  const defaultLocale = config.i18n.locales.find((l) => l.locale === config.i18n.defaultLocale);
+  if (!defaultLocale) return undefined;
+  return collection.locales[defaultLocale.urlLocale];
+}
+
+/**
  * Scans each locale's sourceDir for `collection.makit.ts` files in direct
  * child directories (spec §12). Only depth-1 directories are considered —
  * the standard layout (spec §8) places collections at the top of each

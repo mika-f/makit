@@ -2,8 +2,10 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { MakitError } from "../errors.js";
-import { humanizeSlug } from "../text.js";
+import { humanizeSlug, slugify } from "../text.js";
 import {
+  collectionIndexMarkdownTemplate,
+  collectionMakitTemplate,
   gitignoreRequiredEntries,
   gitignoreTemplate,
   indexMarkdownTemplate,
@@ -17,6 +19,8 @@ export interface ScaffoldOptions {
   locale?: string;
   force?: boolean;
   makitVersion: string;
+  /** Scaffold a `collection.makit.ts`-based starter instead of a collection-less one (spec §12). */
+  collections?: boolean;
 }
 
 export interface ScaffoldResult {
@@ -34,6 +38,11 @@ function toPackageName(dirName: string): string {
   return slug.length > 0 ? slug : "my-documentation";
 }
 
+function toCollectionId(dirName: string): string {
+  const slug = slugify(dirName);
+  return slug.length > 0 ? slug : "docs";
+}
+
 /**
  * Writes a new Makit project into `targetDir`. Files that would silently
  * discard existing user content (`makit.config.ts`, `docs/index.md`) require
@@ -41,17 +50,28 @@ function toPackageName(dirName: string): string {
  * is only created when absent (spec §9.2).
  */
 export async function scaffoldProject(options: ScaffoldOptions): Promise<ScaffoldResult> {
-  const { targetDir, force = false, makitVersion } = options;
+  const { targetDir, force = false, makitVersion, collections = false } = options;
   const lang = options.locale ?? "en";
   const title = toDisplayTitle(basename(targetDir));
 
   const configPath = join(targetDir, "makit.config.ts");
-  const docsIndexPath = join(targetDir, "docs", "index.md");
-  const docsIndexMetaPath = join(targetDir, "docs", "index.meta.ts");
+  const collectionId = collections ? toCollectionId(basename(targetDir)) : undefined;
+  const docsDirSegments = collectionId ? ["docs", collectionId] : ["docs"];
+  const docsIndexDisplay = [...docsDirSegments, "index.md"].join("/");
+  const docsIndexMetaDisplay = [...docsDirSegments, "index.meta.ts"].join("/");
+  const collectionMakitDisplay = collectionId
+    ? [...docsDirSegments, "collection.makit.ts"].join("/")
+    : undefined;
+
+  const docsIndexPath = join(targetDir, ...docsDirSegments, "index.md");
+  const docsIndexMetaPath = join(targetDir, ...docsDirSegments, "index.meta.ts");
+  const collectionMakitPath = collectionId
+    ? join(targetDir, ...docsDirSegments, "collection.makit.ts")
+    : undefined;
 
   if (!force) {
-    const conflicts = [configPath, docsIndexPath, docsIndexMetaPath].filter((path) =>
-      existsSync(path),
+    const conflicts = [configPath, docsIndexPath, docsIndexMetaPath, collectionMakitPath].filter(
+      (path): path is string => path !== undefined && existsSync(path),
     );
     if (conflicts.length > 0) {
       throw new MakitError(
@@ -64,17 +84,24 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
   const created: string[] = [];
 
   await mkdir(targetDir, { recursive: true });
-  await mkdir(join(targetDir, "docs"), { recursive: true });
+  await mkdir(join(targetDir, ...docsDirSegments), { recursive: true });
   await mkdir(join(targetDir, "public"), { recursive: true });
 
-  await writeFile(configPath, makitConfigTemplate(title, lang), "utf-8");
+  await writeFile(configPath, makitConfigTemplate(title, lang, { collections }), "utf-8");
   created.push("makit.config.ts");
 
-  await writeFile(docsIndexPath, indexMarkdownTemplate(title), "utf-8");
-  created.push("docs/index.md");
+  if (collectionId && collectionMakitPath && collectionMakitDisplay) {
+    await writeFile(collectionMakitPath, collectionMakitTemplate(collectionId, title), "utf-8");
+    created.push(collectionMakitDisplay);
+
+    await writeFile(docsIndexPath, collectionIndexMarkdownTemplate(title), "utf-8");
+  } else {
+    await writeFile(docsIndexPath, indexMarkdownTemplate(title), "utf-8");
+  }
+  created.push(docsIndexDisplay);
 
   await writeFile(docsIndexMetaPath, indexMetaTemplate(title), "utf-8");
-  created.push("docs/index.meta.ts");
+  created.push(docsIndexMetaDisplay);
 
   const publicGitkeepPath = join(targetDir, "public", ".gitkeep");
   if (!existsSync(publicGitkeepPath)) {

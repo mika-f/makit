@@ -8,6 +8,7 @@ import { buildPagesForTest } from "../testing/fixtures.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveHome } from "./home.js";
+import { generateFallbackPages } from "./i18n.js";
 
 let dir: string;
 
@@ -29,11 +30,12 @@ function makeConfig(overrides: MakitConfigParsed): ResolvedConfig {
   return resolveConfig(overrides, { root: dir, configPath: join(dir, "makit.config.ts") });
 }
 
-/** `buildAllPages` + collection-top synthesis, mirroring the real pipeline order. */
+/** `buildAllPages` + i18n fallback + collection-top synthesis, mirroring the real pipeline order. */
 async function buildWithTops(config: ResolvedConfig) {
   const { pages, collections } = await buildPagesForTest(config);
-  const tops = synthesizeCollectionTopPages(pages, config, collections);
-  return { pages: [...pages, ...tops], collections };
+  const fallbackPages = generateFallbackPages(pages, config);
+  const tops = synthesizeCollectionTopPages([...pages, ...fallbackPages], config, collections);
+  return { pages: [...pages, ...fallbackPages, ...tops], collections };
 }
 
 describe("resolveHome — default (no explicit layout, spec §33)", () => {
@@ -80,6 +82,52 @@ describe("resolveHome — default (no explicit layout, spec §33)", () => {
       title: "Makit",
       href: "/makit/",
     });
+  });
+
+  it("includes a fallback-only collection's card using the default locale's title (spec §35.5)", async () => {
+    await write("docs/en-us/makit/index.md", "# Makit\n");
+    await write("docs/en-us/enduroq/index.md", "# Enduroq\n");
+    const config = makeConfig({
+      title: "Docs",
+      i18n: {
+        defaultLocale: "en-US",
+        locales: [{ locale: "en-US" }, { locale: "ja-JP" }],
+      },
+      collections: [
+        { id: "makit", title: "Makit", path: "/makit" },
+        { id: "enduroq", title: "Enduroq", path: "/enduroq" },
+      ],
+    });
+    const { pages, collections } = await buildWithTops(config);
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    const home = resolveHome(ja, pages, config, collections);
+    expect(home.kind).toBe("portal");
+    if (home.kind !== "portal") throw new Error("unreachable");
+    // Enduroq has no ja-jp content of its own, but collectionFallback
+    // defaults to "render", so it still appears with the en-US title.
+    expect(home.data.featuredCollections.map((c) => c.id).sort()).toEqual(["enduroq", "makit"]);
+    expect(home.data.featuredCollections.find((c) => c.id === "enduroq")).toMatchObject({
+      title: "Enduroq",
+      href: "/ja-jp/enduroq/",
+    });
+  });
+
+  it("returns existing (nothing to show) when no collection is displayable even via fallback", async () => {
+    await write("docs/en-us/makit/index.md", "# Makit\n");
+    const config = makeConfig({
+      title: "Docs",
+      i18n: {
+        defaultLocale: "en-US",
+        locales: [{ locale: "en-US" }, { locale: "ja-JP" }],
+        collectionFallback: { behavior: "hidden" },
+      },
+      collections: [{ id: "makit", title: "Makit", path: "/makit" }],
+    });
+    const { pages, collections } = await buildWithTops(config);
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    expect(resolveHome(ja, pages, config, collections)).toEqual({ kind: "existing" });
   });
 });
 

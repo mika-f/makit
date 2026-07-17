@@ -4,6 +4,7 @@ import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import type { ResolvedCollection } from "./collections.js";
+import { resolveCollectionLocale } from "./collections.js";
 import { resolveHome } from "./home.js";
 import { resolveGlobalNavigation } from "./navigation.js";
 import { buildRoute } from "./routes.js";
@@ -98,7 +99,11 @@ export async function writeGeneratedData(
   const collectionsData: CollectionData[] = collections.map((collection) => {
     const locales: CollectionData["locales"] = {};
     for (const locale of config.i18n.locales) {
-      const collectionLocale = collection.locales[locale.urlLocale];
+      // Falls back to the default locale's title/description when this
+      // collection has no native content here but collectionFallback still
+      // renders it (spec §35.5) — keeps the collection switcher and portal
+      // cards in sync with what actually has a route.
+      const collectionLocale = resolveCollectionLocale(collection, locale, config);
       if (!collectionLocale) continue;
       locales[locale.urlLocale] = {
         title: collectionLocale.title,

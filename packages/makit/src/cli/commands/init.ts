@@ -27,6 +27,10 @@ export const initCommand = defineCommand({
     },
     force: { type: "boolean", description: "Overwrite existing files" },
     "skip-install": { type: "boolean", description: "Skip installing dependencies" },
+    collections: {
+      type: "boolean",
+      description: "Scaffold a collection.makit.ts-based starter instead of a collection-less one",
+    },
   },
   async run({ args }) {
     const ctx = createCliContext(args);
@@ -38,6 +42,7 @@ export const initCommand = defineCommand({
         targetDir,
         locale: args.locale,
         force: args.force,
+        collections: args.collections,
         makitVersion: getPackageVersion(),
       });
 

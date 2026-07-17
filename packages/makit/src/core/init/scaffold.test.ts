@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MakitError } from "../errors.js";
 import { scaffoldProject } from "./scaffold.js";
@@ -76,5 +76,42 @@ describe("scaffoldProject", () => {
     await scaffoldProject({ targetDir: dir, force: true, makitVersion: "0.1.0" });
     const content = await readFile(join(dir, ".gitignore"), "utf-8");
     expect(content.match(/\.makit\//g)).toHaveLength(1);
+  });
+});
+
+describe("scaffoldProject — collections flavor (spec §12)", () => {
+  it("writes a collection.makit.ts and nests the starter page under it", async () => {
+    const result = await scaffoldProject({
+      targetDir: dir,
+      collections: true,
+      makitVersion: "0.1.0",
+    });
+
+    const id = basename(dir).toLowerCase();
+    expect(existsSync(join(dir, "docs", id, "collection.makit.ts"))).toBe(true);
+    expect(existsSync(join(dir, "docs", id, "index.md"))).toBe(true);
+    expect(existsSync(join(dir, "docs", id, "index.meta.ts"))).toBe(true);
+    expect(existsSync(join(dir, "docs", "index.md"))).toBe(false);
+    expect(result.created).toContain(`docs/${id}/collection.makit.ts`);
+  });
+
+  it("configures discover mode in makit.config.ts", async () => {
+    await scaffoldProject({ targetDir: dir, collections: true, makitVersion: "0.1.0" });
+    const config = await readFile(join(dir, "makit.config.ts"), "utf-8");
+    expect(config).toContain('mode: "discover"');
+  });
+
+  it("omits the collections field entirely for the default (collection-less) flavor", async () => {
+    await scaffoldProject({ targetDir: dir, makitVersion: "0.1.0" });
+    const config = await readFile(join(dir, "makit.config.ts"), "utf-8");
+    expect(config).not.toContain("collections");
+  });
+
+  it("gives the collection.makit.ts a matching id and URL path", async () => {
+    await scaffoldProject({ targetDir: dir, collections: true, makitVersion: "0.1.0" });
+    const id = basename(dir).toLowerCase();
+    const collectionSource = await readFile(join(dir, "docs", id, "collection.makit.ts"), "utf-8");
+    expect(collectionSource).toContain(`id: "${id}"`);
+    expect(collectionSource).toContain(`path: "/${id}"`);
   });
 });

@@ -1,4 +1,15 @@
-export function makitConfigTemplate(title: string, lang: string): string {
+export function makitConfigTemplate(
+  title: string,
+  lang: string,
+  options: { collections?: boolean } = {},
+): string {
+  const collectionsField = options.collections
+    ? `
+  collections: {
+    mode: "discover",
+  },
+`
+    : "";
   return `import { defineConfig } from "@natsuneko-laboratory/makit";
 
 export default defineConfig({
@@ -7,7 +18,7 @@ export default defineConfig({
   sourceDir: "docs",
   publicDir: "public",
   outDir: "dist",
-});
+${collectionsField}});
 `;
 }
 
@@ -26,6 +37,27 @@ export default definePageMetadata({
   id: "index",
   title: ${JSON.stringify(title)},
 });
+`;
+}
+
+/** `docs/{collectionId}/collection.makit.ts` for the `--collections` scaffold (spec §11, §12). */
+export function collectionMakitTemplate(id: string, title: string): string {
+  return `import { defineCollection } from "@natsuneko-laboratory/makit/metadata";
+
+export default defineCollection({
+  id: ${JSON.stringify(id)},
+  title: ${JSON.stringify(title)},
+  path: ${JSON.stringify(`/${id}`)},
+});
+`;
+}
+
+export function collectionIndexMarkdownTemplate(title: string): string {
+  return `# ${title}
+
+This is the top page of your first collection. Add more collections by creating
+sibling directories under \`docs/\`, each with their own \`collection.makit.ts\`
+(spec §12) — Makit discovers them automatically.
 `;
 }
 

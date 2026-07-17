@@ -1,6 +1,7 @@
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
 import type { ResolvedCollection } from "./collections.js";
+import { resolveCollectionLocale } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
 import { buildRoute } from "./routes.js";
@@ -31,7 +32,7 @@ function collectionCard(
   locale: ResolvedLocaleConfig,
   config: ResolvedConfig,
 ): PortalCollectionCard | undefined {
-  const collectionLocale = collection.locales[locale.urlLocale];
+  const collectionLocale = resolveCollectionLocale(collection, locale, config);
   if (!collectionLocale) return undefined;
   return {
     id: collection.id,
@@ -159,7 +160,16 @@ export function resolveHome(
     if (topPage) return { kind: "page", collectionId: only.id, pageId: topPage.pageId };
     return { kind: "existing" };
   }
-  if (visible.length === 0) return { kind: "existing" };
+  if (visible.length === 0) {
+    // No collection has *real* content in this locale — fall back to a
+    // portal of whatever is still displayable via collectionFallback (spec
+    // §35.5); if nothing is even fallback-visible, there's truly nothing to
+    // serve at the root.
+    const anyDisplayable = collections.some(
+      (collection) => !collection.hidden && resolveCollectionLocale(collection, locale, config),
+    );
+    if (!anyDisplayable) return { kind: "existing" };
+  }
 
   return { kind: "portal", data: buildPortalData(locale, config, collections) };
 }

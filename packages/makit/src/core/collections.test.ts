@@ -6,7 +6,7 @@ import { resolveConfig } from "../config/normalize.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import type { CollectionMetadata } from "../metadata/types.js";
 import { METADATA_ENTRY } from "../testing/fixtures.js";
-import { resolveCollections } from "./collections.js";
+import { resolveCollectionLocale, resolveCollections } from "./collections.js";
 
 let dir: string;
 
@@ -161,5 +161,67 @@ describe("resolveCollections", () => {
     await expect(resolveCollections(config, createMetadataJiti())).rejects.toMatchObject({
       code: "duplicate-collection-path",
     });
+  });
+});
+
+describe("resolveCollectionLocale (spec §35.5)", () => {
+  async function makeSingleLocaleCollection(
+    behavior: "render" | "redirect" | "hidden" | "not-found",
+  ) {
+    await write(
+      "docs/en-us/enduroq/collection.makit.ts",
+      collectionSource({ id: "enduroq", title: "Enduroq", path: "/enduroq" }),
+    );
+    const config = makeConfig({
+      collections: { mode: "discover" },
+      i18n: { ...I18N, collectionFallback: { behavior } },
+    });
+    const { collections } = await resolveCollections(config, createMetadataJiti());
+    return { config, collection: collections[0]! };
+  }
+
+  it("falls back to the default locale's title when the fallback behavior is render", async () => {
+    const { config, collection } = await makeSingleLocaleCollection("render");
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    const result = resolveCollectionLocale(collection, ja, config);
+    expect(result?.title).toBe("Enduroq");
+  });
+
+  it("falls back to the default locale's title when the fallback behavior is redirect", async () => {
+    const { config, collection } = await makeSingleLocaleCollection("redirect");
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    expect(resolveCollectionLocale(collection, ja, config)?.title).toBe("Enduroq");
+  });
+
+  it("returns undefined when the fallback behavior is hidden", async () => {
+    const { config, collection } = await makeSingleLocaleCollection("hidden");
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    expect(resolveCollectionLocale(collection, ja, config)).toBeUndefined();
+  });
+
+  it("returns undefined when the fallback behavior is not-found", async () => {
+    const { config, collection } = await makeSingleLocaleCollection("not-found");
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    expect(resolveCollectionLocale(collection, ja, config)).toBeUndefined();
+  });
+
+  it("returns the locale's own entry when it exists, without consulting the fallback", async () => {
+    await write(
+      "docs/en-us/enduroq/collection.makit.ts",
+      collectionSource({ id: "enduroq", title: "Enduroq", path: "/enduroq" }),
+    );
+    await write(
+      "docs/ja-jp/enduroq/collection.makit.ts",
+      collectionSource({ id: "enduroq", title: "エンデュロク", path: "/enduroq" }),
+    );
+    const config = makeConfig({ collections: { mode: "discover" }, i18n: I18N });
+    const { collections } = await resolveCollections(config, createMetadataJiti());
+    const ja = config.i18n.locales.find((l) => l.urlLocale === "ja-jp")!;
+
+    expect(resolveCollectionLocale(collections[0]!, ja, config)?.title).toBe("エンデュロク");
   });
 });
