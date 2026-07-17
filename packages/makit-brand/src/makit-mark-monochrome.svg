@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Makit monochrome mark</title>
+  <desc id="desc">A single-colour layered document with a connected page tree.</desc>
+  <path fill="currentColor" d="M26 73a10 10 0 0 1 15-8.6l30 17.1v114.6L41 213.3A10 10 0 0 1 26 204.7V73Z"/>
+  <path fill="currentColor" d="M55 45a10 10 0 0 1 15-8.6l42 24v137.2l-42 24A10 10 0 0 1 55 213V45Z"/>
+  <path fill="currentColor" d="M89 28.1a10 10 0 0 1 12.2.5l45.8 35.5 45.8-35.5a10 10 0 0 1 16.2 7.9v157.8a10 10 0 0 1-7.8 9.8l-104 22.2a10 10 0 0 1-12.2-9.8V36a10 10 0 0 1 4-7.9Z"/>
+  <path fill="currentColor" d="m147 64 62-35.5v165.8a10 10 0 0 1-7.8 9.8L147 215V64Z" opacity=".18"/>
+  <path fill="#fff" d="m174 31 35 33v34h-35a10 10 0 0 1-10-10V52.5l10-21.5Z"/>
+  <path fill="#fff" d="m174 31 35 33h-35V31Z" opacity=".75"/>
+  <g stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">
+    <path d="M123 92v82M123 130h45"/>
+    <path d="M168 130v18"/>
+  </g>
+  <g fill="#fff">
+    <rect x="109" y="76" width="28" height="28" rx="3"/>
+    <rect x="154" y="116" width="28" height="28" rx="3"/>
+    <rect x="109" y="174" width="28" height="28" rx="3"/>
+  </g>
+</svg>

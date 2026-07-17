@@ -188,6 +188,7 @@ const headerLinkSchema = z.strictObject({
 
 const headerConfigSchema = z.strictObject({
   logo: z.string().optional(),
+  logoDark: z.string().optional(),
   title: z.string().optional(),
   links: z.array(headerLinkSchema).optional(),
 });

@@ -5,10 +5,13 @@ export default defineConfig({
   description: "A CLI for generating static documentation sites from Markdown.",
   lang: "en-US",
   sourceDir: "public",
-  publicDir: "assets",
+  // Keep the documentation site's visual identity in the brand package.
+  publicDir: "packages/makit-brand/src",
   outDir: "dist",
   header: {
     title: "Makit",
+    logo: "/makit-mark-monochrome.svg",
+    logoDark: "/makit-mark.svg",
     links: [
       {
         label: "GitHub",

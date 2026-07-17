@@ -22,6 +22,41 @@ main > article > h1:first-child + p {
   max-width: 48rem;
 }
 
+.makit-prose > p:has(> img[src="/makit-lockup.svg"]),
+.makit-prose > p:has(> img[src="/makit-monochrome.svg"]) {
+  margin: 0 0 2.5rem;
+}
+
+.makit-prose > p > img[src="/makit-lockup.svg"],
+.makit-prose > p > img[src="/makit-monochrome.svg"] {
+  width: min(100%, 43rem);
+  height: auto;
+}
+
+.makit-prose > p:has(> img[src="/makit-lockup.svg"]) {
+  display: none;
+}
+
+:root[data-theme="dark"] .makit-prose > p:has(> img[src="/makit-lockup.svg"]) {
+  display: block;
+}
+
+:root[data-theme="dark"] .makit-prose > p:has(> img[src="/makit-monochrome.svg"]) {
+  display: none;
+}
+
+.makit-prose > p:has(> img[src="/makit-monochrome.svg"]) + h1 {
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.08;
+  max-width: 12ch;
+}
+
+.makit-prose > p:has(> img[src="/makit-monochrome.svg"]) + h1 + p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  max-width: 48rem;
+}
+
 main > article a {
   text-underline-offset: 0.18em;
 }

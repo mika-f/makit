@@ -208,6 +208,8 @@ export interface HeaderLink {
 
 export interface HeaderConfig {
   logo?: string;
+  /** Alternate logo displayed while the site is using its dark theme. */
+  logoDark?: string;
   title?: string;
   links?: HeaderLink[];
 }

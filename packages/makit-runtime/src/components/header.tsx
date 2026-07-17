@@ -92,7 +92,20 @@ export function Header({
             className="flex min-w-0 items-center gap-2.5 font-semibold tracking-[-0.02em] text-[var(--makit-color-foreground)]"
           >
             {header.logo ? (
-              <img src={header.logo} alt="" className="h-7 w-7 rounded-md" />
+              <>
+                <img
+                  src={header.logo}
+                  alt=""
+                  className="makit-header-logo-light h-7 w-7 rounded-md"
+                />
+                {header.logoDark ? (
+                  <img
+                    src={header.logoDark}
+                    alt=""
+                    className="makit-header-logo-dark h-7 w-7 rounded-md"
+                  />
+                ) : null}
+              </>
             ) : (
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--makit-color-foreground)] text-xs font-bold text-[var(--makit-color-background)]">
                 {(header.title ?? siteTitle).slice(0, 1).toUpperCase()}
@@ -128,9 +141,7 @@ export function Header({
             </nav>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {actions}
-        </div>
+        <div className="flex shrink-0 items-center gap-2">{actions}</div>
       </div>
     </header>
   );
