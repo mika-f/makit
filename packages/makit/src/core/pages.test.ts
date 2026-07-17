@@ -135,6 +135,14 @@ describe("buildAllPages", () => {
     expect(pages[0]?.metadataPath).toBe(join(dir, "docs", "index.meta.ts"));
   });
 
+  it("collects every .meta.ts path for watching, even for pages without one (spec §19, §43)", async () => {
+    await write("docs/index.md", "content");
+    await writeMeta("docs/index.md", { title: "Home" });
+    await write("docs/about.md", "content");
+    const { metadataPaths } = await buildPagesForTest(configFor(dir));
+    expect(metadataPaths).toEqual([join(dir, "docs", "index.meta.ts")]);
+  });
+
   it("parses flat front matter as page metadata by default", async () => {
     await write("docs/index.md", "---\ntitle: Old Style\norder: 3\n---\n# Heading\n");
     const { pages } = await buildPagesForTest(configFor(dir));
@@ -171,7 +179,9 @@ describe("buildAllPages", () => {
   it("throws MakitError('duplicate-route') when two files produce the same route", async () => {
     await write("docs/guides.md", "content a");
     await write("docs/guides/index.md", "content b");
-    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({ code: "duplicate-route" });
+    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({
+      code: "duplicate-route",
+    });
   });
 
   it("throws MakitError('duplicate-page-id') when two files share an explicit id", async () => {

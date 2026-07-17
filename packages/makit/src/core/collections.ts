@@ -2,11 +2,12 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import fg from "fast-glob";
 import type { Jiti } from "jiti";
-import { loadMetadataFile } from "../metadata/loader.js";
+import { loadMetadataFile, metadataLoadDiagnostics } from "../metadata/loader.js";
 import type { CollectionMetadata } from "../metadata/types.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
+import type { Diagnostic } from "./validation.js";
 
 /** The ID of the implicit collection created for collection-less sites (spec §48.1). */
 export const IMPLICIT_COLLECTION_ID = "default";
@@ -40,6 +41,7 @@ export interface ResolvedCollection {
 export interface ResolveCollectionsResult {
   collections: ResolvedCollection[];
   warnings: string[];
+  diagnostics: Diagnostic[];
 }
 
 function pathToSegments(path: string | undefined): string[] {
@@ -65,7 +67,7 @@ interface CollectionSource {
 function mergeCollectionSources(
   sources: CollectionSource[],
   config: ResolvedConfig,
-  warnings: string[],
+  diagnostics: Diagnostic[],
 ): ResolvedCollection[] {
   const byId = new Map<string, CollectionSource[]>();
   for (const source of sources) {
@@ -122,10 +124,13 @@ function mergeCollectionSources(
       const missing = config.i18n.locales
         .filter((locale) => !(locale.urlLocale in locales))
         .map((locale) => locale.urlLocale);
-      warnings.push(
-        `Collection "${id}" has no content in locale(s): ${missing.join(", ")} ` +
+      diagnostics.push({
+        code: "collection-fallback",
+        message:
+          `Collection "${id}" has no content in locale(s): ${missing.join(", ")} ` +
           `(collectionFallback.behavior: "${config.i18n.collectionFallback.behavior}")`,
-      );
+        sourcePath: defaultLocaleSource.metadataPath ?? defaultLocaleSource.dir,
+      });
     }
 
     collections.push({
@@ -152,9 +157,9 @@ function mergeCollectionSources(
 async function discoverCollectionSources(
   config: ResolvedConfig,
   jiti: Jiti,
-): Promise<{ sources: CollectionSource[]; warnings: string[] }> {
+): Promise<{ sources: CollectionSource[]; diagnostics: Diagnostic[] }> {
   const sources: CollectionSource[] = [];
-  const warnings: string[] = [];
+  const diagnostics: Diagnostic[] = [];
 
   for (const locale of config.i18n.locales) {
     const sourceDirAbsolute = join(config.root, locale.sourceDir);
@@ -171,7 +176,7 @@ async function discoverCollectionSources(
         projectRoot: config.root,
         jiti,
       });
-      warnings.push(...loaded.warnings.map((warning) => warning.message));
+      diagnostics.push(...metadataLoadDiagnostics(loaded));
       sources.push({
         metadata: loaded.value,
         locale,
@@ -182,7 +187,7 @@ async function discoverCollectionSources(
     }
   }
 
-  return { sources, warnings };
+  return { sources, diagnostics };
 }
 
 /**
@@ -239,9 +244,10 @@ export async function resolveCollections(
   jiti: Jiti,
 ): Promise<ResolveCollectionsResult> {
   const warnings: string[] = [];
+  const diagnostics: Diagnostic[] = [];
 
   if (config.collections === undefined) {
-    return { collections: [implicitCollection(config)], warnings };
+    return { collections: [implicitCollection(config)], warnings, diagnostics };
   }
 
   let sources: CollectionSource[];
@@ -249,11 +255,11 @@ export async function resolveCollections(
     sources = explicitCollectionSources(config, config.collections);
   } else {
     const discovered = await discoverCollectionSources(config, jiti);
-    warnings.push(...discovered.warnings);
+    diagnostics.push(...discovered.diagnostics);
     sources = discovered.sources;
   }
 
-  const collections = mergeCollectionSources(sources, config, warnings);
+  const collections = mergeCollectionSources(sources, config, diagnostics);
   if (collections.length === 0) {
     warnings.push(
       Array.isArray(config.collections)
@@ -262,5 +268,5 @@ export async function resolveCollections(
     );
   }
 
-  return { collections, warnings };
+  return { collections, warnings, diagnostics };
 }

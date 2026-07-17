@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MakitError } from "../core/errors.js";
-import { loadMetadataFile } from "./loader.js";
+import { loadMetadataFile, metadataLoadDiagnostics } from "./loader.js";
 
 // Fixture files import the define functions by absolute path because the
 // temp project has no node_modules to resolve the package specifier from.
@@ -151,10 +151,7 @@ describe("loadMetadataFile", () => {
          return { id: "makit", title: "remote" };
        }`,
     );
-    await expectError(
-      loadMetadataFile(path, "collection", { projectRoot: dir }),
-      "metadata-async",
-    );
+    await expectError(loadMetadataFile(path, "collection", { projectRoot: dir }), "metadata-async");
   });
 
   it("rejects a Promise default export", async () => {
@@ -162,10 +159,7 @@ describe("loadMetadataFile", () => {
       "collection.makit.ts",
       `export default Promise.resolve({ id: "makit", title: "Makit" });`,
     );
-    await expectError(
-      loadMetadataFile(path, "collection", { projectRoot: dir }),
-      "metadata-async",
-    );
+    await expectError(loadMetadataFile(path, "collection", { projectRoot: dir }), "metadata-async");
   });
 
   it("rejects non-serializable values inside metadata", async () => {
@@ -223,10 +217,7 @@ describe("loadMetadataFile", () => {
   });
 
   it("collects transitive local import dependencies (spec §19)", async () => {
-    const sharedDefaults = await write(
-      "metadata/defaults.ts",
-      `export const order = 30;`,
-    );
+    const sharedDefaults = await write("metadata/defaults.ts", `export const order = 30;`);
     const sharedItems = await write(
       "metadata/navigation.ts",
       `import { order } from "./defaults.js";
@@ -293,5 +284,50 @@ describe("loadMetadataFile", () => {
     } finally {
       await rm(outside, { recursive: true, force: true });
     }
+  });
+});
+
+describe("metadataLoadDiagnostics", () => {
+  it("converts a loaded metadata file's warnings into sourced diagnostics", async () => {
+    const path = await write(
+      "collection.makit.ts",
+      `import { defineCollection } from ${JSON.stringify(METADATA_ENTRY)};
+       export default defineCollection({
+         id: "makit",
+         title: process.env.PRODUCT_NAME ?? "Makit",
+       });`,
+    );
+    const loaded = await loadMetadataFile(path, "collection", { projectRoot: dir });
+
+    const diagnostics = metadataLoadDiagnostics(loaded);
+
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({ code: "env-var-in-metadata", sourcePath: path });
+  });
+
+  it("flags evaluation slower than the threshold as slow-metadata-eval (spec §46)", () => {
+    const diagnostics = metadataLoadDiagnostics({
+      warnings: [],
+      evalDurationMs: 501,
+      filePath: "/project/collection.makit.ts",
+    });
+
+    expect(diagnostics).toEqual([
+      {
+        code: "slow-metadata-eval",
+        message: "Metadata evaluation took 501ms.",
+        sourcePath: "/project/collection.makit.ts",
+      },
+    ]);
+  });
+
+  it("does not flag evaluation at or under the threshold", () => {
+    const diagnostics = metadataLoadDiagnostics({
+      warnings: [],
+      evalDurationMs: 500,
+      filePath: "/project/collection.makit.ts",
+    });
+
+    expect(diagnostics).toEqual([]);
   });
 });

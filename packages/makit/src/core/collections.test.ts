@@ -72,7 +72,7 @@ describe("resolveCollections", () => {
     );
 
     const config = makeConfig({ collections: { mode: "discover" }, i18n: I18N });
-    const { collections, warnings } = await resolveCollections(config, createMetadataJiti());
+    const { collections, diagnostics } = await resolveCollections(config, createMetadataJiti());
 
     const makit = collections.find((c) => c.id === "makit");
     expect(makit).toMatchObject({ pathSegments: ["makit"], implicit: false });
@@ -82,7 +82,14 @@ describe("resolveCollections", () => {
     // enduroq exists only in en-us — flagged for collection fallback (spec §35.5).
     const enduroq = collections.find((c) => c.id === "enduroq");
     expect(enduroq?.locales["ja-jp"]).toBeUndefined();
-    expect(warnings.some((w) => w.includes('"enduroq"') && w.includes("ja-jp"))).toBe(true);
+    expect(
+      diagnostics.some(
+        (d) =>
+          d.code === "collection-fallback" &&
+          d.message.includes('"enduroq"') &&
+          d.message.includes("ja-jp"),
+      ),
+    ).toBe(true);
   });
 
   it("resolves LocalizedValue titles per locale", async () => {

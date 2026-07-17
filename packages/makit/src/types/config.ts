@@ -333,7 +333,11 @@ export type MakitWarningCode =
   | "missing-og-image"
   | "default-locale-only-page"
   | "translation-only-page"
-  | "too-many-fallback-pages";
+  | "too-many-fallback-pages"
+  | "collection-fallback"
+  | "env-var-in-metadata"
+  | "out-of-project-import"
+  | "slow-metadata-eval";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,

@@ -1,0 +1,15 @@
+{
+  "name": "makit-example-portal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "makit dev",
+    "build": "makit build",
+    "preview": "makit preview",
+    "check": "makit check"
+  },
+  "dependencies": {
+    "@natsuneko-laboratory/makit": "workspace:*"
+  }
+}

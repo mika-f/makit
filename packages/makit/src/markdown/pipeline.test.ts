@@ -81,6 +81,40 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toContain('href="/ja-jp/guides/configuration/"');
   });
 
+  it("prefixes rewritten links with the collection's URL path (spec §28.1)", async () => {
+    const config = makeConfig();
+    const processor = createMarkdownProcessor(config);
+    const result = await processMarkdown(
+      processor,
+      "[Configuration](./guides/configuration.md)",
+      config,
+      {
+        currentRelativePath: "index.md",
+        collectionSegments: ["makit"],
+      },
+    );
+    expect(result.html).toContain('href="/makit/guides/configuration/"');
+  });
+
+  it("combines the locale prefix and the collection's URL path", async () => {
+    const config = makeConfig({
+      title: "Test",
+      i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
+    });
+    const processor = createMarkdownProcessor(config);
+    const result = await processMarkdown(
+      processor,
+      "[Configuration](./guides/configuration.md)",
+      config,
+      {
+        currentRelativePath: "index.md",
+        localePrefix: "ja-jp",
+        collectionSegments: ["makit"],
+      },
+    );
+    expect(result.html).toContain('href="/ja-jp/makit/guides/configuration/"');
+  });
+
   it("leaves links that escape the sourceDir root untouched", async () => {
     const result = await render("[bad](../outside.md)");
     expect(result.html).toContain('href="../outside.md"');

@@ -66,18 +66,22 @@ export class BuildCache {
     rawContent: string,
     relativePath: string,
     localePrefix: string | undefined,
+    collectionId: string,
   ): string {
-    return sha256(`${this.signature}\n${relativePath}\n${localePrefix ?? ""}\n${rawContent}`);
+    return sha256(
+      `${this.signature}\n${collectionId}\n${relativePath}\n${localePrefix ?? ""}\n${rawContent}`,
+    );
   }
 
   async get(
     rawContent: string,
     relativePath: string,
     localePrefix: string | undefined,
+    collectionId: string,
   ): Promise<CachedMarkdownResult | undefined> {
     const entryPath = join(
       this.cacheDir,
-      `${this.keyFor(rawContent, relativePath, localePrefix)}.json`,
+      `${this.keyFor(rawContent, relativePath, localePrefix, collectionId)}.json`,
     );
     if (!existsSync(entryPath)) return undefined;
     try {
@@ -91,11 +95,12 @@ export class BuildCache {
     rawContent: string,
     relativePath: string,
     localePrefix: string | undefined,
+    collectionId: string,
     result: CachedMarkdownResult,
   ): Promise<void> {
     const entryPath = join(
       this.cacheDir,
-      `${this.keyFor(rawContent, relativePath, localePrefix)}.json`,
+      `${this.keyFor(rawContent, relativePath, localePrefix, collectionId)}.json`,
     );
     await mkdir(this.cacheDir, { recursive: true });
     await writeFile(entryPath, JSON.stringify(result), "utf-8");

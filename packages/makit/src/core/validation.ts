@@ -1,28 +1,13 @@
 import { existsSync } from "node:fs";
 import { join, sep } from "node:path";
 import type { ResolvedNavNode } from "./nav-nodes.js";
+import type { MakitWarningCode } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { groupPagesByPageId } from "./i18n.js";
 
 export interface Diagnostic {
-  code:
-    | "missing-title"
-    | "missing-page-metadata"
-    | "generated-page-id"
-    | "multiple-placement-without-primary"
-    | "deep-navigation"
-    | "empty-section"
-    | "empty-group"
-    | "unknown-code-language"
-    | "page-not-in-navigation"
-    | "broken-link"
-    | "missing-anchor"
-    | "missing-site-url"
-    | "missing-og-image"
-    | "default-locale-only-page"
-    | "translation-only-page"
-    | "too-many-fallback-pages";
+  code: MakitWarningCode;
   message: string;
   sourcePath?: string;
 }

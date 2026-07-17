@@ -1,7 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import type { Jiti } from "jiti";
-import { createMetadataJiti, loadMetadataFile } from "../metadata/loader.js";
+import {
+  createMetadataJiti,
+  loadMetadataFile,
+  metadataLoadDiagnostics,
+} from "../metadata/loader.js";
 import type { PageMetadata } from "../metadata/types.js";
 import { parseFrontMatter } from "../markdown/frontmatter.js";
 import { createMarkdownProcessor, processMarkdown } from "../markdown/pipeline.js";
@@ -21,10 +25,14 @@ import {
 import type { SourceFile } from "./scanner.js";
 import { scanSourceFiles } from "./scanner.js";
 import { humanizeSlug } from "./text.js";
+import type { Diagnostic } from "./validation.js";
 
 export interface BuildPageResult {
   page: GeneratedPage;
   warnings: string[];
+  diagnostics: Diagnostic[];
+  /** Local files imported by the page's `.meta.ts`, for watching and cache keys (spec §19, §22, §43). */
+  metadataDependencies: string[];
 }
 
 /**
@@ -40,8 +48,13 @@ async function resolvePageMetadata(
   file: SourceFile,
   config: ResolvedConfig,
   jiti?: Jiti,
-): Promise<{ metadata: PageMetadata; content: string; warnings: string[] }> {
-  const warnings: string[] = [];
+): Promise<{
+  metadata: PageMetadata;
+  content: string;
+  diagnostics: Diagnostic[];
+  dependencies: string[];
+}> {
+  const diagnostics: Diagnostic[] = [];
   const frontMatter = parseFrontMatter(raw, file.absolutePath);
 
   if (frontMatter.metadata && config.validation.disallowFrontMatter) {
@@ -54,6 +67,7 @@ async function resolvePageMetadata(
   }
 
   let metadata: PageMetadata = {};
+  let dependencies: string[] = [];
   if (file.metadataPath) {
     if (frontMatter.metadata) {
       throw new MakitError(
@@ -67,12 +81,13 @@ async function resolvePageMetadata(
       jiti,
     });
     metadata = loaded.value;
-    warnings.push(...loaded.warnings.map((warning) => warning.message));
+    diagnostics.push(...metadataLoadDiagnostics(loaded));
+    dependencies = loaded.dependencies;
   } else if (frontMatter.metadata) {
     metadata = frontMatter.metadata;
   }
 
-  return { metadata, content: frontMatter.content, warnings };
+  return { metadata, content: frontMatter.content, diagnostics, dependencies };
 }
 
 /** Assembles one `GeneratedPage` from a scanned source file. */
@@ -84,7 +99,12 @@ export async function buildPage(
   jiti?: Jiti,
 ): Promise<BuildPageResult> {
   const raw = await readFile(file.absolutePath, "utf-8");
-  const { metadata, content, warnings } = await resolvePageMetadata(raw, file, config, jiti);
+  const { metadata, content, diagnostics, dependencies } = await resolvePageMetadata(
+    raw,
+    file,
+    config,
+    jiti,
+  );
 
   const pathSegments = filePathToSegments(file.relativePath);
   const slugSegments = resolveSlugSegments(metadata.slug, pathSegments);
@@ -102,14 +122,17 @@ export async function buildPage(
   // change without breaking translation pairing (spec §18, §29).
   const pageId = derivePageId(metadata.id, pathSegments);
 
-  const cached = await cache?.get(content, file.relativePath, localePrefix);
+  const cached = await cache?.get(content, file.relativePath, localePrefix, file.collection.id);
   const processed =
     cached ??
     (await processMarkdown(processor, content, config, {
       currentRelativePath: file.relativePath,
       localePrefix,
+      collectionSegments: file.collection.pathSegments,
     }));
-  if (!cached) await cache?.set(content, file.relativePath, localePrefix, processed);
+  if (!cached) {
+    await cache?.set(content, file.relativePath, localePrefix, file.collection.id, processed);
+  }
 
   // Title resolution chain (spec §17): .meta.ts -> first H1 -> filename -> pageId.
   const firstH1 = processed.headings.find((heading) => heading.depth === 1)?.text;
@@ -161,16 +184,18 @@ export async function buildPage(
 
   return {
     page,
-    warnings: [
-      ...warnings,
-      ...processed.warnings.map((warning) => `${file.relativePath}: ${warning}`),
-    ],
+    warnings: processed.warnings.map((warning) => `${file.relativePath}: ${warning}`),
+    diagnostics,
+    metadataDependencies: dependencies,
   };
 }
 
 export interface BuildAllPagesResult {
   pages: GeneratedPage[];
   warnings: string[];
+  diagnostics: Diagnostic[];
+  /** Every `.meta.ts` and its local import dependencies, for watching (spec §19, §43). */
+  metadataPaths: string[];
 }
 
 export interface BuildAllPagesOptions {
@@ -196,15 +221,19 @@ export async function buildAllPages(
 
   const pages: GeneratedPage[] = [];
   const warnings: string[] = [];
+  const diagnostics: Diagnostic[] = [];
+  const metadataPaths: string[] = [];
 
   for (const file of sourceFiles) {
     const result = await buildPage(file, config, processor, cache, jiti);
     pages.push(result.page);
     warnings.push(...result.warnings);
+    diagnostics.push(...result.diagnostics);
+    if (file.metadataPath) metadataPaths.push(file.metadataPath, ...result.metadataDependencies);
   }
 
   detectDuplicateRoutes(pages);
   detectDuplicatePageIds(pages);
 
-  return { pages, warnings };
+  return { pages, warnings, diagnostics, metadataPaths };
 }

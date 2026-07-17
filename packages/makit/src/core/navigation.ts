@@ -7,10 +7,12 @@ import { MakitError } from "./errors.js";
 import type { ResolvedNavNode } from "./nav-nodes.js";
 import { resolveCollectionNavigation } from "./nav-resolve.js";
 import { buildRoute } from "./routes.js";
+import type { Diagnostic } from "./validation.js";
 
 export interface GenerateNavigationResult {
   navigation: ResolvedNavNode[];
   warnings: string[];
+  diagnostics: Diagnostic[];
   /** navigation.makit.ts / category.makit.ts files involved, for watching. */
   metadataPaths: string[];
 }
@@ -32,7 +34,12 @@ export async function generateNavigation(
     collections,
     jiti,
   });
-  return { navigation: result.items, warnings: result.warnings, metadataPaths: result.metadataPaths };
+  return {
+    navigation: result.items,
+    warnings: result.warnings,
+    diagnostics: result.diagnostics,
+    metadataPaths: result.metadataPaths,
+  };
 }
 
 /** A global navigation item with `collection` references resolved to concrete hrefs. */
@@ -97,6 +104,7 @@ export function resolveGlobalNavigation(
 export interface GenerateAllNavigationResult {
   byLocale: Record<string, Record<string, ResolvedNavNode[]>>;
   warnings: string[];
+  diagnostics: Diagnostic[];
   metadataPaths: string[];
 }
 
@@ -109,6 +117,7 @@ export async function generateAllNavigation(
 ): Promise<GenerateAllNavigationResult> {
   const byLocale: Record<string, Record<string, ResolvedNavNode[]>> = {};
   const warnings: string[] = [];
+  const diagnostics: Diagnostic[] = [];
   const metadataPaths = new Set<string>();
 
   for (const locale of config.i18n.locales) {
@@ -117,9 +126,10 @@ export async function generateAllNavigation(
       const result = await generateNavigation(pages, locale, config, collection, collections, jiti);
       byLocale[locale.urlLocale]![collection.id] = result.navigation;
       warnings.push(...result.warnings);
+      diagnostics.push(...result.diagnostics);
       for (const path of result.metadataPaths) metadataPaths.add(path);
     }
   }
 
-  return { byLocale, warnings, metadataPaths: [...metadataPaths] };
+  return { byLocale, warnings, diagnostics, metadataPaths: [...metadataPaths] };
 }

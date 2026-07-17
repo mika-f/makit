@@ -74,13 +74,18 @@ export async function build(
   }
 
   const jiti = createMetadataJiti();
-  const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
+  const {
+    collections,
+    warnings: collectionWarnings,
+    diagnostics: collectionDiagnostics,
+  } = await resolveCollections(config, jiti);
   logger.info(`Resolved ${collections.length} collection(s)`);
 
-  const { pages: scannedPages, warnings: pipelineWarnings } = await buildAllPages(
-    config,
-    collections,
-  );
+  const {
+    pages: scannedPages,
+    warnings: pipelineWarnings,
+    diagnostics: pageDiagnostics,
+  } = await buildAllPages(config, collections);
   // Draft pages are visible in `makit dev` but excluded from production output (spec §14.4).
   const productionPages = scannedPages.filter((page) => !page.draft);
   logger.success(
@@ -106,8 +111,11 @@ export async function build(
     config,
   );
 
-  const { byLocale: navigationByLocale, warnings: navigationWarnings } =
-    await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  const {
+    byLocale: navigationByLocale,
+    warnings: navigationWarnings,
+    diagnostics: navigationMetadataDiagnostics,
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
   const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(
     undecoratedPages,
     navigationByLocale,
@@ -121,6 +129,9 @@ export async function build(
   }
 
   const diagnostics = [
+    ...collectionDiagnostics,
+    ...pageDiagnostics,
+    ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
     ...validatePages(allPages, config, { navigationByLocale }),
   ];

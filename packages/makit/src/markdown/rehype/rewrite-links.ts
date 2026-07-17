@@ -4,11 +4,13 @@ import { visit } from "unist-util-visit";
 import { buildRoute, filePathToSegments } from "../../core/routes.js";
 
 export interface LinkRewriteContext {
-  /** Current file's path relative to its locale's sourceDir, forward-slash separated (e.g. "guides/configuration.md"). */
+  /** Current file's path relative to its collection's directory, forward-slash separated (e.g. "guides/configuration.md"). */
   currentRelativePath: string;
   basePath: string;
   /** URL-facing locale prefix (e.g. "ja-jp"). Omit when i18n is disabled. */
   localePrefix?: string;
+  /** The collection's URL prefix segments (spec §28.1). */
+  collectionSegments?: readonly string[];
   trailingSlash: boolean;
 }
 
@@ -25,7 +27,7 @@ export function rewriteMarkdownLinkHref(href: string, ctx: LinkRewriteContext): 
   const currentDir = posix.dirname(ctx.currentRelativePath);
   const resolved = posix.normalize(posix.join(currentDir, pathPart!));
   if (resolved === ".." || resolved.startsWith("../")) {
-    // Escapes the locale's sourceDir root — not a valid page reference.
+    // Escapes the collection's directory — not a valid page reference.
     // Leave the href untouched; link validation (a later phase) reports it.
     return undefined;
   }
@@ -33,6 +35,7 @@ export function rewriteMarkdownLinkHref(href: string, ctx: LinkRewriteContext): 
   const route = buildRoute(segments, {
     basePath: ctx.basePath,
     localePrefix: ctx.localePrefix,
+    collectionSegments: ctx.collectionSegments,
     trailingSlash: ctx.trailingSlash,
   });
   return `${route}${anchor ?? ""}`;

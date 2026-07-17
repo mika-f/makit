@@ -20,10 +20,12 @@ export interface MarkdownProcessResult {
 }
 
 export interface MarkdownProcessContext {
-  /** Current file's path relative to its locale's sourceDir, forward-slash separated. */
+  /** Current file's path relative to its collection's directory, forward-slash separated. */
   currentRelativePath: string;
   /** URL-facing locale prefix (e.g. "ja-jp"). Omit when i18n is disabled. */
   localePrefix?: string;
+  /** The collection's URL prefix segments (spec §28.1). */
+  collectionSegments?: readonly string[];
 }
 
 // biome-ignore-start: unified's fluent `.use()` typing can't express a dynamically-built
@@ -93,6 +95,7 @@ export async function processMarkdown(
     currentRelativePath: context.currentRelativePath,
     basePath: config.basePath,
     localePrefix: context.localePrefix,
+    collectionSegments: context.collectionSegments,
     trailingSlash: config.build.trailingSlash,
   } satisfies LinkRewriteContext;
 

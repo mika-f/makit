@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import fg from "fast-glob";
 import type { Jiti } from "jiti";
-import { loadMetadataFile } from "../metadata/loader.js";
+import { loadMetadataFile, metadataLoadDiagnostics } from "../metadata/loader.js";
 import type { CategoryMetadata, NavigationMetadata, NavigationNode } from "../metadata/types.js";
 import type { NavigationGroup, NavigationItem } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
@@ -13,6 +13,7 @@ import { localizeValue } from "./localize.js";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "./nav-nodes.js";
 import { buildRoute } from "./routes.js";
 import { humanizeSlug } from "./text.js";
+import type { Diagnostic } from "./validation.js";
 
 export interface ResolveNavigationContext {
   pages: readonly GeneratedPage[];
@@ -26,6 +27,7 @@ export interface ResolveNavigationContext {
 export interface ResolveNavigationResult {
   items: ResolvedNavNode[];
   warnings: string[];
+  diagnostics: Diagnostic[];
   /** Metadata files that participated (navigation.makit.ts / category.makit.ts), for watching. */
   metadataPaths: string[];
 }
@@ -176,9 +178,10 @@ async function scanCategories(
   dir: string,
   projectRoot: string,
   jiti: Jiti,
-): Promise<Map<string, CategoryEntry>> {
+): Promise<{ byDir: Map<string, CategoryEntry>; diagnostics: Diagnostic[] }> {
   const byDir = new Map<string, CategoryEntry>();
-  if (!existsSync(dir)) return byDir;
+  const diagnostics: Diagnostic[] = [];
+  if (!existsSync(dir)) return { byDir, diagnostics };
 
   const matches = await fg("**/category.makit.ts", { cwd: dir, absolute: false, dot: false });
   for (const relPath of matches.sort()) {
@@ -187,10 +190,11 @@ async function scanCategories(
       projectRoot,
       jiti,
     });
+    diagnostics.push(...metadataLoadDiagnostics(loaded));
     const dirKey = relPath.split("/").slice(0, -1).join("/");
     byDir.set(dirKey, { metadata: loaded.value, metadataPath });
   }
-  return byDir;
+  return { byDir, diagnostics };
 }
 
 interface TreeNode {
@@ -324,7 +328,7 @@ function buildAutoItems(
 
 export async function resolveAutoNavigation(
   ctx: ResolveNavigationContext,
-): Promise<{ items: ResolvedNavNode[]; metadataPaths: string[] }> {
+): Promise<{ items: ResolvedNavNode[]; metadataPaths: string[]; diagnostics: Diagnostic[] }> {
   const collectionLocale =
     ctx.collection.locales[ctx.locale.urlLocale] ??
     // Whole-collection fallback locales reuse the default locale's structure.
@@ -333,9 +337,9 @@ export async function resolveAutoNavigation(
         ""
     ];
 
-  const categories = collectionLocale
+  const { byDir: categories, diagnostics } = collectionLocale
     ? await scanCategories(collectionLocale.dir, ctx.config.root, ctx.jiti)
-    : new Map<string, CategoryEntry>();
+    : { byDir: new Map<string, CategoryEntry>(), diagnostics: [] as Diagnostic[] };
   const autoCtx: AutoContext = { ...ctx, categories };
 
   const localePages = ctx.pages.filter(
@@ -364,6 +368,7 @@ export async function resolveAutoNavigation(
   return {
     items,
     metadataPaths: [...categories.values()].map((entry) => entry.metadataPath),
+    diagnostics,
   };
 }
 
@@ -471,6 +476,7 @@ export async function resolveCollectionNavigation(
     return {
       items: resolveManualNavigation(configNav.items, ctx),
       warnings: [],
+      diagnostics: [],
       metadataPaths: [],
     };
   }
@@ -482,7 +488,8 @@ export async function resolveCollectionNavigation(
     });
     return {
       items: resolveManualNavigation(loaded.value.items, ctx),
-      warnings: loaded.warnings.map((warning) => warning.message),
+      warnings: [],
+      diagnostics: metadataLoadDiagnostics(loaded),
       metadataPaths: [navFilePath, ...loaded.dependencies],
     };
   }
@@ -494,9 +501,9 @@ export async function resolveCollectionNavigation(
       ctx.config.navigation.locales[ctx.locale.urlLocale] ??
       [];
     const { items, warnings } = resolveLegacyManualNavigation(groups, ctx);
-    return { items, warnings, metadataPaths: [] };
+    return { items, warnings, diagnostics: [], metadataPaths: [] };
   }
 
-  const { items, metadataPaths } = await resolveAutoNavigation(ctx);
-  return { items, warnings: [], metadataPaths };
+  const { items, metadataPaths, diagnostics } = await resolveAutoNavigation(ctx);
+  return { items, warnings: [], diagnostics, metadataPaths };
 }

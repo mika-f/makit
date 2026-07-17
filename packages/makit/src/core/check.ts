@@ -2,6 +2,7 @@ import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
+import { resolveHome } from "./home.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
@@ -35,8 +36,16 @@ export interface CheckResult {
  */
 export async function check(config: ResolvedConfig): Promise<CheckResult> {
   const jiti = createMetadataJiti();
-  const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
-  const { pages, warnings: pipelineWarnings } = await buildAllPages(config, collections);
+  const {
+    collections,
+    warnings: collectionWarnings,
+    diagnostics: collectionDiagnostics,
+  } = await resolveCollections(config, jiti);
+  const {
+    pages,
+    warnings: pipelineWarnings,
+    diagnostics: pageDiagnostics,
+  } = await buildAllPages(config, collections);
   const fallbackPages = generateFallbackPages(pages, config);
   const collectionTopPages = synthesizeCollectionTopPages(
     [...pages, ...fallbackPages],
@@ -47,8 +56,11 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     [...pages, ...fallbackPages, ...collectionTopPages],
     config,
   );
-  const { byLocale: navigationByLocale, warnings: navigationWarnings } =
-    await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  const {
+    byLocale: navigationByLocale,
+    warnings: navigationWarnings,
+    diagnostics: navigationMetadataDiagnostics,
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
   const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(
     undecoratedPages,
     navigationByLocale,
@@ -56,7 +68,16 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     collections,
   );
 
+  // Resolving home per locale surfaces home config errors (spec §33, §45)
+  // without needing a full build — `resolveHome` throws MakitErrors.
+  for (const locale of config.i18n.locales) {
+    resolveHome(locale, allPages, config, collections);
+  }
+
   const diagnostics = [
+    ...collectionDiagnostics,
+    ...pageDiagnostics,
+    ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
     ...validatePages(allPages, config, { navigationByLocale }),
   ];

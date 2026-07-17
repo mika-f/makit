@@ -29,10 +29,10 @@ describe("BuildCache", () => {
     expect(cache).toBeDefined();
 
     const result = { html: "<p>hi</p>", headings: [], warnings: [] };
-    expect(await cache!.get("# Hi", "index.md", undefined)).toBeUndefined();
+    expect(await cache!.get("# Hi", "index.md", undefined, "default")).toBeUndefined();
 
-    await cache!.set("# Hi", "index.md", undefined, result);
-    expect(await cache!.get("# Hi", "index.md", undefined)).toEqual(result);
+    await cache!.set("# Hi", "index.md", undefined, "default", result);
+    expect(await cache!.get("# Hi", "index.md", undefined, "default")).toEqual(result);
   });
 
   it("misses when the source content changes", async () => {
@@ -40,19 +40,19 @@ describe("BuildCache", () => {
     const config = resolveConfig({ title: "Test" }, { root: dir, configPath });
     const cache = await BuildCache.create(config);
 
-    await cache!.set("# Hi", "index.md", undefined, {
+    await cache!.set("# Hi", "index.md", undefined, "default", {
       html: "<p>hi</p>",
       headings: [],
       warnings: [],
     });
-    expect(await cache!.get("# Bye", "index.md", undefined)).toBeUndefined();
+    expect(await cache!.get("# Bye", "index.md", undefined, "default")).toBeUndefined();
   });
 
   it("misses when the config file content changes", async () => {
     const configPath = await writeConfigFile("export default { title: 'Test' };");
     const config = resolveConfig({ title: "Test" }, { root: dir, configPath });
     const cacheBefore = await BuildCache.create(config);
-    await cacheBefore!.set("# Hi", "index.md", undefined, {
+    await cacheBefore!.set("# Hi", "index.md", undefined, "default", {
       html: "<p>hi</p>",
       headings: [],
       warnings: [],
@@ -60,7 +60,7 @@ describe("BuildCache", () => {
 
     await writeConfigFile("export default { title: 'Test Changed' };");
     const cacheAfter = await BuildCache.create(config);
-    expect(await cacheAfter!.get("# Hi", "index.md", undefined)).toBeUndefined();
+    expect(await cacheAfter!.get("# Hi", "index.md", undefined, "default")).toBeUndefined();
   });
 
   it("misses when the same content moves to a different path", async () => {
@@ -68,12 +68,12 @@ describe("BuildCache", () => {
     const config = resolveConfig({ title: "Test" }, { root: dir, configPath });
     const cache = await BuildCache.create(config);
 
-    await cache!.set("# Hi", "index.md", undefined, {
+    await cache!.set("# Hi", "index.md", undefined, "default", {
       html: "<p>hi</p>",
       headings: [],
       warnings: [],
     });
-    expect(await cache!.get("# Hi", "guides/index.md", undefined)).toBeUndefined();
+    expect(await cache!.get("# Hi", "guides/index.md", undefined, "default")).toBeUndefined();
   });
 
   it("misses when the locale prefix differs (affects link rewriting)", async () => {
@@ -81,12 +81,25 @@ describe("BuildCache", () => {
     const config = resolveConfig({ title: "Test" }, { root: dir, configPath });
     const cache = await BuildCache.create(config);
 
-    await cache!.set("# Hi", "index.md", "en-us", {
+    await cache!.set("# Hi", "index.md", "en-us", "default", {
       html: "<p>hi</p>",
       headings: [],
       warnings: [],
     });
-    expect(await cache!.get("# Hi", "index.md", "ja-jp")).toBeUndefined();
+    expect(await cache!.get("# Hi", "index.md", "ja-jp", "default")).toBeUndefined();
+  });
+
+  it("misses when the same relative path belongs to a different collection (affects link rewriting)", async () => {
+    const configPath = await writeConfigFile("export default { title: 'Test' };");
+    const config = resolveConfig({ title: "Test" }, { root: dir, configPath });
+    const cache = await BuildCache.create(config);
+
+    await cache!.set("# Hi", "index.md", undefined, "makit", {
+      html: "<p>hi</p>",
+      headings: [],
+      warnings: [],
+    });
+    expect(await cache!.get("# Hi", "index.md", undefined, "enduroq")).toBeUndefined();
   });
 
   it("returns undefined instead of throwing when the config file cannot be read", async () => {

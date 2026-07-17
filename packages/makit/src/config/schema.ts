@@ -303,6 +303,10 @@ const warningCodeSchema = z.enum([
   "default-locale-only-page",
   "translation-only-page",
   "too-many-fallback-pages",
+  "collection-fallback",
+  "env-var-in-metadata",
+  "out-of-project-import",
+  "slow-metadata-eval",
 ]);
 
 const failOnCodeSchema = z.union([

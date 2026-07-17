@@ -30,6 +30,12 @@ importers:
         specifier: workspace:*
         version: link:../../packages/makit
 
+  examples/portal:
+    dependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../../packages/makit
+
   packages/adapter-cloudflare-pages:
     devDependencies:
       '@natsuneko-laboratory/makit':

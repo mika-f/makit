@@ -23,6 +23,34 @@ export interface LoadMetadataOptions {
   jiti?: Jiti;
 }
 
+/** Above this, metadata evaluation is slow enough to warn about (spec §46 `slow-metadata-eval`). */
+const SLOW_METADATA_EVAL_THRESHOLD_MS = 500;
+
+export interface MetadataDiagnostic {
+  code: MetadataWarning["code"] | "slow-metadata-eval";
+  message: string;
+  sourcePath: string;
+}
+
+/** Converts a loaded metadata file's warnings (spec §21, §46) and eval time into diagnostics. */
+export function metadataLoadDiagnostics(
+  loaded: Pick<LoadedMetadata<unknown>, "warnings" | "evalDurationMs" | "filePath">,
+): MetadataDiagnostic[] {
+  const diagnostics: MetadataDiagnostic[] = loaded.warnings.map((warning) => ({
+    code: warning.code,
+    message: warning.message,
+    sourcePath: loaded.filePath,
+  }));
+  if (loaded.evalDurationMs > SLOW_METADATA_EVAL_THRESHOLD_MS) {
+    diagnostics.push({
+      code: "slow-metadata-eval",
+      message: `Metadata evaluation took ${Math.round(loaded.evalDurationMs)}ms.`,
+      sourcePath: loaded.filePath,
+    });
+  }
+  return diagnostics;
+}
+
 const DEFINE_FUNCTION_BY_KIND: Record<MetadataKind, string> = {
   collection: "defineCollection",
   navigation: "defineNavigation",

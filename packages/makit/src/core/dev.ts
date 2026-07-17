@@ -4,9 +4,11 @@ import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import chokidar from "chokidar";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { loadConfig } from "../config/load.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
+import type { ResolvedCollection } from "./collections.js";
 import { resolveCollections } from "./collections.js";
 import { writeGeneratedData } from "./generate.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
@@ -25,12 +27,39 @@ export interface DevServer {
   close: () => Promise<void>;
 }
 
-async function regenerateContent(config: ResolvedConfig, logger: Logger): Promise<void> {
+/** Every `.makit.ts`/`.meta.ts` file and its local import dependencies (spec §19, §43). */
+function collectMetadataWatchPaths(
+  collections: readonly ResolvedCollection[],
+  pageMetadataPaths: readonly string[],
+  navMetadataPaths: readonly string[],
+): string[] {
+  const paths = new Set<string>();
+  for (const collection of collections) {
+    for (const locale of Object.values(collection.locales)) {
+      if (locale.metadataPath) paths.add(locale.metadataPath);
+      for (const dependency of locale.dependencies) paths.add(dependency);
+    }
+  }
+  for (const path of pageMetadataPaths) paths.add(path);
+  for (const path of navMetadataPaths) paths.add(path);
+  return [...paths];
+}
+
+async function regenerateContent(config: ResolvedConfig, logger: Logger): Promise<string[]> {
   // A fresh jiti per regeneration so edited metadata files re-evaluate.
   const jiti = createMetadataJiti();
-  const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
+  const {
+    collections,
+    warnings: collectionWarnings,
+    diagnostics: collectionDiagnostics,
+  } = await resolveCollections(config, jiti);
   // Unlike `makit build`, dev keeps draft pages visible (spec §16).
-  const { pages, warnings } = await buildAllPages(config, collections);
+  const {
+    pages,
+    warnings,
+    diagnostics: pageDiagnostics,
+    metadataPaths: pageMetadataPaths,
+  } = await buildAllPages(config, collections);
   const fallbackPages = generateFallbackPages(pages, config);
   const collectionTopPages = synthesizeCollectionTopPages(
     [...pages, ...fallbackPages],
@@ -41,7 +70,11 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
     [...pages, ...fallbackPages, ...collectionTopPages],
     config,
   );
-  const { byLocale } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  const {
+    byLocale,
+    diagnostics: navigationMetadataDiagnostics,
+    metadataPaths: navMetadataPaths,
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
   const { pages: allPages } = decoratePagesWithNavigation(
     undecoratedPages,
     byLocale,
@@ -50,34 +83,99 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
   );
   await writeGeneratedData(config, allPages, collections, byLocale);
   for (const warning of [...collectionWarnings, ...warnings]) logger.warn(warning);
+  for (const diagnostic of [
+    ...collectionDiagnostics,
+    ...pageDiagnostics,
+    ...navigationMetadataDiagnostics,
+  ]) {
+    logger.warn(
+      diagnostic.sourcePath
+        ? `${diagnostic.sourcePath}: ${diagnostic.message}`
+        : diagnostic.message,
+      diagnostic.code,
+    );
+  }
   logger.success(`Regenerated ${allPages.length} page(s)`);
+
+  return collectMetadataWatchPaths(collections, pageMetadataPaths, navMetadataPaths);
 }
 
-/** Starts `next dev` over `.makit/app`, watching Markdown/public sources and regenerating on change (spec §9.3, §30). */
+/** Starts `next dev` over `.makit/app`, watching sources and regenerating on change (spec §9.3, §43). */
 export async function startDevServer(
-  config: ResolvedConfig,
+  initialConfig: ResolvedConfig,
   options: DevOptions,
   logger: Logger,
 ): Promise<DevServer> {
+  let config = initialConfig;
   const makitDir = join(config.root, ".makit");
-  const publicSrcDir = join(config.root, config.publicDir);
-  const publicDestDir = join(makitDir, "public");
 
   await generateApp(config);
-  await regenerateContent(config, logger);
+  let metadataWatchPaths = await regenerateContent(config, logger);
 
-  const watchPaths = config.i18n.locales.map((locale) => join(config.root, locale.sourceDir));
-  const watcher = chokidar.watch(watchPaths, { ignoreInitial: true });
-
-  watcher.on("all", (event, path) => {
-    logger.debug(`${event}: ${relative(config.root, path)}`);
-    regenerateContent(config, logger).catch((error: unknown) => {
-      logger.error(error instanceof Error ? error.message : String(error));
-    });
-  });
-
+  let sourceWatcher: ReturnType<typeof chokidar.watch> | undefined;
+  let metadataWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let publicWatcher: ReturnType<typeof chokidar.watch> | undefined;
-  if (existsSync(publicSrcDir)) {
+  let regenerating = false;
+  let regenerateAgain = false;
+
+  const runRegenerate = (): void => {
+    if (regenerating) {
+      regenerateAgain = true;
+      return;
+    }
+    regenerating = true;
+    regenerateContent(config, logger)
+      .then((paths) => {
+        metadataWatchPaths = paths;
+        watchMetadataDependencies();
+      })
+      .catch((error: unknown) => {
+        logger.error(error instanceof Error ? error.message : String(error));
+      })
+      .finally(() => {
+        regenerating = false;
+        if (regenerateAgain) {
+          regenerateAgain = false;
+          runRegenerate();
+        }
+      });
+  };
+
+  function watchSources(): void {
+    sourceWatcher?.close();
+    const watchPaths = config.i18n.locales.map((locale) => join(config.root, locale.sourceDir));
+    sourceWatcher = chokidar.watch(watchPaths, { ignoreInitial: true });
+    sourceWatcher.on("all", (event, path) => {
+      logger.debug(`${event}: ${relative(config.root, path)}`);
+      runRegenerate();
+    });
+  }
+
+  // Local files a `.meta.ts`/`.makit.ts` imports can live outside every
+  // watched sourceDir (a shared `metadata/` module at the project root is
+  // the common case) — the dependency set changes as authors edit imports,
+  // so this watcher is rebuilt after every regeneration (spec §19, §43).
+  function watchMetadataDependencies(): void {
+    metadataWatcher?.close();
+    if (metadataWatchPaths.length === 0) {
+      metadataWatcher = undefined;
+      return;
+    }
+    metadataWatcher = chokidar.watch(metadataWatchPaths, { ignoreInitial: true });
+    metadataWatcher.on("all", (event, path) => {
+      logger.debug(`${event}: ${relative(config.root, path)}`);
+      runRegenerate();
+    });
+  }
+
+  function watchPublicDir(): void {
+    publicWatcher?.close();
+    const publicSrcDir = join(config.root, config.publicDir);
+    const publicDestDir = join(makitDir, "public");
+    if (!existsSync(publicSrcDir)) {
+      publicWatcher = undefined;
+      return;
+    }
     publicWatcher = chokidar.watch(publicSrcDir, { ignoreInitial: true });
     publicWatcher.on("all", () => {
       cp(publicSrcDir, publicDestDir, { recursive: true })
@@ -88,9 +186,37 @@ export async function startDevServer(
     });
   }
 
-  logger.info(
-    "Config file changes require restarting `makit dev` (spec §30 full re-analysis isn't applied live).",
-  );
+  watchSources();
+  watchMetadataDependencies();
+  watchPublicDir();
+
+  // `makit.config.ts` itself (spec §43): most fields (title, theme, navigation,
+  // collections, home, i18n messages, ...) only affect `.makit/generated/*`
+  // JSON read at request time, so reloading and regenerating picks them up
+  // live. Fields baked into `.makit/next.config.mjs` at generateApp-time
+  // (basePath, trailingSlash, i18n.enabled's locale routing) still need a
+  // `next dev` restart — Next.js itself doesn't hot-reload its own config.
+  const configWatcher = chokidar.watch(config.configPath, { ignoreInitial: true });
+  configWatcher.on("change", () => {
+    logger.info(`Config changed: ${relative(config.root, config.configPath)} — reloading`);
+    loadConfig({ cwd: config.root, configPath: config.configPath })
+      .then(async (reloaded) => {
+        config = reloaded;
+        await generateApp(config);
+        watchSources();
+        watchPublicDir();
+        runRegenerate();
+        logger.info(
+          "Regenerated from the new config. Changes to basePath/trailingSlash/i18n routing " +
+            "require restarting `makit dev` to fully take effect.",
+        );
+      })
+      .catch((error: unknown) => {
+        logger.error(
+          `Failed to reload config: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
+  });
 
   const nextBin = join(resolvePackageRoot("next"), "dist", "bin", "next");
   const child = spawn(
@@ -102,7 +228,12 @@ export async function startDevServer(
   return {
     close: () =>
       new Promise((resolvePromise) => {
-        Promise.all([watcher.close(), publicWatcher?.close()]).finally(() => {
+        Promise.all([
+          sourceWatcher?.close(),
+          metadataWatcher?.close(),
+          publicWatcher?.close(),
+          configWatcher.close(),
+        ]).finally(() => {
           child.once("exit", () => resolvePromise());
           child.kill();
         });
