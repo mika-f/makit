@@ -27,6 +27,8 @@ export interface MakitConfig {
   styles?: string[];
   seo?: SeoConfig;
   sitemap?: SitemapConfig;
+  /** Generate LLM-oriented Markdown endpoints plus llms.txt files. */
+  llms?: LlmsConfig;
   build?: BuildConfig;
   dev?: DevConfig;
   preview?: PreviewConfig;
@@ -308,6 +310,11 @@ export interface SeoConfig {
 export interface SitemapConfig {
   enabled?: boolean;
   includeFallbackPages?: boolean;
+}
+
+/** Controls LLM-oriented static output. Disabled by default. */
+export interface LlmsConfig {
+  enabled?: boolean;
 }
 
 // #endregion

@@ -133,6 +133,7 @@ describe("resolveConfig defaults", () => {
     expect(resolved.basePath).toBe("");
     expect(resolved.seo.titleTemplate).toBe("%s | My Docs");
     expect(resolved.sitemap).toEqual({ enabled: true, includeFallbackPages: false });
+    expect(resolved.llms).toEqual({ enabled: false });
     expect(resolved.build).toEqual({ clean: true, trailingSlash: true });
     expect(resolved.dev).toEqual({
       port: 3000,
@@ -155,6 +156,12 @@ describe("resolveConfig defaults", () => {
       ctx,
     );
     expect(resolved.markdown.shiki.themes).toEqual({ light: "nord", dark: "nord" });
+  });
+
+  it("enables LLM-oriented output when configured", () => {
+    const resolved = resolveConfig({ title: "My Docs", llms: { enabled: true } }, ctx);
+
+    expect(resolved.llms).toEqual({ enabled: true });
   });
 
   it("uses a custom titleTemplate when given", () => {

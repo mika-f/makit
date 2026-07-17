@@ -16,6 +16,7 @@ import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 import { generateSitemapXml } from "./sitemap.js";
+import { writeLlmsFiles } from "./llms.js";
 import type { Diagnostic } from "./validation.js";
 import { selectPromotedDiagnostics, validatePages } from "./validation.js";
 import {
@@ -180,6 +181,10 @@ export async function build(
   const sitemapXml = generateSitemapXml(allPages, config);
   if (sitemapXml) {
     await writeFile(join(outDirAbsolute, "sitemap.xml"), sitemapXml, "utf-8");
+  }
+  if (config.llms.enabled) {
+    await writeLlmsFiles(outDirAbsolute, allPages, config);
+    logger.success("Generated Markdown endpoints and llms.txt");
   }
 
   const deploymentResult = await generateDeploymentAdapter(config, deployment);

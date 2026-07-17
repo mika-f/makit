@@ -39,6 +39,9 @@ export default defineConfig({
       lineNumbers: true,
     },
   },
+  llms: {
+    enabled: true,
+  },
   navigation: {
     auto: {
       numericPrefixes: true,

@@ -274,6 +274,10 @@ const sitemapConfigSchema = z.strictObject({
   includeFallbackPages: z.boolean().optional(),
 });
 
+const llmsConfigSchema = z.strictObject({
+  enabled: z.boolean().optional(),
+});
+
 const buildConfigSchema = z.strictObject({
   clean: z.boolean().optional(),
   trailingSlash: z.boolean().optional(),
@@ -388,6 +392,7 @@ export const makitConfigSchema = z.strictObject({
   styles: z.array(z.string()).optional(),
   seo: seoConfigSchema.optional(),
   sitemap: sitemapConfigSchema.optional(),
+  llms: llmsConfigSchema.optional(),
   build: buildConfigSchema.optional(),
   dev: devConfigSchema.optional(),
   preview: previewConfigSchema.optional(),

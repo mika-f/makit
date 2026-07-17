@@ -19,6 +19,7 @@ export type {
   MakitConfig,
   MakitFallbackBehavior,
   MakitI18nConfig,
+  LlmsConfig,
   MakitLocaleConfig,
   MakitLocaleFallbackConfig,
   MakitMessages,

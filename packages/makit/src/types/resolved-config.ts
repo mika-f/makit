@@ -102,6 +102,10 @@ export interface ResolvedSitemapConfig {
   includeFallbackPages: boolean;
 }
 
+export interface ResolvedLlmsConfig {
+  enabled: boolean;
+}
+
 export interface ResolvedBuildConfig extends Required<BuildConfig> {}
 
 export interface ResolvedDevConfig {
@@ -177,6 +181,7 @@ export interface ResolvedConfig {
   styles: string[];
   seo: ResolvedSeoConfig;
   sitemap: ResolvedSitemapConfig;
+  llms: ResolvedLlmsConfig;
   build: ResolvedBuildConfig;
   dev: ResolvedDevConfig;
   preview: ResolvedPreviewConfig;

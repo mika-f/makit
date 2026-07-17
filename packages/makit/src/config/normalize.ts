@@ -237,6 +237,9 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       enabled: parsed.sitemap?.enabled ?? true,
       includeFallbackPages: parsed.sitemap?.includeFallbackPages ?? false,
     },
+    llms: {
+      enabled: parsed.llms?.enabled ?? false,
+    },
     build: {
       clean: parsed.build?.clean ?? true,
       trailingSlash: parsed.build?.trailingSlash ?? true,
