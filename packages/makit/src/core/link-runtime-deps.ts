@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, rm, symlink } from "node:fs/promises";
+import { lstat, mkdir, readlink, rm, symlink } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { MakitError } from "./errors.js";
@@ -52,12 +52,27 @@ export function resolvePackageRoot(pkgName: string): string {
   return dir;
 }
 
+async function currentLinkTarget(linkPath: string): Promise<string | undefined> {
+  try {
+    if (!(await lstat(linkPath)).isSymbolicLink()) return undefined;
+    return await readlink(linkPath);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Symlinks each Next.js runtime dependency into `.makit/node_modules/`,
  * resolved from makit's own dependency tree (rather than relying on ambient
  * hoisting into the user's project root, which pnpm's strict node_modules
  * layout does not guarantee). This makes `.makit/app`'s own module
  * resolution work the same way under npm, pnpm, yarn, and bun.
+ *
+ * Runs on every `makit dev` config reload as well as at startup, so leaves
+ * an already-correct link untouched rather than unconditionally
+ * unlinking + relinking it — `tailwindcss`/`@tailwindcss/postcss` are live
+ * dependencies of the running `next dev`/Turbopack process, and swapping
+ * their module path out from under it for no reason is asking for trouble.
  */
 export async function linkRuntimeDependencies(makitDir: string): Promise<void> {
   const nodeModulesDir = join(makitDir, "node_modules");
@@ -66,6 +81,9 @@ export async function linkRuntimeDependencies(makitDir: string): Promise<void> {
   for (const pkgName of RUNTIME_PACKAGES) {
     const targetDir = resolvePackageRoot(pkgName);
     const linkPath = join(nodeModulesDir, ...pkgName.split("/"));
+
+    if ((await currentLinkTarget(linkPath)) === targetDir) continue;
+
     await mkdir(dirname(linkPath), { recursive: true });
     await rm(linkPath, { recursive: true, force: true });
 

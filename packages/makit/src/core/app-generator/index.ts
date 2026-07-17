@@ -32,16 +32,30 @@ function customStyleImportPath(
 }
 
 /**
- * (Re)generates the entire `.makit/app` Next.js application from scratch
- * (spec §33). `.makit/` is fully reproducible — nothing here is meant to be
- * hand-edited, so every file is overwritten unconditionally.
+ * (Re)generates the `.makit/app` Next.js application (spec §33). `.makit/`
+ * is fully reproducible — nothing here is meant to be hand-edited — but this
+ * also runs while `makit dev`'s `next dev`/Turbopack child is live (on a
+ * `makit.config.ts` reload), so files are written in place via
+ * `atomicWriteFile` (a no-op if content is unchanged) rather than deleting
+ * `.makit/app` and rewriting everything from scratch: a live dev server
+ * watching these paths can otherwise observe a burst of delete+recreate
+ * events for files whose content never actually changed, which is what was
+ * making Turbopack's CSS pipeline flaky under rapid concurrent rebuilds.
+ * The only thing actively removed is the routing structure for whichever
+ * i18n mode is *not* active, since Next.js errors on conflicting routes if
+ * both are left on disk (switching `i18n.enabled` still needs a `next dev`
+ * restart to fully take effect either way, same as basePath/trailingSlash).
  */
 export async function generateApp(config: ResolvedConfig): Promise<void> {
   const makitDir = join(config.root, ".makit");
   const appDir = join(makitDir, "app");
   const stylesDir = join(makitDir, "styles");
 
-  await rm(appDir, { recursive: true, force: true });
+  await mkdir(appDir, { recursive: true });
+  await rm(join(appDir, config.i18n.enabled ? "[[...slug]]" : "[locale]"), {
+    recursive: true,
+    force: true,
+  });
 
   const runtimePackageRoots = RUNTIME_PACKAGES.map((pkgName) => resolvePackageRoot(pkgName));
   const turbopackRoot = commonAncestorDir([config.root, ...runtimePackageRoots]);

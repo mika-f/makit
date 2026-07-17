@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { readdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
@@ -18,6 +18,30 @@ export interface WriteGeneratedDataResult {
 
 async function writeJson(path: string, data: unknown): Promise<void> {
   await atomicWriteFile(path, `${JSON.stringify(data, null, 2)}\n`);
+}
+
+/**
+ * Removes files under `dir` that aren't in `keep`, then removes any
+ * directory left empty by that. Used instead of `rm(generatedDir, {
+ * recursive: true })` up front — `.makit/generated/*.json` is read at
+ * request time by a live `next dev` process (spec §40), and deleting the
+ * whole tree before writing it back means every regeneration (which in dev
+ * runs on every source-file save) briefly makes the whole site 404/500 and
+ * fires a large delete+recreate burst even for files whose content didn't
+ * change, which is what was making Turbopack's CSS pipeline flaky.
+ */
+async function pruneStale(dir: string, keep: ReadonlySet<string>): Promise<void> {
+  const entries = await readdir(dir, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await pruneStale(full, keep);
+      const remaining = await readdir(full).catch(() => [true]);
+      if (remaining.length === 0) await rm(full, { recursive: true, force: true });
+    } else if (!keep.has(full)) {
+      await rm(full, { force: true });
+    }
+  }
 }
 
 /** One entry of `indexes/page-map.json`: `pageMap[locale][collectionId][pageId]`. */
@@ -68,8 +92,13 @@ export async function writeGeneratedData(
 ): Promise<WriteGeneratedDataResult> {
   const generatedDir = join(config.root, ".makit", "generated");
   // Stale files from a previous layout (deleted pages, renamed collections)
-  // must not survive a regeneration (spec §5.5).
-  await rm(generatedDir, { recursive: true, force: true });
+  // must not survive a regeneration (spec §5.5) — tracked here and pruned
+  // at the end instead of deleting everything up front (see `pruneStale`).
+  const written = new Set<string>();
+  const write = async (path: string, data: unknown): Promise<void> => {
+    written.add(path);
+    await writeJson(path, data);
+  };
 
   const site = {
     title: config.title,
@@ -91,9 +120,9 @@ export async function writeGeneratedData(
       code: config.markdown.code,
     },
   };
-  await writeJson(join(generatedDir, "site.json"), site);
+  await write(join(generatedDir, "site.json"), site);
 
-  await writeJson(join(generatedDir, "locales.json"), config.i18n);
+  await write(join(generatedDir, "locales.json"), config.i18n);
 
   const collectionsData: CollectionData[] = collections.map((collection) => {
     const locales: CollectionData["locales"] = {};
@@ -125,10 +154,10 @@ export async function writeGeneratedData(
       locales,
     };
   });
-  await writeJson(join(generatedDir, "collections.json"), collectionsData);
+  await write(join(generatedDir, "collections.json"), collectionsData);
 
   for (const page of pages) {
-    await writeJson(
+    await write(
       join(generatedDir, "pages", page.locale, page.collectionId, `${page.pageId}.json`),
       page,
     );
@@ -136,11 +165,11 @@ export async function writeGeneratedData(
 
   for (const locale of config.i18n.locales) {
     const global = resolveGlobalNavigation(config.navigation.global, locale, config, collections);
-    await writeJson(join(generatedDir, "navigation", locale.urlLocale, "global.json"), global);
+    await write(join(generatedDir, "navigation", locale.urlLocale, "global.json"), global);
 
     const byCollection = navigationByLocale[locale.urlLocale] ?? {};
     for (const [collectionId, navigation] of Object.entries(byCollection)) {
-      await writeJson(
+      await write(
         join(generatedDir, "navigation", locale.urlLocale, `${collectionId}.json`),
         navigation,
       );
@@ -190,19 +219,21 @@ export async function writeGeneratedData(
         trailingSlash: config.build.trailingSlash,
       });
       (routeMap[locale.urlLocale] ??= {})[""] = { kind: "portal", route };
-      await writeJson(join(generatedDir, "home", `${locale.urlLocale}.json`), home.data);
+      await write(join(generatedDir, "home", `${locale.urlLocale}.json`), home.data);
     }
   }
 
-  await writeJson(join(generatedDir, "indexes", "page-map.json"), pageMap);
-  await writeJson(join(generatedDir, "indexes", "route-map.json"), routeMap);
-  await writeJson(join(generatedDir, "indexes", "collection-map.json"), collectionMap);
-  await writeJson(join(generatedDir, "indexes", "translation-map.json"), translationMap);
+  await write(join(generatedDir, "indexes", "page-map.json"), pageMap);
+  await write(join(generatedDir, "indexes", "route-map.json"), routeMap);
+  await write(join(generatedDir, "indexes", "collection-map.json"), collectionMap);
+  await write(join(generatedDir, "indexes", "translation-map.json"), translationMap);
 
   const searchByLocale = buildSearchIndex(pages);
   for (const [locale, entries] of Object.entries(searchByLocale)) {
-    await writeJson(join(generatedDir, "search", `${locale}.json`), entries);
+    await write(join(generatedDir, "search", `${locale}.json`), entries);
   }
+
+  await pruneStale(generatedDir, written);
 
   return { generatedDir };
 }
