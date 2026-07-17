@@ -279,6 +279,13 @@ const llmsConfigSchema = z.strictObject({
   enabled: z.boolean().optional(),
 });
 
+const githubConfigSchema = z.strictObject({
+  repository: z
+    .string()
+    .regex(/^[^/\\s]+\/[^/\\s]+$/, "repository must be in owner/repository form"),
+  branch: z.string().min(1).optional(),
+});
+
 const buildConfigSchema = z.strictObject({
   clean: z.boolean().optional(),
   trailingSlash: z.boolean().optional(),
@@ -394,6 +401,7 @@ export const makitConfigSchema = z.strictObject({
   seo: seoConfigSchema.optional(),
   sitemap: sitemapConfigSchema.optional(),
   llms: llmsConfigSchema.optional(),
+  github: githubConfigSchema.optional(),
   build: buildConfigSchema.optional(),
   dev: devConfigSchema.optional(),
   preview: previewConfigSchema.optional(),

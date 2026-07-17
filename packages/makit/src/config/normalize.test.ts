@@ -134,6 +134,7 @@ describe("resolveConfig defaults", () => {
     expect(resolved.seo.titleTemplate).toBe("%s | My Docs");
     expect(resolved.sitemap).toEqual({ enabled: true, includeFallbackPages: false });
     expect(resolved.llms).toEqual({ enabled: false });
+    expect(resolved.github).toBeUndefined();
     expect(resolved.build).toEqual({ clean: true, trailingSlash: true });
     expect(resolved.dev).toEqual({
       port: 3000,
@@ -162,6 +163,20 @@ describe("resolveConfig defaults", () => {
     const resolved = resolveConfig({ title: "My Docs", llms: { enabled: true } }, ctx);
 
     expect(resolved.llms).toEqual({ enabled: true });
+  });
+
+  it("configures GitHub editing with main as the default branch", () => {
+    const configured = resolveConfig(
+      { title: "My Docs", github: { repository: "example/docs", branch: "production" } },
+      ctx,
+    );
+    const defaultBranch = resolveConfig(
+      { title: "My Docs", github: { repository: "example/docs" } },
+      ctx,
+    );
+
+    expect(configured.github).toEqual({ repository: "example/docs", branch: "production" });
+    expect(defaultBranch.github).toEqual({ repository: "example/docs", branch: "main" });
   });
 
   it("uses a custom titleTemplate when given", () => {

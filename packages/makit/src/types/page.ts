@@ -69,6 +69,8 @@ export interface GeneratedPage {
   /** URL-facing locale the *content* actually comes from (differs from `locale` for fallback pages). */
   contentLocale: string;
   sourcePath: string;
+  /** GitHub edit URL for this source page, when configured. */
+  editUrl?: string;
   /** Absolute path of the page's `.meta.ts` file, when one exists (spec §9.1, §39). */
   metadataPath?: string;
   isFallback: boolean;

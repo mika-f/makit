@@ -97,6 +97,9 @@ export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) 
             headings={page.headings}
             minDepth={site.markdown.tableOfContents.minDepth}
             maxDepth={site.markdown.tableOfContents.maxDepth}
+            route={page.route}
+            editUrl={page.isFallback ? undefined : page.editUrl}
+            markdownEnabled={site.llms.enabled && !page.isFallback && !page.draft}
           />
         )}
       </div>

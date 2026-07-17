@@ -240,6 +240,10 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
     llms: {
       enabled: parsed.llms?.enabled ?? false,
     },
+    github: parsed.github && {
+      repository: parsed.github.repository,
+      branch: parsed.github.branch ?? "main",
+    },
     build: {
       clean: parsed.build?.clean ?? true,
       trailingSlash: parsed.build?.trailingSlash ?? true,

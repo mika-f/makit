@@ -80,6 +80,7 @@ export interface GeneratedPage {
   locale: string;
   contentLocale: string;
   sourcePath: string;
+  editUrl?: string;
   metadataPath?: string;
   isFallback: boolean;
   fallbackSource?: string;
@@ -241,6 +242,9 @@ export interface SiteData {
   markdown: {
     tableOfContents: { minDepth: number; maxDepth: number };
     code: { copyButton: boolean; lineNumbers: boolean };
+  };
+  llms: {
+    enabled: boolean;
   };
 }
 

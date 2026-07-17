@@ -45,6 +45,9 @@ export default defineConfig({
   llms: {
     enabled: true,
   },
+  github: {
+    repository: "mika-f/makit",
+  },
   i18n: {
     defaultLocale: "en-US",
     locales: [

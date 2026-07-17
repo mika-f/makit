@@ -119,6 +119,7 @@ export async function writeGeneratedData(
       tableOfContents: config.markdown.tableOfContents,
       code: config.markdown.code,
     },
+    llms: config.llms,
   };
   await write(join(generatedDir, "site.json"), site);
 

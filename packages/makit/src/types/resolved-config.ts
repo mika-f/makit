@@ -4,6 +4,7 @@ import type {
   CollectionsConfig,
   ExternalLinksConfig,
   FooterConfig,
+  GitHubConfig,
   GlobalNavigationGroup,
   HeaderConfig,
   HomeSectionConfig,
@@ -106,6 +107,8 @@ export interface ResolvedLlmsConfig {
   enabled: boolean;
 }
 
+export interface ResolvedGitHubConfig extends Required<GitHubConfig> {}
+
 export interface ResolvedBuildConfig extends Required<BuildConfig> {}
 
 export interface ResolvedDevConfig {
@@ -182,6 +185,7 @@ export interface ResolvedConfig {
   seo: ResolvedSeoConfig;
   sitemap: ResolvedSitemapConfig;
   llms: ResolvedLlmsConfig;
+  github?: ResolvedGitHubConfig;
   build: ResolvedBuildConfig;
   dev: ResolvedDevConfig;
   preview: ResolvedPreviewConfig;

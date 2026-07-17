@@ -29,6 +29,8 @@ export interface MakitConfig {
   sitemap?: SitemapConfig;
   /** Generate LLM-oriented Markdown endpoints plus llms.txt files. */
   llms?: LlmsConfig;
+  /** Source repository used by the page-level "Edit on GitHub" link. */
+  github?: GitHubConfig;
   build?: BuildConfig;
   dev?: DevConfig;
   preview?: PreviewConfig;
@@ -298,6 +300,17 @@ export interface MarkdownConfig {
   tableOfContents?: TableOfContentsConfig;
   remarkPlugins?: UnifiedPluginEntry[];
   rehypePlugins?: UnifiedPluginEntry[];
+}
+
+// #endregion
+
+// #region source repository
+
+export interface GitHubConfig {
+  /** GitHub repository in `owner/repository` form. */
+  repository: string;
+  /** Branch containing the documentation source. @default "main" */
+  branch?: string;
 }
 
 // #endregion

@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { basename, extname } from "node:path";
+import { basename, extname, relative, sep } from "node:path";
 import type { Jiti } from "jiti";
 import {
   createMetadataJiti,
@@ -28,6 +28,14 @@ import type { SourceFile } from "./scanner.js";
 import { scanSourceFiles } from "./scanner.js";
 import { humanizeSlug } from "./text.js";
 import type { Diagnostic } from "./validation.js";
+
+function githubEditUrl(config: ResolvedConfig, sourcePath: string): string | undefined {
+  if (!config.github) return undefined;
+  const sourceRelativePath = relative(config.root, sourcePath).split(sep).join("/");
+  if (sourceRelativePath === "" || sourceRelativePath.startsWith("../")) return undefined;
+  const encodedPath = sourceRelativePath.split("/").map(encodeURIComponent).join("/");
+  return `https://github.com/${config.github.repository}/edit/${encodeURIComponent(config.github.branch)}/${encodedPath}`;
+}
 
 export interface BuildPageResult {
   page: GeneratedPage;
@@ -170,6 +178,7 @@ export async function buildPage(
     locale: file.locale.urlLocale,
     contentLocale: file.locale.urlLocale,
     sourcePath: file.absolutePath,
+    editUrl: githubEditUrl(config, file.absolutePath),
     metadataPath: file.metadataPath,
     isFallback: false,
     title,
