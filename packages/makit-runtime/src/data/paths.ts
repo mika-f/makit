@@ -28,6 +28,10 @@ export function pagePath(locale: string, collectionId: string, pageId: string): 
   return join(GENERATED_DIR, "pages", locale, collectionId, `${pageId}.json`);
 }
 
+export function homePath(locale: string): string {
+  return join(GENERATED_DIR, "home", `${locale}.json`);
+}
+
 export function pageMapPath(): string {
   return join(GENERATED_DIR, "indexes", "page-map.json");
 }

@@ -3,17 +3,13 @@ import { join } from "node:path";
 import fg from "fast-glob";
 import type { Jiti } from "jiti";
 import { loadMetadataFile } from "../metadata/loader.js";
-import type {
-  CategoryMetadata,
-  LocalizedValue,
-  NavigationMetadata,
-  NavigationNode,
-} from "../metadata/types.js";
+import type { CategoryMetadata, NavigationMetadata, NavigationNode } from "../metadata/types.js";
 import type { NavigationGroup, NavigationItem } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
+import { localizeValue } from "./localize.js";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "./nav-nodes.js";
 import { buildRoute } from "./routes.js";
 import { humanizeSlug } from "./text.js";
@@ -32,14 +28,6 @@ export interface ResolveNavigationResult {
   warnings: string[];
   /** Metadata files that participated (navigation.makit.ts / category.makit.ts), for watching. */
   metadataPaths: string[];
-}
-
-function localize(
-  value: string | LocalizedValue<string> | undefined,
-  locale: ResolvedLocaleConfig,
-): string | undefined {
-  if (value === undefined || typeof value === "string") return value;
-  return value[locale.locale] ?? value[locale.urlLocale] ?? Object.values(value)[0];
 }
 
 function isNavigable(page: GeneratedPage, ctx: ResolveNavigationContext): boolean {
@@ -127,7 +115,12 @@ function resolveManualNodes(
         break;
       }
       case "link":
-        resolved.push({ type: "link", title: node.title, href: node.href, external: node.external });
+        resolved.push({
+          type: "link",
+          title: node.title,
+          href: node.href,
+          external: node.external,
+        });
         break;
       case "collection": {
         const target = ctx.collections.find((collection) => collection.id === node.collection);
@@ -137,8 +130,7 @@ function resolveManualNodes(
             `Navigation for collection "${ctx.collection.id}" references unknown collection "${node.collection}" (spec §45).`,
           );
         }
-        const title =
-          node.title ?? target.locales[ctx.locale.urlLocale]?.title ?? target.id;
+        const title = node.title ?? target.locales[ctx.locale.urlLocale]?.title ?? target.id;
         resolved.push({
           type: "link",
           title,
@@ -164,8 +156,7 @@ export function resolveManualNavigation(
   const pageById = new Map(
     ctx.pages
       .filter(
-        (page) =>
-          page.locale === ctx.locale.urlLocale && page.collectionId === ctx.collection.id,
+        (page) => page.locale === ctx.locale.urlLocale && page.collectionId === ctx.collection.id,
       )
       .map((page) => [page.pageId, page]),
   );
@@ -244,7 +235,7 @@ function sortEntries(
   const titleOf = ([segment, node]: [string, TreeNode]): string => {
     if (node.children.size > 0) {
       const dirKey = parentKey === "" ? segment : `${parentKey}/${segment}`;
-      const categoryTitle = localize(categoryFor(dirKey, ctx)?.title, ctx.locale);
+      const categoryTitle = localizeValue(categoryFor(dirKey, ctx)?.title, ctx.locale);
       if (categoryTitle) return categoryTitle;
     }
     return node.page ? navTitle(node.page) : humanizeSlug(segment);
@@ -278,7 +269,9 @@ function buildAutoContainer(
   // Directory depth decides section vs group by default: top-level
   // directories are the collection's major divisions (spec §7.3-7.4).
   const type = category?.type ?? (depth === 1 ? "section" : "group");
-  const title = localize(category?.title, ctx.locale) ?? (node.page ? navTitle(node.page) : humanizeSlug(segment));
+  const title =
+    localizeValue(category?.title, ctx.locale) ??
+    (node.page ? navTitle(node.page) : humanizeSlug(segment));
 
   const items: ResolvedNavNode[] = [];
   if (node.page) {
@@ -475,7 +468,11 @@ export async function resolveCollectionNavigation(
         `Collection "${ctx.collection.id}" has manual navigation in makit.config.ts AND a navigation.makit.ts (${navFilePath}). Use one source (spec §25).`,
       );
     }
-    return { items: resolveManualNavigation(configNav.items, ctx), warnings: [], metadataPaths: [] };
+    return {
+      items: resolveManualNavigation(configNav.items, ctx),
+      warnings: [],
+      metadataPaths: [],
+    };
   }
 
   if (navFilePath && configNav?.mode !== "auto") {

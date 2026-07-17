@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
+import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
@@ -37,7 +38,15 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
   const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
   const { pages, warnings: pipelineWarnings } = await buildAllPages(config, collections);
   const fallbackPages = generateFallbackPages(pages, config);
-  const undecoratedPages = populateAlternates([...pages, ...fallbackPages], config);
+  const collectionTopPages = synthesizeCollectionTopPages(
+    [...pages, ...fallbackPages],
+    config,
+    collections,
+  );
+  const undecoratedPages = populateAlternates(
+    [...pages, ...fallbackPages, ...collectionTopPages],
+    config,
+  );
   const { byLocale: navigationByLocale, warnings: navigationWarnings } =
     await generateAllNavigation(undecoratedPages, config, collections, jiti);
   const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(

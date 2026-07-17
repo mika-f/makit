@@ -141,7 +141,12 @@ describe("writeGeneratedData (spec §40 layout)", () => {
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
     const { pages, collections } = await buildPagesForTest(config);
-    const { byLocale } = await generateAllNavigation(pages, config, collections, createMetadataJiti());
+    const { byLocale } = await generateAllNavigation(
+      pages,
+      config,
+      collections,
+      createMetadataJiti(),
+    );
     const { generatedDir } = await writeGeneratedData(config, pages, collections, byLocale);
 
     const enNav = (await readJson(
@@ -162,6 +167,34 @@ describe("writeGeneratedData (spec §40 layout)", () => {
       href: "/en-us/",
       collection: "default",
     });
+  });
+
+  it("writes a portal home/{locale}.json and a portal route-map entry when there is no root page (spec §33.2)", async () => {
+    await write("docs/makit/index.md", "# Makit\n");
+    await write("docs/enduroq/index.md", "# Enduroq\n");
+    const config = resolveConfig(
+      {
+        title: "My Docs",
+        collections: [
+          { id: "makit", title: "Makit", path: "/makit" },
+          { id: "enduroq", title: "Enduroq", path: "/enduroq" },
+        ],
+      },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages, collections } = await buildPagesForTest(config);
+    const { generatedDir } = await writeGeneratedData(config, pages, collections);
+
+    const routeMap = (await readJson(join(generatedDir, "indexes", "route-map.json"))) as Record<
+      string,
+      Record<string, { kind: string }>
+    >;
+    expect(routeMap.en?.[""]).toEqual({ kind: "portal", route: "/" });
+
+    const home = (await readJson(join(generatedDir, "home", "en.json"))) as {
+      featuredCollections: { id: string }[];
+    };
+    expect(home.featuredCollections.map((c) => c.id).sort()).toEqual(["enduroq", "makit"]);
   });
 
   it("removes stale files from a previous generation", async () => {

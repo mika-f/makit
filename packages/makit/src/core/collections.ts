@@ -3,9 +3,10 @@ import { join } from "node:path";
 import fg from "fast-glob";
 import type { Jiti } from "jiti";
 import { loadMetadataFile } from "../metadata/loader.js";
-import type { CollectionMetadata, LocalizedValue } from "../metadata/types.js";
+import type { CollectionMetadata } from "../metadata/types.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
 import { MakitError } from "./errors.js";
+import { localizeValue } from "./localize.js";
 
 /** The ID of the implicit collection created for collection-less sites (spec §48.1). */
 export const IMPLICIT_COLLECTION_ID = "default";
@@ -44,16 +45,6 @@ export interface ResolveCollectionsResult {
 function pathToSegments(path: string | undefined): string[] {
   if (!path) return [];
   return path.split("/").filter((segment) => segment.length > 0);
-}
-
-function localizeValue(
-  value: string | LocalizedValue<string> | undefined,
-  locale: ResolvedLocaleConfig,
-  fallback?: string,
-): string | undefined {
-  if (value === undefined) return fallback;
-  if (typeof value === "string") return value;
-  return value[locale.locale] ?? value[locale.urlLocale] ?? Object.values(value)[0] ?? fallback;
 }
 
 interface CollectionSource {

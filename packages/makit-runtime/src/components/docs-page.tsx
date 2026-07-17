@@ -1,6 +1,7 @@
-import { getHomeRoute } from "../data/loaders.js";
+import { getCollections, getGlobalNavigation, getHomeRoute } from "../data/loaders.js";
 import type { GeneratedPage, I18nData, ResolvedNavNode, SiteData } from "../data/types.js";
 import { Breadcrumbs } from "./breadcrumbs.js";
+import { CollectionSwitcher } from "./collection-switcher.js";
 import { FallbackNotice } from "./fallback-notice.js";
 import { Footer } from "./footer.js";
 import { Header } from "./header.js";
@@ -20,13 +21,22 @@ export interface DocsPageProps {
 
 /** The standard theme's page shell (spec §21.1): header, sidebar, content, ToC, footer. */
 export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) {
-  const homeHref = (await getHomeRoute(page.locale)) ?? `${site.basePath}/`;
+  const [homeHref, collections, globalNavigation] = await Promise.all([
+    getHomeRoute(page.locale).then((href) => href ?? `${site.basePath}/`),
+    getCollections(),
+    getGlobalNavigation(page.locale),
+  ]);
 
   const prev = page.navigationPosition?.prev;
   const next = page.navigationPosition?.next;
 
   const headerActions = (
     <>
+      <CollectionSwitcher
+        collections={collections}
+        currentCollectionId={page.collectionId}
+        locale={page.locale}
+      />
       {i18n.enabled && (
         <LocaleSwitcher
           page={page}
@@ -45,6 +55,7 @@ export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) 
         siteTitle={site.title}
         homeHref={homeHref}
         actions={headerActions}
+        globalNavigation={globalNavigation}
       />
       <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col md:flex-row">
         {page.sidebar && <Sidebar navigation={navigation} currentRoute={page.route} />}

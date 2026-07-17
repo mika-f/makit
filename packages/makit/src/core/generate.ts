@@ -4,6 +4,7 @@ import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import type { ResolvedCollection } from "./collections.js";
+import { resolveHome } from "./home.js";
 import { resolveGlobalNavigation } from "./navigation.js";
 import { buildRoute } from "./routes.js";
 import { buildSearchIndex } from "./search-index.js";
@@ -29,12 +30,10 @@ export interface PageMapEntry {
 }
 
 /** One entry of `indexes/route-map.json`: `routeMap[locale][joinedSegments]`. */
-export interface RouteMapEntry {
-  collectionId: string;
-  pageId: string;
-  /** What renders at this route; portal/collection-top variants arrive in later phases. */
-  kind: "page";
-}
+export type RouteMapEntry =
+  | { kind: "page"; collectionId: string; pageId: string }
+  /** The synthesized site home (spec §33.2) — see `home/{locale}.json`. */
+  | { kind: "portal"; route: string };
 
 /** One entry of `collections.json`. */
 export interface CollectionData {
@@ -171,6 +170,26 @@ export async function writeGeneratedData(
       Object.entries(collection.locales).map(([locale, data]) => [locale, data.rootRoute]),
     );
   }
+
+  for (const locale of config.i18n.locales) {
+    const home = resolveHome(locale, pages, config, collections);
+    if (home.kind === "page") {
+      (routeMap[locale.urlLocale] ??= {})[""] = {
+        kind: "page",
+        collectionId: home.collectionId,
+        pageId: home.pageId,
+      };
+    } else if (home.kind === "portal") {
+      const route = buildRoute([], {
+        basePath: config.basePath,
+        localePrefix: config.i18n.enabled ? locale.urlLocale : undefined,
+        trailingSlash: config.build.trailingSlash,
+      });
+      (routeMap[locale.urlLocale] ??= {})[""] = { kind: "portal", route };
+      await writeJson(join(generatedDir, "home", `${locale.urlLocale}.json`), home.data);
+    }
+  }
+
   await writeJson(join(generatedDir, "indexes", "page-map.json"), pageMap);
   await writeJson(join(generatedDir, "indexes", "route-map.json"), routeMap);
   await writeJson(join(generatedDir, "indexes", "collection-map.json"), collectionMap);

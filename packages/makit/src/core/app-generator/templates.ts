@@ -61,11 +61,15 @@ export function slugPageTemplate(localeExpression: string): string {
   return `import { notFound } from "next/navigation";
 import {
   DocsPage,
+  PortalHomePage,
   buildPageMetadata,
+  buildSiteMetadata,
   getAllStaticParams,
   getCollectionNavigation,
+  getHomeData,
   getLocalesData,
   getPageForRoute,
+  getRouteEntry,
   getSiteData,
 } from "@natsuneko-laboratory/makit-runtime";
 
@@ -76,23 +80,31 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }) {
   params = await params;
   const locale = ${localeExpression};
+  const entry = await getRouteEntry(locale, params.slug ?? []);
+  if (!entry) return {};
+  const site = await getSiteData();
+  if (entry.kind === "portal") return buildSiteMetadata(site);
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) return {};
-  const site = await getSiteData();
   return buildPageMetadata(page, site);
 }
 
 export default async function Page({ params }) {
   params = await params;
   const locale = ${localeExpression};
+  const entry = await getRouteEntry(locale, params.slug ?? []);
+  if (!entry) notFound();
+
+  const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
+
+  if (entry.kind === "portal") {
+    const home = await getHomeData(locale);
+    return <PortalHomePage home={home} site={site} i18n={i18n} locale={locale} />;
+  }
+
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) notFound();
-
-  const [site, i18n, navigation] = await Promise.all([
-    getSiteData(),
-    getLocalesData(),
-    getCollectionNavigation(locale, page.collectionId),
-  ]);
+  const navigation = await getCollectionNavigation(locale, page.collectionId);
 
   return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} />;
 }

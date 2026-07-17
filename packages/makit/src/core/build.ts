@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { writeGeneratedData } from "./generate.js";
@@ -91,7 +92,19 @@ export async function build(
     logger.info(`Generated ${fallbackPages.length} fallback page(s)`);
   }
 
-  const undecoratedPages = populateAlternates([...productionPages, ...fallbackPages], config);
+  const collectionTopPages = synthesizeCollectionTopPages(
+    [...productionPages, ...fallbackPages],
+    config,
+    collections,
+  );
+  if (collectionTopPages.length > 0) {
+    logger.info(`Synthesized ${collectionTopPages.length} collection top page(s)`);
+  }
+
+  const undecoratedPages = populateAlternates(
+    [...productionPages, ...fallbackPages, ...collectionTopPages],
+    config,
+  );
 
   const { byLocale: navigationByLocale, warnings: navigationWarnings } =
     await generateAllNavigation(undecoratedPages, config, collections, jiti);

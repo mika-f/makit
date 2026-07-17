@@ -6,6 +6,7 @@ import chokidar from "chokidar";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
 import { writeGeneratedData } from "./generate.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
@@ -31,7 +32,15 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
   // Unlike `makit build`, dev keeps draft pages visible (spec §16).
   const { pages, warnings } = await buildAllPages(config, collections);
   const fallbackPages = generateFallbackPages(pages, config);
-  const undecoratedPages = populateAlternates([...pages, ...fallbackPages], config);
+  const collectionTopPages = synthesizeCollectionTopPages(
+    [...pages, ...fallbackPages],
+    config,
+    collections,
+  );
+  const undecoratedPages = populateAlternates(
+    [...pages, ...fallbackPages, ...collectionTopPages],
+    config,
+  );
   const { byLocale } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
   const { pages: allPages } = decoratePagesWithNavigation(
     undecoratedPages,

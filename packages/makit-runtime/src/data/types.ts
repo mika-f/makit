@@ -112,13 +112,27 @@ export interface PageMapEntry {
 export type LocalePageMap = Record<string, Record<string, PageMapEntry>>;
 
 /** One entry of `indexes/route-map.json`: `routeMap[locale][joinedSegments]`. */
-export interface RouteMapEntry {
-  collectionId: string;
-  pageId: string;
-  kind: "page";
-}
+export type RouteMapEntry =
+  | { kind: "page"; collectionId: string; pageId: string }
+  /** The synthesized site home (spec §33.2) — see `home/{locale}.json`. */
+  | { kind: "portal"; route: string };
 
 export type LocaleRouteMap = Record<string, RouteMapEntry>;
+
+/** One card in a synthesized portal home (spec §33.2). */
+export interface PortalCollectionCard {
+  id: string;
+  title: string;
+  description?: string;
+  icon?: string;
+  href: string;
+}
+
+/** `home/{locale}.json` — the resolved payload for a synthesized portal home. */
+export interface PortalHomeData {
+  featuredCollections: PortalCollectionCard[];
+  sections: { title?: string; collections: PortalCollectionCard[] }[];
+}
 
 /** One entry of `collections.json`. */
 export interface CollectionData {

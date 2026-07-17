@@ -4,7 +4,7 @@ import type {
   GeneratedPageLink,
   PageHierarchyNode,
 } from "../types/page.js";
-import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import type { ResolvedConfig } from "../types/resolved-config.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "./nav-nodes.js";
@@ -32,7 +32,12 @@ function collectOccurrences(
 ): void {
   for (const node of nodes) {
     if (node.type === "page") {
-      out.push({ pageId: node.pageId, title: node.title, href: node.href, ancestors: [...ancestors] });
+      out.push({
+        pageId: node.pageId,
+        title: node.title,
+        href: node.href,
+        ancestors: [...ancestors],
+      });
     } else if (node.type === "section" || node.type === "group") {
       // A clickable container counts as an occurrence of its page too.
       if (node.pageId && node.href) {
@@ -198,7 +203,10 @@ export function decoratePagesWithNavigation(
 
       const toLink = (occurrence: Occurrence | undefined): GeneratedPageLink | undefined => {
         if (!occurrence) return undefined;
-        if (!pagination.crossSection && topSectionOf(occurrence) !== topSectionOf(entry.occurrence)) {
+        if (
+          !pagination.crossSection &&
+          topSectionOf(occurrence) !== topSectionOf(entry.occurrence)
+        ) {
           return undefined;
         }
         return { pageId: occurrence.pageId, title: occurrence.title, href: occurrence.href };

@@ -53,7 +53,12 @@ function makeConfig(overrides: MakitConfigParsed): ResolvedConfig {
 /** Builds pages, resolves navigation, and decorates — the pipeline as `build.ts` runs it. */
 async function decorate(config: ResolvedConfig) {
   const { pages, collections } = await buildPagesForTest(config);
-  const { byLocale } = await generateAllNavigation(pages, config, collections, createMetadataJiti());
+  const { byLocale } = await generateAllNavigation(
+    pages,
+    config,
+    collections,
+    createMetadataJiti(),
+  );
   return decoratePagesWithNavigation(pages, byLocale, config, collections);
 }
 
@@ -63,7 +68,9 @@ describe("decoratePagesWithNavigation — breadcrumbs and hierarchy (spec §31, 
     const { pages } = await decorate(makeConfig({ title: "Docs" }));
 
     const page = pages[0]!;
-    expect(page.hierarchy).toEqual([{ type: "section", id: "guides", title: "Guides", href: undefined }]);
+    expect(page.hierarchy).toEqual([
+      { type: "section", id: "guides", title: "Guides", href: undefined },
+    ]);
     expect(page.breadcrumbs).toEqual([
       { title: "Home", href: "/" },
       { title: "Guides", href: undefined },

@@ -19,7 +19,9 @@ function ItemLink({
   currentRoute: string;
 }) {
   if (!href) {
-    return <span className="text-sm font-medium text-[var(--makit-color-foreground)]">{title}</span>;
+    return (
+      <span className="text-sm font-medium text-[var(--makit-color-foreground)]">{title}</span>
+    );
   }
   const isActive = href === currentRoute;
   return (

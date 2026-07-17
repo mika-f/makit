@@ -4,6 +4,7 @@ import {
   collectionNavigationPath,
   collectionsPath,
   globalNavigationPath,
+  homePath,
   localesPath,
   pageMapPath,
   pagePath,
@@ -18,7 +19,9 @@ import type {
   I18nData,
   LocalePageMap,
   LocaleRouteMap,
+  PortalHomeData,
   ResolvedNavNode,
+  RouteMapEntry,
   SiteData,
 } from "./types.js";
 
@@ -95,26 +98,38 @@ export function getTranslationMap(): Promise<Record<string, Record<string, strin
   return readJson(translationMapPath());
 }
 
-/** Finds the page for a given `(locale, slug)` App Router param pair, or `undefined` if none matches. */
+/** The raw route-map entry for a `(locale, slug)` pair — lets a route template decide page vs. portal before fetching either. */
+export async function getRouteEntry(
+  locale: string,
+  slug: readonly string[],
+): Promise<RouteMapEntry | undefined> {
+  const routeMap = await getRouteMap();
+  return routeMap[locale]?.[slug.join("/")];
+}
+
+/** Finds the page for a given `(locale, slug)` App Router param pair, or `undefined` if none matches (or it's a portal home). */
 export async function getPageForRoute(
   locale: string,
   slug: readonly string[],
 ): Promise<GeneratedPage | undefined> {
   const routeMap = await getRouteMap();
   const entry = routeMap[locale]?.[slug.join("/")];
-  if (!entry) return undefined;
+  if (!entry || entry.kind !== "page") return undefined;
   return getPageById(locale, entry.collectionId, entry.pageId);
 }
 
-/** The locale's home route (the page with zero segments), if one exists. */
+/** The resolved payload for a synthesized portal home (spec §33.2, `home/{locale}.json`). */
+export function getHomeData(locale: string): Promise<PortalHomeData> {
+  return readJson(homePath(locale));
+}
+
+/** The locale's home route — whatever occupies `segments: []` (a page, an aliased page, or a portal). */
 export async function getHomeRoute(locale: string): Promise<string | undefined> {
-  const pageMap = await getPageMap();
-  for (const byPageId of Object.values(pageMap[locale] ?? {})) {
-    for (const entry of Object.values(byPageId)) {
-      if (entry.segments.length === 0) return entry.route;
-    }
-  }
-  return undefined;
+  const routeMap = await getRouteMap();
+  const entry = routeMap[locale]?.[""];
+  if (!entry) return undefined;
+  if (entry.kind === "portal") return entry.route;
+  return (await getPageById(locale, entry.collectionId, entry.pageId)).route;
 }
 
 export interface StaticParam {
@@ -122,17 +137,37 @@ export interface StaticParam {
   slug: string[];
 }
 
-/** Params for every non-draft page, for `generateStaticParams` (spec §41). */
+/**
+ * Params for every non-draft page, for `generateStaticParams` (spec §41).
+ * Combines the page map (every real/fallback/synthesized page, honoring
+ * `draft`) with any route-map-only entries — currently just the portal
+ * home, which has no backing `GeneratedPage`.
+ */
 export async function getAllStaticParams(): Promise<StaticParam[]> {
-  const pageMap = await getPageMap();
+  const [pageMap, routeMap] = await Promise.all([getPageMap(), getRouteMap()]);
   const params: StaticParam[] = [];
+  const seen = new Set<string>();
+
   for (const [locale, byCollection] of Object.entries(pageMap)) {
     for (const byPageId of Object.values(byCollection)) {
       for (const entry of Object.values(byPageId)) {
         if (entry.draft) continue;
+        const key = `${locale}:${entry.segments.join("/")}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
         params.push({ locale, slug: entry.segments });
       }
     }
   }
+
+  for (const [locale, byRoute] of Object.entries(routeMap)) {
+    for (const joinedSegments of Object.keys(byRoute)) {
+      const key = `${locale}:${joinedSegments}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      params.push({ locale, slug: joinedSegments === "" ? [] : joinedSegments.split("/") });
+    }
+  }
+
   return params;
 }

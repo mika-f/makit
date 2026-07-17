@@ -4,11 +4,13 @@ export {
   getCollectionNavigation,
   getCollections,
   getGlobalNavigation,
+  getHomeData,
   getHomeRoute,
   getLocalesData,
   getPageById,
   getPageForRoute,
   getPageMap,
+  getRouteEntry,
   getRouteMap,
   getSiteData,
   getTranslationMap,
@@ -39,6 +41,8 @@ export type {
   PageHierarchyNode,
   PageMapEntry,
   PageTaxonomy,
+  PortalCollectionCard,
+  PortalHomeData,
   ResolvedNavContainerNode,
   ResolvedNavLinkNode,
   ResolvedNavNode,
@@ -53,8 +57,10 @@ export type {
 export { buildPageMetadata, buildSiteMetadata } from "./metadata/build-metadata.js";
 
 export { Breadcrumbs } from "./components/breadcrumbs.js";
+export { CollectionSwitcher } from "./components/collection-switcher.js";
 export { DocsPage } from "./components/docs-page.js";
 export { NotFoundPage } from "./components/not-found-page.js";
+export { PortalHomePage } from "./components/portal-home-page.js";
 export { RootPage } from "./components/root-page.js";
 export { ThemeScript } from "./theme/theme-script.js";
 export { ThemeVariables } from "./theme/theme-variables.js";
