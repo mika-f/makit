@@ -153,7 +153,14 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     '@plugin "@tailwindcss/typography";',
     "",
     '@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));',
-    `@source "${options.makitRuntimeDistPath}/**/*.js";`,
+    // makit-runtime's build emits ESM output as `.mjs` (never plain `.js`,
+    // see its tsdown config) — matching `*.js` here made this directive a
+    // silent no-op, since the glob never matched any file. Tailwind's
+    // component classes were only ever showing up via its own automatic
+    // fallback scanning of whatever broad root Turbopack picked (needed for
+    // `.makit/node_modules`'s symlinks, see `commonAncestorDir` above) —
+    // an uncontrolled, much larger surface than this explicit list intends.
+    `@source "${options.makitRuntimeDistPath}/**/*.mjs";`,
     "",
     "pre.shiki {",
     "  position: relative;",
