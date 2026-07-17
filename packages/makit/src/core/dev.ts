@@ -121,30 +121,52 @@ export async function startDevServer(
   let sourceWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let metadataWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let publicWatcher: ReturnType<typeof chokidar.watch> | undefined;
-  let regenerating = false;
-  let regenerateAgain = false;
+
+  // A single mutex around every regeneration path (content-only and
+  // config-triggered): `generateApp` and `writeGeneratedData` both write
+  // into `.makit/` while a live `next dev`/Turbopack process watches it, and
+  // running two of these passes concurrently — e.g. a source-file save
+  // landing mid-config-reload — is what was corrupting the compiled CSS
+  // (spec §43). Pending triggers that land while busy are coalesced into at
+  // most one follow-up run each; a pending config reload takes priority
+  // since it already re-runs content regeneration too.
+  let busy = false;
+  let pendingRegenerate = false;
+  let pendingReloadConfig = false;
+
+  function runNext(): void {
+    if (pendingReloadConfig) {
+      pendingReloadConfig = false;
+      pendingRegenerate = false;
+      reloadConfig();
+    } else if (pendingRegenerate) {
+      pendingRegenerate = false;
+      runRegenerate();
+    }
+  }
+
+  function runExclusive(task: () => Promise<void>): void {
+    busy = true;
+    task().finally(() => {
+      busy = false;
+      runNext();
+    });
+  }
 
   const runRegenerate = (): void => {
-    if (regenerating) {
-      regenerateAgain = true;
+    if (busy) {
+      pendingRegenerate = true;
       return;
     }
-    regenerating = true;
-    regenerateContent(config, logger)
-      .then((paths) => {
+    runExclusive(async () => {
+      try {
+        const paths = await regenerateContent(config, logger);
         metadataWatchPaths = paths;
         watchMetadataDependencies();
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         logger.error(error instanceof Error ? error.message : String(error));
-      })
-      .finally(() => {
-        regenerating = false;
-        if (regenerateAgain) {
-          regenerateAgain = false;
-          runRegenerate();
-        }
-      });
+      }
+    });
   };
 
   function watchSources(): void {
@@ -202,27 +224,36 @@ export async function startDevServer(
   // live. Fields baked into `.makit/next.config.mjs` at generateApp-time
   // (basePath, trailingSlash, i18n.enabled's locale routing) still need a
   // `next dev` restart — Next.js itself doesn't hot-reload its own config.
-  const configWatcher = chokidar.watch(config.configPath, { ignoreInitial: true });
-  configWatcher.on("change", () => {
-    logger.info(`Config changed: ${relative(config.root, config.configPath)} — reloading`);
-    loadConfig({ cwd: config.root, configPath: config.configPath })
-      .then(async (reloaded) => {
+  const reloadConfig = (): void => {
+    if (busy) {
+      pendingReloadConfig = true;
+      return;
+    }
+    runExclusive(async () => {
+      logger.info(`Config changed: ${relative(config.root, config.configPath)} — reloading`);
+      try {
+        const reloaded = await loadConfig({ cwd: config.root, configPath: config.configPath });
         config = reloaded;
         await generateApp(config);
         watchSources();
         watchPublicDir();
-        runRegenerate();
+        const paths = await regenerateContent(config, logger);
+        metadataWatchPaths = paths;
+        watchMetadataDependencies();
         logger.info(
           "Regenerated from the new config. Changes to basePath/trailingSlash/i18n routing " +
             "require restarting `makit dev` to fully take effect.",
         );
-      })
-      .catch((error: unknown) => {
+      } catch (error) {
         logger.error(
           `Failed to reload config: ${error instanceof Error ? error.message : String(error)}`,
         );
-      });
-  });
+      }
+    });
+  };
+
+  const configWatcher = chokidar.watch(config.configPath, { ignoreInitial: true });
+  configWatcher.on("change", reloadConfig);
 
   const nextBin = join(resolvePackageRoot("next"), "dist", "bin", "next");
   const child = spawn(
