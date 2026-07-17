@@ -1,7 +1,8 @@
-import { cp, mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import type { ResolvedConfig } from "../../types/resolved-config.js";
+import { atomicWriteFile } from "../atomic-write.js";
 import { commonAncestorDir } from "../common-ancestor.js";
 import {
   RUNTIME_PACKAGES,
@@ -18,10 +19,7 @@ import {
   slugPageTemplate,
 } from "./templates.js";
 
-async function writeText(path: string, content: string): Promise<void> {
-  await mkdir(join(path, ".."), { recursive: true });
-  await writeFile(path, content, "utf-8");
-}
+const writeText = atomicWriteFile;
 
 function customStyleImportPath(
   config: ResolvedConfig,

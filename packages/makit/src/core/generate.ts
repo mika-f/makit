@@ -1,8 +1,9 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
 import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { atomicWriteFile } from "./atomic-write.js";
 import type { ResolvedCollection } from "./collections.js";
 import { resolveCollectionLocale } from "./collections.js";
 import { resolveHome } from "./home.js";
@@ -16,8 +17,7 @@ export interface WriteGeneratedDataResult {
 }
 
 async function writeJson(path: string, data: unknown): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
-  await writeFile(path, `${JSON.stringify(data, null, 2)}\n`, "utf-8");
+  await atomicWriteFile(path, `${JSON.stringify(data, null, 2)}\n`);
 }
 
 /** One entry of `indexes/page-map.json`: `pageMap[locale][collectionId][pageId]`. */
@@ -70,7 +70,6 @@ export async function writeGeneratedData(
   // Stale files from a previous layout (deleted pages, renamed collections)
   // must not survive a regeneration (spec §5.5).
   await rm(generatedDir, { recursive: true, force: true });
-  await mkdir(generatedDir, { recursive: true });
 
   const site = {
     title: config.title,
