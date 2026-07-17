@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "React components and Next.js integration used by Makit's generated .makit/ app.",
   "license": "MIT",
+  "repository": "https://github.com/mika-f/makit.git",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "main": "./dist/index.mjs",
   "types": "./dist/index.d.mts",

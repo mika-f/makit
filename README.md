@@ -125,6 +125,16 @@ pnpm typecheck
 
 Issues, feature requests, and pull requests are welcome. For substantial changes, please start a discussion in [Issues](https://github.com/mika-f/makit/issues).
 
+## Publishing
+
+The `Publish npm packages` workflow runs when a `v*` tag is pushed, or can be
+started manually from GitHub Actions. It validates the workspace and publishes
+only package versions that are not already available on npm.
+
+Before the first release, configure npm Trusted Publishing for each published
+package with the GitHub repository `mika-f/makit` and workflow filename
+`publish.yml`. Then push a version tag, for example `v0.1.0`.
+
 ## License
 
 [MIT](LICENSE)

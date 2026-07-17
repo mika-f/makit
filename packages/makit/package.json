@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "description": "Generate static documentation sites from Markdown, powered by Next.js.",
   "license": "MIT",
+  "repository": "https://github.com/mika-f/makit.git",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "makit": "./dist/cli/index.mjs"
   },
