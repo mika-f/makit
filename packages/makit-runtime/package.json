@@ -18,6 +18,7 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
+    "prepublishOnly": "pnpm run build",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
