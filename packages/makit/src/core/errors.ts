@@ -17,8 +17,6 @@ export type MakitErrorCode =
   | "duplicate-collection-id"
   | "duplicate-collection-path"
   | "front-matter-not-supported"
-  | "front-matter-too-deep"
-  | "front-matter-parse-failed"
   | "front-matter-conflicts-with-metadata"
   | "metadata-eval-failed"
   | "metadata-missing-default-export"

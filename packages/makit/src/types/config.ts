@@ -337,7 +337,9 @@ export type MakitWarningCode =
   | "collection-fallback"
   | "env-var-in-metadata"
   | "out-of-project-import"
-  | "slow-metadata-eval";
+  | "slow-metadata-eval"
+  | "front-matter-too-deep"
+  | "front-matter-invalid-value";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,
@@ -356,9 +358,11 @@ export interface ValidationConfig {
    * a lightweight, flat (non-nested) alternative to `{page}.meta.ts` —
    * useful for pages that only need a couple of scalar overrides (e.g.
    * `title`, `order`). Nested fields (`navigation`, `taxonomy`) and fields
-   * with object/array-of-object values are not supported this way and
-   * always raise a build error asking for `.meta.ts`. A page may not define
-   * both a `.meta.ts` file and non-empty front matter — pick one.
+   * with object/array-of-object values are not supported this way; such a
+   * field is dropped and reported as a `front-matter-too-deep` warning
+   * (promote it to a build error via `failOn`/`strict`) rather than failing
+   * the whole page. A page may not define both a `.meta.ts` file and
+   * non-empty front matter — pick one.
    *
    * Set to `true` to forbid front matter entirely and force all page
    * metadata through `.meta.ts`.

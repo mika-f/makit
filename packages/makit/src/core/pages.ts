@@ -57,6 +57,7 @@ async function resolvePageMetadata(
 }> {
   const diagnostics: Diagnostic[] = [];
   const frontMatter = parseFrontMatter(raw, file.absolutePath);
+  diagnostics.push(...frontMatter.diagnostics);
 
   if (frontMatter.metadata && config.validation.disallowFrontMatter) {
     throw new MakitError(

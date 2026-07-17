@@ -161,11 +161,27 @@ describe("buildAllPages", () => {
     });
   });
 
-  it("rejects nested front matter fields (spec extension: flat only)", async () => {
-    await write("docs/index.md", "---\nnavigation:\n  title: Custom\n---\n# Heading\n");
-    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({
-      code: "front-matter-too-deep",
-    });
+  it("warns and drops nested front matter fields instead of failing the build", async () => {
+    await write(
+      "docs/index.md",
+      "---\ntitle: Kept\nnavigation:\n  title: Custom\n---\n# Heading\n",
+    );
+    const { pages, diagnostics } = await buildPagesForTest(configFor(dir));
+    // The nested field is dropped, but the rest of the front matter still applies.
+    expect(pages[0]?.title).toBe("Kept");
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({ code: "front-matter-too-deep" }),
+    );
+  });
+
+  it("warns and drops a front matter field with an invalid value instead of failing the build", async () => {
+    await write("docs/index.md", "---\ntitle: Kept\norder: not-a-number\n---\n# Heading\n");
+    const { pages, diagnostics } = await buildPagesForTest(configFor(dir));
+    expect(pages[0]?.title).toBe("Kept");
+    expect(pages[0]?.order).toBeUndefined();
+    expect(diagnostics).toContainEqual(
+      expect.objectContaining({ code: "front-matter-invalid-value" }),
+    );
   });
 
   it("rejects a page that defines both front matter and .meta.ts", async () => {

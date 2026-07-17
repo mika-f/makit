@@ -1,6 +1,6 @@
 import matter from "gray-matter";
 import { z } from "zod";
-import { MakitError } from "../core/errors.js";
+import type { Diagnostic } from "../core/validation.js";
 import type { PageMetadata } from "../metadata/types.js";
 
 /**
@@ -32,48 +32,80 @@ export interface ParsedFrontMatter {
   metadata?: PageMetadata;
   /** Markdown body with the front matter block removed. */
   content: string;
+  /** Unsupported fields are dropped rather than failing the build (spec §31.1). */
+  diagnostics: Diagnostic[];
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Rejects front matter deeper than one level — nested fields need `.meta.ts`. */
-function assertFlat(data: Record<string, unknown>, sourcePath: string): void {
+type FrontMatterShape = typeof frontMatterSchema.shape;
+
+/**
+ * Drops fields deeper than one level — nested fields need `.meta.ts` — and
+ * fields that don't match the flat schema, reporting each as a warning
+ * instead of failing the whole page. Unrecognized keys are stripped
+ * silently, as before, so editor/CMS metadata can coexist harmlessly.
+ */
+function collectFlatData(
+  data: Record<string, unknown>,
+  sourcePath: string,
+  diagnostics: Diagnostic[],
+): Partial<PageMetadata> {
+  const shape = frontMatterSchema.shape as FrontMatterShape;
+  const metadata: Record<string, unknown> = {};
+
   for (const [key, value] of Object.entries(data)) {
     const values = Array.isArray(value) ? value : [value];
     if (values.some(isPlainObject)) {
-      throw new MakitError(
-        "front-matter-too-deep",
-        `${sourcePath}: front matter field "${key}" is nested. Markdown front matter only ` +
-          'supports flat (scalar) fields; move structured metadata into a sibling "{filename}.meta.ts" ' +
-          "file (definePageMetadata) instead.",
-      );
+      diagnostics.push({
+        code: "front-matter-too-deep",
+        sourcePath,
+        message:
+          `front matter field "${key}" is nested. Markdown front matter only supports flat ` +
+          '(scalar) fields; move structured metadata into a sibling "{filename}.meta.ts" file ' +
+          "(definePageMetadata) instead. The field was ignored.",
+      });
+      continue;
     }
+
+    const fieldSchema = shape[key as keyof FrontMatterShape];
+    if (!fieldSchema) continue; // unknown keys are stripped silently
+
+    const result = fieldSchema.safeParse(value);
+    if (!result.success) {
+      diagnostics.push({
+        code: "front-matter-invalid-value",
+        sourcePath,
+        message:
+          `front matter field "${key}" is invalid — ${result.error.issues
+            .map((issue) => issue.message)
+            .join(", ")}. The field was ignored.`,
+      });
+      continue;
+    }
+
+    metadata[key] = result.data;
   }
+
+  return metadata as Partial<PageMetadata>;
 }
 
 /**
  * Extracts a Markdown page's own YAML front matter, if any, as a flat
  * {@link PageMetadata} subset, and returns the body with the block removed.
+ * Fields that are nested or fail validation are dropped and reported as
+ * diagnostics rather than aborting the build.
  */
 export function parseFrontMatter(raw: string, sourcePath: string): ParsedFrontMatter {
   const parsed = matter(raw);
   if (Object.keys(parsed.data).length === 0) {
-    return { content: parsed.content };
+    return { content: parsed.content, diagnostics: [] };
   }
 
-  assertFlat(parsed.data, sourcePath);
+  const diagnostics: Diagnostic[] = [];
+  const metadata = collectFlatData(parsed.data, sourcePath, diagnostics);
 
-  const result = frontMatterSchema.safeParse(parsed.data);
-  if (!result.success) {
-    throw new MakitError(
-      "front-matter-parse-failed",
-      `${sourcePath}: invalid front matter — ${result.error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join(", ")}`,
-    );
-  }
-
-  return { metadata: result.data, content: parsed.content };
+  return { metadata, content: parsed.content, diagnostics };
 }
