@@ -1,25 +1,25 @@
-import type { NavigationGroup, NavigationItem } from "../data/types.js";
+import type { ResolvedNavNode } from "../data/types.js";
 
 export interface FlatNavigationEntry {
   title: string;
   href: string;
 }
 
-function flattenItems(items: readonly NavigationItem[], out: FlatNavigationEntry[]): void {
-  for (const item of items) {
-    if (item.href && !item.external) {
-      out.push({ title: item.title, href: item.href });
+function flattenNodes(nodes: readonly ResolvedNavNode[], out: FlatNavigationEntry[]): void {
+  for (const node of nodes) {
+    if (node.type === "link") {
+      if (!node.external) out.push({ title: node.title, href: node.href });
+      continue;
     }
-    if (item.items) flattenItems(item.items, out);
+    if (node.href) out.push({ title: node.title ?? "", href: node.href });
+    if (node.type === "section" || node.type === "group") flattenNodes(node.items, out);
   }
 }
 
-/** Flattens the nav tree into a single ordered list, for prev/next links (spec §21.1). */
-export function flattenNavigation(groups: readonly NavigationGroup[]): FlatNavigationEntry[] {
+/** Flattens the nav tree into a single ordered list of internal, linkable entries. */
+export function flattenNavigation(nodes: readonly ResolvedNavNode[]): FlatNavigationEntry[] {
   const out: FlatNavigationEntry[] = [];
-  for (const group of groups) {
-    flattenItems(group.items, out);
-  }
+  flattenNodes(nodes, out);
   return out;
 }
 
@@ -28,9 +28,15 @@ export interface PrevNext {
   next?: FlatNavigationEntry;
 }
 
-/** Finds the previous/next entries around `currentRoute` in the flattened nav order. */
-export function findPrevNext(groups: readonly NavigationGroup[], currentRoute: string): PrevNext {
-  const flat = flattenNavigation(groups);
+/**
+ * Finds the previous/next entries around `currentRoute` in the flattened
+ * nav order. `GeneratedPage.navigationPosition` (computed at build time,
+ * canonical-position and `crossSection`-aware) is the source of truth for
+ * `DocsPage`'s prev/next links — this helper remains for custom themes that
+ * want a route-order lookup over the raw navigation tree.
+ */
+export function findPrevNext(nodes: readonly ResolvedNavNode[], currentRoute: string): PrevNext {
+  const flat = flattenNavigation(nodes);
   const index = flat.findIndex((entry) => entry.href === currentRoute);
   if (index === -1) return {};
   return { prev: flat[index - 1], next: flat[index + 1] };

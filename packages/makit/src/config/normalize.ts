@@ -10,6 +10,7 @@ import {
   DEFAULT_DEV_HOST,
   DEFAULT_DEV_PORT,
   DEFAULT_FALLBACK_NOTICE,
+  DEFAULT_HOME_LABEL,
   DEFAULT_LANG,
   DEFAULT_OUT_DIR,
   DEFAULT_PUBLIC_DIR,
@@ -115,6 +116,7 @@ function resolveI18n(parsed: MakitConfigParsed, topLevelLang: string): ResolvedI
     const override = i18n.messages?.[locale.locale] ?? i18n.messages?.[locale.urlLocale];
     messages[locale.urlLocale] = {
       fallbackNotice: override?.fallbackNotice ?? DEFAULT_FALLBACK_NOTICE,
+      home: override?.home ?? DEFAULT_HOME_LABEL,
     };
   }
 

@@ -19,3 +19,4 @@ export const DEFAULT_DEV_HOST = "localhost";
 
 export const DEFAULT_FALLBACK_NOTICE =
   "This page has not been translated yet. Showing the default language version.";
+export const DEFAULT_HOME_LABEL = "Home";

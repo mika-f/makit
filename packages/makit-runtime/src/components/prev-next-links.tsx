@@ -1,6 +1,12 @@
-import type { PrevNext } from "../navigation/flatten.js";
+import type { GeneratedPageLink } from "../data/types.js";
 
-export function PrevNextLinks({ prev, next }: PrevNext) {
+export interface PrevNextLinksProps {
+  prev?: GeneratedPageLink;
+  next?: GeneratedPageLink;
+}
+
+/** Renders the page's precomputed prev/next links (`GeneratedPage.navigationPosition`, spec §30, §32). */
+export function PrevNextLinks({ prev, next }: PrevNextLinksProps) {
   if (!prev && !next) return null;
 
   return (

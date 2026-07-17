@@ -20,9 +20,12 @@ export type {
   FooterData,
   FooterLink,
   GeneratedAlternate,
+  GeneratedBreadcrumb,
   GeneratedHeading,
   GeneratedMetadata,
+  GeneratedNavigationPosition,
   GeneratedPage,
+  GeneratedPageLink,
   GlobalNavigationGroup,
   GlobalNavigationItem,
   HeaderData,
@@ -33,10 +36,13 @@ export type {
   LocalePageMap,
   LocaleRouteMap,
   MissingPageBehavior,
-  NavigationGroup,
-  NavigationItem,
+  PageHierarchyNode,
   PageMapEntry,
   PageTaxonomy,
+  ResolvedNavContainerNode,
+  ResolvedNavLinkNode,
+  ResolvedNavNode,
+  ResolvedNavPageNode,
   RootBehavior,
   RootLocaleOption,
   RouteMapEntry,
@@ -46,6 +52,7 @@ export type {
 } from "./data/types.js";
 export { buildPageMetadata, buildSiteMetadata } from "./metadata/build-metadata.js";
 
+export { Breadcrumbs } from "./components/breadcrumbs.js";
 export { DocsPage } from "./components/docs-page.js";
 export { NotFoundPage } from "./components/not-found-page.js";
 export { RootPage } from "./components/root-page.js";

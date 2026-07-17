@@ -172,7 +172,7 @@ export function decoratePagesWithNavigation(
     if (breadcrumbsConfig.enabled) {
       if (breadcrumbsConfig.showHome) {
         breadcrumbs.push({
-          title: "Home",
+          title: config.i18n.messages[page.locale]?.home ?? "Home",
           href: buildRoute([], {
             basePath: config.basePath,
             localePrefix: config.i18n.enabled ? page.locale : undefined,

@@ -1,43 +1,22 @@
-import type { NavigationGroup } from "../data/types.js";
+import type { ResolvedNavNode } from "../data/types.js";
 import { NavigationItems } from "./navigation-items.js";
 
-function SidebarGroups({
-  groups,
-  currentRoute,
-}: {
-  groups: readonly NavigationGroup[];
-  currentRoute: string;
-}) {
-  return (
-    <nav className="space-y-4" aria-label="Documentation navigation">
-      {groups.map((group, index) => (
-        <div key={group.title ?? `group-${index}`}>
-          {group.title && (
-            <h2 className="mb-1 px-2 text-xs font-semibold uppercase tracking-wide text-[var(--makit-color-foreground)] opacity-60">
-              {group.title}
-            </h2>
-          )}
-          <NavigationItems items={group.items} currentRoute={currentRoute} />
-        </div>
-      ))}
-    </nav>
-  );
-}
-
 export function Sidebar({
-  groups,
+  navigation,
   currentRoute,
 }: {
-  groups: readonly NavigationGroup[];
+  navigation: readonly ResolvedNavNode[];
   currentRoute: string;
 }) {
-  if (groups.length === 0) return null;
+  if (navigation.length === 0) return null;
 
   return (
     <>
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 border-r border-[var(--makit-color-border)] p-4 md:block">
-        <SidebarGroups groups={groups} currentRoute={currentRoute} />
+        <nav className="space-y-4" aria-label="Documentation navigation">
+          <NavigationItems items={navigation} currentRoute={currentRoute} />
+        </nav>
       </aside>
 
       {/* Mobile nav: a zero-JS <details> disclosure */}
@@ -45,9 +24,9 @@ export function Sidebar({
         <summary className="cursor-pointer text-sm font-medium text-[var(--makit-color-foreground)]">
           Menu
         </summary>
-        <div className="mt-3">
-          <SidebarGroups groups={groups} currentRoute={currentRoute} />
-        </div>
+        <nav className="mt-3 space-y-4" aria-label="Documentation navigation">
+          <NavigationItems items={navigation} currentRoute={currentRoute} />
+        </nav>
       </details>
     </>
   );

@@ -18,7 +18,7 @@ import type {
   I18nData,
   LocalePageMap,
   LocaleRouteMap,
-  NavigationGroup,
+  ResolvedNavNode,
   SiteData,
 } from "./types.js";
 
@@ -60,9 +60,9 @@ export function getGlobalNavigation(locale: string): Promise<GlobalNavigationGro
 export function getCollectionNavigation(
   locale: string,
   collectionId: string,
-): Promise<NavigationGroup[]> {
+): Promise<ResolvedNavNode[]> {
   // A collection can be absent in a locale (spec §35.5) — treat as empty.
-  return readJson<NavigationGroup[]>(collectionNavigationPath(locale, collectionId)).catch(
+  return readJson<ResolvedNavNode[]>(collectionNavigationPath(locale, collectionId)).catch(
     () => [],
   );
 }

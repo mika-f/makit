@@ -80,6 +80,8 @@ export interface MakitLocaleFallbackConfig {
 
 export interface MakitMessages {
   fallbackNotice: string;
+  /** The "Home" breadcrumb label (spec §31). */
+  home: string;
 }
 
 export type MakitRootBehavior = "default" | "detect" | "select";

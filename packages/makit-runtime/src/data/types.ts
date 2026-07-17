@@ -30,6 +30,38 @@ export interface PageTaxonomy {
   tags?: string[];
 }
 
+/** One breadcrumb entry: Site > Collection > Section > Group > Page (spec §31). */
+export interface GeneratedBreadcrumb {
+  title: string;
+  /** Absent for URL-less sections/groups — rendered as a plain label. */
+  href?: string;
+}
+
+/** One ancestor in the page's canonical navigation hierarchy (spec §39). */
+export interface PageHierarchyNode {
+  type: "collection" | "section" | "group";
+  id?: string;
+  title: string;
+  href?: string;
+}
+
+/** Prev/next link resolved from navigation order (spec §32). */
+export interface GeneratedPageLink {
+  pageId: string;
+  title: string;
+  href: string;
+}
+
+/** The page's canonical position in its collection's navigation (spec §30, §39). */
+export interface GeneratedNavigationPosition {
+  /** IDs of the section/group ancestors, root-first. */
+  path: string[];
+  /** Index in the flattened canonical navigation order. */
+  index: number;
+  prev?: GeneratedPageLink;
+  next?: GeneratedPageLink;
+}
+
 export interface GeneratedPage {
   pageId: string;
   collectionId: string;
@@ -47,6 +79,8 @@ export interface GeneratedPage {
   headings: GeneratedHeading[];
   draft: boolean;
   hidden: boolean;
+  titleSource: "metadata" | "heading" | "filename" | "pageId";
+  pageIdSource: "metadata" | "auto";
   sidebar: boolean;
   tableOfContents: boolean;
   order?: number;
@@ -55,6 +89,12 @@ export interface GeneratedPage {
     primary?: string[];
   };
   taxonomy?: PageTaxonomy;
+  /** Canonical ancestors: Collection > Section > Group (spec §39). */
+  hierarchy: PageHierarchyNode[];
+  /** Breadcrumb trail incl. Site/Home and the page itself per theme config (spec §31). */
+  breadcrumbs: GeneratedBreadcrumb[];
+  /** Canonical navigation position with prev/next (spec §30, §32). Absent for pages outside navigation. */
+  navigationPosition?: GeneratedNavigationPosition;
   metadata: GeneratedMetadata;
 }
 
@@ -211,19 +251,42 @@ export interface I18nData {
   localeSwitcher: {
     missingPage: MissingPageBehavior;
   };
-  messages: Record<string, { fallbackNotice: string }>;
+  messages: Record<string, { fallbackNotice: string; home: string }>;
 }
 
-export interface NavigationItem {
+/**
+ * The resolved navigation tree written to `navigation/{locale}/{collection}.json`
+ * (spec §14, §25, §27). All page/collection references are already resolved
+ * to concrete titles and hrefs.
+ */
+export type ResolvedNavNode = ResolvedNavPageNode | ResolvedNavContainerNode | ResolvedNavLinkNode;
+
+export interface ResolvedNavPageNode {
+  type: "page";
+  pageId: string;
   title: string;
-  href?: string;
-  external?: boolean;
-  items?: NavigationItem[];
+  href: string;
 }
 
-export interface NavigationGroup {
+/** A section (major division) or group (logical grouping) — spec §7.3-7.4. */
+export interface ResolvedNavContainerNode {
+  type: "section" | "group";
+  /** Used for `navigation.primary` matching (spec §30); auto mode uses the directory name. */
+  id?: string;
   title?: string;
-  items: NavigationItem[];
+  /** Set when the container itself is clickable (spec §15.2 `index`, §14.2 `page`). */
+  pageId?: string;
+  href?: string;
+  collapsible: boolean;
+  collapsed: boolean;
+  items: ResolvedNavNode[];
+}
+
+export interface ResolvedNavLinkNode {
+  type: "link";
+  title: string;
+  href: string;
+  external?: boolean;
 }
 
 export interface RootLocaleOption {

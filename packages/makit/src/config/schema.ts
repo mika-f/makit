@@ -105,6 +105,7 @@ const localeFallbackConfigSchema = z.strictObject({
 
 const messagesSchema = z.strictObject({
   fallbackNotice: z.string(),
+  home: z.string(),
 });
 
 const i18nConfigSchema = z.strictObject({
