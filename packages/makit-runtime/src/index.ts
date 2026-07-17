@@ -68,3 +68,6 @@ export { ThemeScript } from "./theme/theme-script.js";
 export { ThemeVariables } from "./theme/theme-variables.js";
 
 export { findPrevNext, flattenNavigation } from "./navigation/flatten.js";
+
+export { negotiateLocale } from "./i18n/negotiate-locale.js";
+export type { LocaleCandidate, NegotiateLocaleOptions } from "./i18n/negotiate-locale.js";

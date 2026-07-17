@@ -3,32 +3,20 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import type { RootLocaleOption } from "../data/types.js";
+import { negotiateLocale } from "../i18n/negotiate-locale.js";
 
 const LOCALE_STORAGE_KEY = "makit-locale";
-
-function pickLocale(
-  locales: readonly RootLocaleOption[],
-  browserLangs: readonly string[],
-): RootLocaleOption | undefined {
-  for (const lang of browserLangs) {
-    const exact = locales.find((l) => l.locale.toLowerCase() === lang.toLowerCase());
-    if (exact) return exact;
-  }
-  for (const lang of browserLangs) {
-    const prefix = lang.split("-")[0]?.toLowerCase();
-    const partial = locales.find((l) => l.locale.split("-")[0]?.toLowerCase() === prefix);
-    if (partial) return partial;
-  }
-  return undefined;
-}
 
 /** Client-side language detection for `i18n.root.behavior: "detect"` (spec §16.10). */
 export function RootDetect({
   locales,
   defaultHref,
+  defaultLocale,
 }: {
   locales: RootLocaleOption[];
   defaultHref: string;
+  /** BCP-47 tag of the site's default locale, used to break exact matches ties. */
+  defaultLocale: string;
 }) {
   useEffect(() => {
     try {
@@ -43,12 +31,12 @@ export function RootDetect({
         navigator.languages && navigator.languages.length > 0
           ? navigator.languages
           : [navigator.language];
-      const detected = pickLocale(locales, browserLangs);
+      const detected = negotiateLocale(locales, browserLangs, { default: defaultLocale });
       window.location.replace(detected?.href ?? defaultHref);
     } catch {
       window.location.replace(defaultHref);
     }
-  }, [locales, defaultHref]);
+  }, [locales, defaultHref, defaultLocale]);
 
   return (
     <p className="flex min-h-screen items-center justify-center text-[var(--makit-color-foreground)]">
