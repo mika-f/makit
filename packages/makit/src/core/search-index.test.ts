@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
+import type { PageMetadata } from "../metadata/types.js";
+import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
 import type { MakitConfigParsed } from "../config/schema.js";
-import { buildAllPages } from "./pages.js";
 import { generateFallbackPages } from "./i18n.js";
 import { buildSearchIndex } from "./search-index.js";
 
@@ -24,6 +25,13 @@ async function write(relativePath: string, content: string): Promise<void> {
   await writeFile(fullPath, content, "utf-8");
 }
 
+async function writeMeta(markdownRelativePath: string, metadata: PageMetadata): Promise<void> {
+  await write(
+    markdownRelativePath.replace(/\.(md|markdown)$/i, ".meta.ts"),
+    pageMetaSource(metadata),
+  );
+}
+
 function makeConfig(overrides: MakitConfigParsed) {
   return resolveConfig(overrides, { root: dir, configPath: join(dir, "makit.config.ts") });
 }
@@ -32,10 +40,11 @@ describe("buildSearchIndex", () => {
   it("includes title, route, locale, pageId, headings, and plain-text content", async () => {
     await write(
       "docs/guides/configuration.md",
-      "---\nid: config\n---\n# Configuration\n\nSome **bold** text and a [link](https://example.com).\n\n## Options\n",
+      "# Configuration\n\nSome **bold** text and a [link](https://example.com).\n\n## Options\n",
     );
+    await writeMeta("docs/guides/configuration.md", { id: "config" });
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const index = buildSearchIndex(pages);
     expect(index.en).toHaveLength(1);
@@ -56,7 +65,7 @@ describe("buildSearchIndex", () => {
       title: "Test",
       i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const index = buildSearchIndex(pages);
     expect(index["en-us"]).toHaveLength(1);
@@ -65,17 +74,19 @@ describe("buildSearchIndex", () => {
 
   it("excludes fallback, hidden, and draft pages", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
-    await write("docs/en-us/secret.md", "---\nhidden: true\n---\n# Secret");
-    await write("docs/en-us/wip.md", "---\ndraft: true\n---\n# WIP");
+    await write("docs/en-us/secret.md", "# Secret");
+    await writeMeta("docs/en-us/secret.md", { hidden: true });
+    await write("docs/en-us/wip.md", "# WIP");
+    await writeMeta("docs/en-us/wip.md", { draft: true });
     const config = makeConfig({
       title: "Test",
       i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
     const fallbackPages = generateFallbackPages(pages, config);
 
     const index = buildSearchIndex([...pages, ...fallbackPages]);
     expect(index["ja-jp"]).toBeUndefined();
-    expect(index["en-us"]?.map((e) => e.pageId).sort()).toEqual(["guides/deployment"]);
+    expect(index["en-us"]?.map((e) => e.pageId).sort()).toEqual(["guides.deployment"]);
   });
 });

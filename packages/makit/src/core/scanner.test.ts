@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
+import { testCollections } from "../testing/fixtures.js";
 import { scanSourceFiles } from "./scanner.js";
 
 let dir: string;
@@ -31,7 +32,7 @@ describe("scanSourceFiles", () => {
       { title: "Test" },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const files = await scanSourceFiles(config);
+    const files = await scanSourceFiles(config, await testCollections(config));
 
     const relativePaths = files.map((f) => f.relativePath).sort();
     expect(relativePaths).toEqual(["guides/configuration.markdown", "index.md"]);
@@ -48,7 +49,7 @@ describe("scanSourceFiles", () => {
       { title: "Test" },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const files = await scanSourceFiles(config);
+    const files = await scanSourceFiles(config, await testCollections(config));
 
     expect(files.map((f) => f.relativePath)).toEqual(["index.md"]);
   });
@@ -61,7 +62,7 @@ describe("scanSourceFiles", () => {
       { title: "Test", sourceDir: "docs", outDir: "docs/dist" },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const files = await scanSourceFiles(config);
+    const files = await scanSourceFiles(config, await testCollections(config));
 
     expect(files.map((f) => f.relativePath)).toEqual(["index.md"]);
   });
@@ -77,7 +78,7 @@ describe("scanSourceFiles", () => {
       },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const files = await scanSourceFiles(config);
+    const files = await scanSourceFiles(config, await testCollections(config));
 
     expect(files).toHaveLength(2);
     expect(files.map((f) => f.locale.urlLocale).sort()).toEqual(["en-us", "ja-jp"]);
@@ -96,7 +97,7 @@ describe("scanSourceFiles", () => {
       },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const files = await scanSourceFiles(config);
+    const files = await scanSourceFiles(config, await testCollections(config));
 
     expect(files.map((f) => f.relativePath)).toEqual(["index.md"]);
   });

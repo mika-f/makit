@@ -12,14 +12,20 @@ export default defineConfig({
 }
 
 export function indexMarkdownTemplate(title: string): string {
-  return `---
-title: ${title}
----
-
-# ${title}
+  return `# ${title}
 
 Welcome to your new Makit documentation site. Edit this file at \`docs/index.md\`
 and run \`makit dev\` to see your changes live.
+`;
+}
+
+export function indexMetaTemplate(title: string): string {
+  return `import { definePageMetadata } from "@natsuneko-laboratory/makit/metadata";
+
+export default definePageMetadata({
+  id: "index",
+  title: ${JSON.stringify(title)},
+});
 `;
 }
 

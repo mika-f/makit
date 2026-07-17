@@ -31,26 +31,23 @@ export default function NotFound() {
 }
 
 export function rootPageTemplate(): string {
-  return `import { getLocalesData, getManifest, getSiteData, RootPage } from "@natsuneko-laboratory/makit-runtime";
+  return `import { getHomeRoute, getLocalesData, getSiteData, RootPage } from "@natsuneko-laboratory/makit-runtime";
 
 export default async function Page() {
-  const [i18n, manifest, site] = await Promise.all([getLocalesData(), getManifest(), getSiteData()]);
+  const [i18n, site] = await Promise.all([getLocalesData(), getSiteData()]);
 
   const defaultLocaleConfig = i18n.locales.find((locale) => locale.locale === i18n.defaultLocale);
-  const defaultEntry = manifest.pages.find(
-    (page) => page.locale === defaultLocaleConfig?.urlLocale && page.segments.length === 0,
-  );
-  const defaultHref = defaultEntry?.route ?? \`\${site.basePath}/\`;
+  const defaultHref =
+    (defaultLocaleConfig && (await getHomeRoute(defaultLocaleConfig.urlLocale))) ?? \`\${site.basePath}/\`;
 
-  const locales = i18n.locales.map((locale) => {
-    const entry = manifest.pages.find((page) => page.locale === locale.urlLocale && page.segments.length === 0);
-    return {
+  const locales = await Promise.all(
+    i18n.locales.map(async (locale) => ({
       locale: locale.locale,
       urlLocale: locale.urlLocale,
       label: locale.label,
-      href: entry?.route ?? defaultHref,
-    };
-  });
+      href: (await getHomeRoute(locale.urlLocale)) ?? defaultHref,
+    })),
+  );
 
   return (
     <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} siteTitle={site.title} />
@@ -66,8 +63,8 @@ import {
   DocsPage,
   buildPageMetadata,
   getAllStaticParams,
+  getCollectionNavigation,
   getLocalesData,
-  getNavigation,
   getPageForRoute,
   getSiteData,
 } from "@natsuneko-laboratory/makit-runtime";
@@ -91,7 +88,11 @@ export default async function Page({ params }) {
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) notFound();
 
-  const [site, i18n, navigation] = await Promise.all([getSiteData(), getLocalesData(), getNavigation(locale)]);
+  const [site, i18n, navigation] = await Promise.all([
+    getSiteData(),
+    getLocalesData(),
+    getCollectionNavigation(locale, page.collectionId),
+  ]);
 
   return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} />;
 }

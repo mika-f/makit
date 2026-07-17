@@ -1,227 +1,125 @@
-import type { NavigationGroup, NavigationItem } from "../types/config.js";
+import type { Jiti } from "jiti";
+import type { GlobalNavigationGroup, GlobalNavigationItem } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import type { ResolvedCollection } from "./collections.js";
+import { MakitError } from "./errors.js";
+import type { ResolvedNavNode } from "./nav-nodes.js";
+import { resolveCollectionNavigation } from "./nav-resolve.js";
 import { buildRoute } from "./routes.js";
-import { humanizeSlug } from "./text.js";
 
-interface TreeNode {
-  page?: GeneratedPage;
-  children: Map<string, TreeNode>;
+export interface GenerateNavigationResult {
+  navigation: ResolvedNavNode[];
+  warnings: string[];
+  /** navigation.makit.ts / category.makit.ts files involved, for watching. */
+  metadataPaths: string[];
 }
 
-function navItemTitle(page: GeneratedPage): string {
-  return page.navigation?.title ?? page.title;
-}
-
-function pageOrder(page: GeneratedPage | undefined): number {
-  return page?.order ?? Number.POSITIVE_INFINITY;
-}
-
-function insertIntoTree(root: TreeNode, segments: readonly string[], page: GeneratedPage): void {
-  let node = root;
-  for (const segment of segments) {
-    let child = node.children.get(segment);
-    if (!child) {
-      child = { children: new Map() };
-      node.children.set(segment, child);
-    }
-    node = child;
-  }
-  node.page = page;
-}
-
-function sortChildEntries(entries: [string, TreeNode][]): [string, TreeNode][] {
-  return entries.sort(([keyA, a], [keyB, b]) => {
-    const orderDiff = pageOrder(a.page) - pageOrder(b.page);
-    if (orderDiff !== 0) return orderDiff;
-    const titleA = a.page ? navItemTitle(a.page) : humanizeSlug(keyA);
-    const titleB = b.page ? navItemTitle(b.page) : humanizeSlug(keyB);
-    return titleA.localeCompare(titleB);
+/** Builds the navigation tree for one (locale, collection) pair (spec §25, §27). */
+export async function generateNavigation(
+  pages: readonly GeneratedPage[],
+  locale: ResolvedLocaleConfig,
+  config: ResolvedConfig,
+  collection: ResolvedCollection,
+  collections: readonly ResolvedCollection[],
+  jiti: Jiti,
+): Promise<GenerateNavigationResult> {
+  const result = await resolveCollectionNavigation({
+    pages,
+    locale,
+    config,
+    collection,
+    collections,
+    jiti,
   });
+  return { navigation: result.items, warnings: result.warnings, metadataPaths: result.metadataPaths };
 }
 
-/** Builds nested `NavigationItem`s for one subtree (a directory's contents). */
-function buildItemsFromNode(node: TreeNode): NavigationItem[] {
-  const items: NavigationItem[] = [];
-  for (const [segment, child] of sortChildEntries([...node.children.entries()])) {
-    const hasChildren = child.children.size > 0;
-    if (!hasChildren) {
-      if (child.page) {
-        items.push({ title: navItemTitle(child.page), href: child.page.route });
-      }
-      continue;
-    }
-    items.push({
-      title: child.page ? navItemTitle(child.page) : humanizeSlug(segment),
-      href: child.page?.route,
-      items: buildItemsFromNode(child),
-    });
-  }
-  return items;
+/** A global navigation item with `collection` references resolved to concrete hrefs. */
+export interface ResolvedGlobalNavigationItem {
+  title: string;
+  href?: string;
+  /** The referenced collection's id, kept for active-state highlighting. */
+  collection?: string;
+  external?: boolean;
+  items?: ResolvedGlobalNavigationItem[];
+}
+
+export interface ResolvedGlobalNavigationGroup {
+  title?: string;
+  items: ResolvedGlobalNavigationItem[];
 }
 
 /**
- * Builds the top-level `NavigationGroup[]` (spec §17.1). Unlike nested
- * `NavigationItem`s, a `NavigationGroup` has no `href` of its own — a
- * top-level directory's own index page (if any) is injected as that
- * group's first item so it stays reachable.
+ * Resolves `navigation.global` for one locale (spec §26): `collection`
+ * references become the collection's top-page route. Referencing an unknown
+ * collection is a build error (spec §45).
  */
-function buildAutoNavigation(root: TreeNode): NavigationGroup[] {
-  const ungrouped: NavigationItem[] = [];
-  if (root.page) {
-    ungrouped.push({ title: navItemTitle(root.page), href: root.page.route });
-  }
-
-  const groups: NavigationGroup[] = [];
-  for (const [segment, child] of sortChildEntries([...root.children.entries()])) {
-    const hasChildren = child.children.size > 0;
-    if (!hasChildren) {
-      if (child.page) {
-        ungrouped.push({ title: navItemTitle(child.page), href: child.page.route });
-      }
-      continue;
-    }
-    const items: NavigationItem[] = [];
-    if (child.page) {
-      items.push({ title: navItemTitle(child.page), href: child.page.route });
-    }
-    items.push(...buildItemsFromNode(child));
-    groups.push({ title: child.page ? navItemTitle(child.page) : humanizeSlug(segment), items });
-  }
-
-  const result: NavigationGroup[] = [];
-  if (ungrouped.length > 0) result.push({ items: ungrouped });
-  result.push(...groups);
-  return result;
-}
-
-function isNavigablePage(page: GeneratedPage, config: ResolvedConfig): boolean {
-  if (page.hidden) return false;
-  if (page.isFallback && !config.navigation.includeFallbackPages) return false;
-  return true;
-}
-
-/** Front matter `navigation.group` pulls a page out of the directory tree into a named top-level group (spec §14). */
-function buildExplicitGroups(pages: readonly GeneratedPage[]): NavigationGroup[] {
-  const byGroup = new Map<string, GeneratedPage[]>();
-  for (const page of pages) {
-    const groupTitle = page.navigation?.group;
-    if (!groupTitle) continue;
-    const list = byGroup.get(groupTitle) ?? [];
-    list.push(page);
-    byGroup.set(groupTitle, list);
-  }
-
-  const groups: NavigationGroup[] = [];
-  for (const [title, groupPages] of byGroup) {
-    const sorted = [...groupPages].sort((a, b) => {
-      const orderDiff = pageOrder(a) - pageOrder(b);
-      if (orderDiff !== 0) return orderDiff;
-      return navItemTitle(a).localeCompare(navItemTitle(b));
-    });
-    groups.push({
-      title,
-      items: sorted.map((page) => ({ title: navItemTitle(page), href: page.route })),
-    });
-  }
-  return groups;
-}
-
-function normalizeConfiguredHref(href: string): string[] {
-  return href
-    .split("/")
-    .map((segment) => segment.trim())
-    .filter(Boolean);
-}
-
-/** Manual nav hrefs are locale-agnostic (spec §17.2); checks them against real routes for this locale. */
-function validateManualNavigation(
-  groups: readonly NavigationGroup[],
-  knownRoutes: ReadonlySet<string>,
-  config: ResolvedConfig,
+export function resolveGlobalNavigation(
+  groups: readonly GlobalNavigationGroup[],
   locale: ResolvedLocaleConfig,
-  warnings: string[],
-): void {
+  config: ResolvedConfig,
+  collections: readonly ResolvedCollection[],
+): ResolvedGlobalNavigationGroup[] {
+  const byId = new Map(collections.map((collection) => [collection.id, collection]));
   const localePrefix = config.i18n.enabled ? locale.urlLocale : undefined;
 
-  const visit = (items: readonly NavigationItem[]) => {
-    for (const item of items) {
-      if (item.href && !item.external) {
-        const segments = normalizeConfiguredHref(item.href);
-        const expectedRoute = buildRoute(segments, {
-          basePath: config.basePath,
-          localePrefix,
-          trailingSlash: config.build.trailingSlash,
-        });
-        if (!knownRoutes.has(expectedRoute)) {
-          warnings.push(
-            `Navigation href "${item.href}" (locale "${locale.locale}") does not match any known page route.`,
-          );
-        }
+  const resolveItem = (item: GlobalNavigationItem): ResolvedGlobalNavigationItem => {
+    let href = item.href;
+    if (item.collection !== undefined) {
+      const collection = byId.get(item.collection);
+      if (!collection) {
+        throw new MakitError(
+          "missing-navigation-target",
+          `Global navigation item "${item.title}" references unknown collection "${item.collection}".`,
+        );
       }
-      if (item.items) visit(item.items);
+      href = buildRoute([], {
+        basePath: config.basePath,
+        localePrefix,
+        collectionSegments: collection.pathSegments,
+        trailingSlash: config.build.trailingSlash,
+      });
     }
+    return {
+      title: item.title,
+      href,
+      collection: item.collection,
+      external: item.external,
+      items: item.items?.map(resolveItem),
+    };
   };
 
-  for (const group of groups) visit(group.items);
+  return groups.map((group) => ({ title: group.title, items: group.items.map(resolveItem) }));
 }
 
-export interface GenerateNavigationResult {
-  navigation: NavigationGroup[];
-  warnings: string[];
-}
-
-/** Builds the navigation tree for one locale (spec §17). */
-export function generateNavigation(
-  pages: readonly GeneratedPage[],
-  locale: ResolvedLocaleConfig,
-  config: ResolvedConfig,
-): GenerateNavigationResult {
-  const warnings: string[] = [];
-  const localePages = pages.filter((page) => page.locale === locale.urlLocale);
-
-  if (config.navigation.mode === "manual") {
-    const manualGroups =
-      config.navigation.locales[locale.locale] ?? config.navigation.locales[locale.urlLocale] ?? [];
-    const knownRoutes = new Set(localePages.map((page) => page.route));
-    validateManualNavigation(manualGroups, knownRoutes, config, locale, warnings);
-    return { navigation: manualGroups, warnings };
-  }
-
-  const navigablePages = localePages.filter((page) => isNavigablePage(page, config));
-  const treePages = navigablePages.filter((page) => !page.navigation?.group);
-
-  const root: TreeNode = { children: new Map() };
-  for (const page of treePages) {
-    insertIntoTree(root, page.segments, page);
-  }
-
-  const navigation = [
-    ...buildAutoNavigation(root),
-    ...buildExplicitGroups(navigablePages.filter((page) => page.navigation?.group)),
-  ];
-
-  return { navigation, warnings };
-}
-
+/** `navigation[locale][collectionId]` (spec §40 layout). */
 export interface GenerateAllNavigationResult {
-  byLocale: Record<string, NavigationGroup[]>;
+  byLocale: Record<string, Record<string, ResolvedNavNode[]>>;
   warnings: string[];
+  metadataPaths: string[];
 }
 
-/** Runs {@link generateNavigation} for every configured locale. */
-export function generateAllNavigation(
+/** Runs {@link generateNavigation} for every (locale, collection) pair. */
+export async function generateAllNavigation(
   pages: readonly GeneratedPage[],
   config: ResolvedConfig,
-): GenerateAllNavigationResult {
-  const byLocale: Record<string, NavigationGroup[]> = {};
+  collections: readonly ResolvedCollection[],
+  jiti: Jiti,
+): Promise<GenerateAllNavigationResult> {
+  const byLocale: Record<string, Record<string, ResolvedNavNode[]>> = {};
   const warnings: string[] = [];
+  const metadataPaths = new Set<string>();
 
   for (const locale of config.i18n.locales) {
-    const result = generateNavigation(pages, locale, config);
-    byLocale[locale.urlLocale] = result.navigation;
-    warnings.push(...result.warnings);
+    byLocale[locale.urlLocale] = {};
+    for (const collection of collections) {
+      const result = await generateNavigation(pages, locale, config, collection, collections, jiti);
+      byLocale[locale.urlLocale]![collection.id] = result.navigation;
+      warnings.push(...result.warnings);
+      for (const path of result.metadataPaths) metadataPaths.add(path);
+    }
   }
 
-  return { byLocale, warnings };
+  return { byLocale, warnings, metadataPaths: [...metadataPaths] };
 }

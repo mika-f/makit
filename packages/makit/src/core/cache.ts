@@ -16,8 +16,8 @@ function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
 
-function getMakitVersion(): string {
-  const root = resolvePackageRoot("@natsuneko-laboratory/makit");
+function getPackageVersion(packageName: string): string {
+  const root = resolvePackageRoot(packageName);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf-8")) as { version: string };
   return pkg.version;
 }
@@ -46,7 +46,16 @@ export class BuildCache {
     try {
       const cacheDir = join(config.root, ".makit", "cache", "pages");
       const configContent = await readFile(config.configPath, "utf-8");
-      const signature = sha256(`${getMakitVersion()}\n${configContent}`);
+      // Spec §22: the cache key includes the Makit version, the TypeScript
+      // loader (jiti) version, and the Node.js version.
+      const signature = sha256(
+        [
+          getPackageVersion("@natsuneko-laboratory/makit"),
+          getPackageVersion("jiti"),
+          process.version,
+          configContent,
+        ].join("\n"),
+      );
       return new BuildCache(cacheDir, signature);
     } catch {
       return undefined;

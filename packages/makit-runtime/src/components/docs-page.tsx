@@ -1,4 +1,4 @@
-import { getManifest } from "../data/loaders.js";
+import { getHomeRoute } from "../data/loaders.js";
 import type { GeneratedPage, I18nData, NavigationGroup, SiteData } from "../data/types.js";
 import { findPrevNext } from "../navigation/flatten.js";
 import { FallbackNotice } from "./fallback-notice.js";
@@ -20,11 +20,7 @@ export interface DocsPageProps {
 
 /** The standard theme's page shell (spec §21.1): header, sidebar, content, ToC, footer. */
 export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) {
-  const manifest = await getManifest();
-  const homeEntry = manifest.pages.find(
-    (entry) => entry.locale === page.locale && entry.segments.length === 0,
-  );
-  const homeHref = homeEntry?.route ?? `${site.basePath}/`;
+  const homeHref = (await getHomeRoute(page.locale)) ?? `${site.basePath}/`;
 
   const { prev, next } = findPrevNext(navigation, page.route);
 

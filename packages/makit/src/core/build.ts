@@ -2,12 +2,15 @@ import { spawn } from "node:child_process";
 import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { resolveCollections } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { writeGeneratedData } from "./generate.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { resolvePackageRoot } from "./link-runtime-deps.js";
 import type { Logger } from "./logger.js";
+import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 import { generateSitemapXml } from "./sitemap.js";
@@ -69,7 +72,14 @@ export async function build(
     await rm(outDirAbsolute, { recursive: true, force: true });
   }
 
-  const { pages: scannedPages, warnings: pipelineWarnings } = await buildAllPages(config);
+  const jiti = createMetadataJiti();
+  const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
+  logger.info(`Resolved ${collections.length} collection(s)`);
+
+  const { pages: scannedPages, warnings: pipelineWarnings } = await buildAllPages(
+    config,
+    collections,
+  );
   // Draft pages are visible in `makit dev` but excluded from production output (spec §14.4).
   const productionPages = scannedPages.filter((page) => !page.draft);
   logger.success(
@@ -81,19 +91,26 @@ export async function build(
     logger.info(`Generated ${fallbackPages.length} fallback page(s)`);
   }
 
-  const allPages = populateAlternates([...productionPages, ...fallbackPages], config);
+  const undecoratedPages = populateAlternates([...productionPages, ...fallbackPages], config);
 
-  const { byLocale: navigationByLocale, warnings: navigationWarnings } = generateAllNavigation(
-    allPages,
+  const { byLocale: navigationByLocale, warnings: navigationWarnings } =
+    await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(
+    undecoratedPages,
+    navigationByLocale,
     config,
+    collections,
   );
-  const warnings = [...pipelineWarnings, ...navigationWarnings];
+  const warnings = [...collectionWarnings, ...pipelineWarnings, ...navigationWarnings];
 
   for (const warning of warnings) {
     logger.warn(warning);
   }
 
-  const diagnostics = validatePages(allPages, config, { navigationByLocale });
+  const diagnostics = [
+    ...navigationDiagnostics,
+    ...validatePages(allPages, config, { navigationByLocale }),
+  ];
   for (const diagnostic of diagnostics) {
     logger.warn(
       diagnostic.sourcePath
@@ -117,7 +134,7 @@ export async function build(
     else logger.info(diagnostic.message);
   }
 
-  await writeGeneratedData(config, allPages, navigationByLocale);
+  await writeGeneratedData(config, allPages, collections, navigationByLocale);
   logger.success("Wrote .makit/generated/");
 
   await generateApp(config);

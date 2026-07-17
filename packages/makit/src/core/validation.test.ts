@@ -3,13 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
+import type { PageMetadata } from "../metadata/types.js";
+import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
 import type { MakitConfigParsed } from "../config/schema.js";
-import { buildAllPages } from "./pages.js";
 import {
   validateFallbackRatio,
   validateImages,
   validateInternalLinks,
   validateNavigationCoverage,
+  validatePageMetadata,
   validateSeo,
   validateTitles,
   validateTranslationCoverage,
@@ -31,6 +33,13 @@ async function write(relativePath: string, content: string): Promise<void> {
   await writeFile(fullPath, content, "utf-8");
 }
 
+async function writeMeta(markdownRelativePath: string, metadata: PageMetadata): Promise<void> {
+  await write(
+    markdownRelativePath.replace(/\.(md|markdown)$/i, ".meta.ts"),
+    pageMetaSource(metadata),
+  );
+}
+
 function makeConfig(overrides: MakitConfigParsed) {
   return resolveConfig(overrides, { root: dir, configPath: join(dir, "makit.config.ts") });
 }
@@ -39,7 +48,7 @@ describe("validateInternalLinks", () => {
   it("flags a link to a route that does not exist", async () => {
     await write("docs/index.md", "[broken](./missing.md)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateInternalLinks(pages);
     expect(
@@ -51,7 +60,7 @@ describe("validateInternalLinks", () => {
     await write("docs/index.md", "[ok](./other.md)");
     await write("docs/other.md", "# Other");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateInternalLinks(pages)).toHaveLength(0);
   });
@@ -59,7 +68,7 @@ describe("validateInternalLinks", () => {
   it("flags a same-page anchor that does not exist", async () => {
     await write("docs/index.md", "# Home\n\n[jump](#does-not-exist)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateInternalLinks(pages);
     expect(diagnostics.some((d) => d.code === "missing-anchor")).toBe(true);
@@ -68,7 +77,7 @@ describe("validateInternalLinks", () => {
   it("does not flag a same-page anchor that exists", async () => {
     await write("docs/index.md", "# Home\n\n## Section\n\n[jump](#section)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateInternalLinks(pages)).toHaveLength(0);
   });
@@ -77,7 +86,7 @@ describe("validateInternalLinks", () => {
     await write("docs/index.md", "[jump](./other.md#missing)");
     await write("docs/other.md", "# Other");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateInternalLinks(pages);
     expect(diagnostics.some((d) => d.code === "missing-anchor")).toBe(true);
@@ -85,9 +94,10 @@ describe("validateInternalLinks", () => {
 
   it("flags a production page linking to a draft page", async () => {
     await write("docs/index.md", "[draft](./secret.md)");
-    await write("docs/secret.md", "---\ndraft: true\n---\n# Secret");
+    await write("docs/secret.md", "# Secret");
+    await writeMeta("docs/secret.md", { draft: true });
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateInternalLinks(pages);
     expect(diagnostics.some((d) => d.code === "broken-link" && d.message.includes("draft"))).toBe(
@@ -98,7 +108,7 @@ describe("validateInternalLinks", () => {
   it("flags a syntactically invalid external URL", async () => {
     await write("docs/index.md", '<a href="http://">bad</a>\n\nplain text');
     const config = makeConfig({ title: "Test", markdown: { allowDangerousHtml: true } });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateInternalLinks(pages);
     expect(diagnostics.some((d) => d.code === "broken-link" && d.message.includes("http://"))).toBe(
@@ -109,7 +119,7 @@ describe("validateInternalLinks", () => {
   it("does not flag a valid external URL", async () => {
     await write("docs/index.md", "[ok](https://example.com)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateInternalLinks(pages)).toHaveLength(0);
   });
@@ -119,7 +129,7 @@ describe("validateImages", () => {
   it("flags a missing local image", async () => {
     await write("docs/index.md", "![missing](/does-not-exist.png)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateImages(pages, config);
     expect(diagnostics.some((d) => d.code === "broken-link")).toBe(true);
@@ -129,7 +139,7 @@ describe("validateImages", () => {
     await write("docs/index.md", "![ok](/logo.png)");
     await write("public/logo.png", "fake-binary-content");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateImages(pages, config)).toHaveLength(0);
   });
@@ -137,25 +147,49 @@ describe("validateImages", () => {
   it("does not flag an external image URL", async () => {
     await write("docs/index.md", "![ok](https://example.com/logo.png)");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateImages(pages, config)).toHaveLength(0);
   });
 });
 
+describe("validatePageMetadata", () => {
+  it("flags pages without a .meta.ts and pages with an auto-generated ID", async () => {
+    await write("docs/guides/deployment.md", "# Deployment");
+    const config = makeConfig({ title: "Test" });
+    const { pages } = await buildPagesForTest(config);
+
+    const diagnostics = validatePageMetadata(pages);
+    expect(diagnostics.map((d) => d.code).sort()).toEqual([
+      "generated-page-id",
+      "missing-page-metadata",
+    ]);
+  });
+
+  it("does not flag a page with a .meta.ts declaring an explicit id", async () => {
+    await write("docs/guides/deployment.md", "# Deployment");
+    await writeMeta("docs/guides/deployment.md", { id: "deployment" });
+    const config = makeConfig({ title: "Test" });
+    const { pages } = await buildPagesForTest(config);
+
+    expect(validatePageMetadata(pages)).toHaveLength(0);
+  });
+});
+
 describe("validateTitles", () => {
-  it("flags a page with no front matter title or H1", async () => {
+  it("flags a page with no .meta.ts title or H1", async () => {
     await write("docs/getting-started.md", "Just a paragraph.");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateTitles(pages).some((d) => d.code === "missing-title")).toBe(true);
   });
 
-  it("does not flag a page with a front matter title", async () => {
-    await write("docs/index.md", "---\ntitle: Home\n---\ncontent");
+  it("does not flag a page with a .meta.ts title", async () => {
+    await write("docs/index.md", "content");
+    await writeMeta("docs/index.md", { title: "Home" });
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateTitles(pages)).toHaveLength(0);
   });
@@ -163,7 +197,7 @@ describe("validateTitles", () => {
   it("does not flag a page with an H1", async () => {
     await write("docs/index.md", "# Home\n\ncontent");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateTitles(pages)).toHaveLength(0);
   });
@@ -173,7 +207,7 @@ describe("validateSeo", () => {
   it("flags a missing siteUrl", async () => {
     await write("docs/index.md", "# Home");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateSeo(pages, config).some((d) => d.code === "missing-site-url")).toBe(true);
   });
@@ -181,7 +215,7 @@ describe("validateSeo", () => {
   it("flags a page with no OGP image and no default image", async () => {
     await write("docs/index.md", "# Home");
     const config = makeConfig({ title: "Test", siteUrl: "https://example.com" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateSeo(pages, config).some((d) => d.code === "missing-og-image")).toBe(true);
   });
@@ -193,7 +227,7 @@ describe("validateSeo", () => {
       siteUrl: "https://example.com",
       seo: { defaultImage: "/og.png" },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateSeo(pages, config).some((d) => d.code === "missing-og-image")).toBe(false);
   });
@@ -203,19 +237,28 @@ describe("validateNavigationCoverage", () => {
   it("flags a page not reachable from its locale's navigation", async () => {
     await write("docs/index.md", "# Home");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
-    const diagnostics = validateNavigationCoverage(pages, { en: [] });
+    const diagnostics = validateNavigationCoverage(pages, { en: { default: [] } });
     expect(diagnostics.some((d) => d.code === "page-not-in-navigation")).toBe(true);
   });
 
   it("does not flag a page that is reachable", async () => {
     await write("docs/index.md", "# Home");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const diagnostics = validateNavigationCoverage(pages, {
-      en: [{ items: [{ title: "Home", href: "/" }] }],
+      en: {
+        default: [
+          {
+            type: "section",
+            collapsible: false,
+            collapsed: false,
+            items: [{ type: "page", pageId: "index", title: "Home", href: pages[0]!.route }],
+          },
+        ],
+      },
     });
     expect(diagnostics).toHaveLength(0);
   });
@@ -228,7 +271,7 @@ describe("validateTranslationCoverage", () => {
       title: "Test",
       i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(
       validateTranslationCoverage(pages, config).some((d) => d.code === "default-locale-only-page"),
@@ -241,7 +284,7 @@ describe("validateTranslationCoverage", () => {
       title: "Test",
       i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(
       validateTranslationCoverage(pages, config).some((d) => d.code === "translation-only-page"),
@@ -251,7 +294,7 @@ describe("validateTranslationCoverage", () => {
   it("is a no-op when i18n is disabled", async () => {
     await write("docs/index.md", "# Home");
     const config = makeConfig({ title: "Test" });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(validateTranslationCoverage(pages, config)).toHaveLength(0);
   });
@@ -266,7 +309,7 @@ describe("validateFallbackRatio", () => {
       title: "Test",
       i18n: { defaultLocale: "en-US", locales: [{ locale: "en-US" }, { locale: "ja-JP" }] },
     });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     // Simulate 2 real + 2 fallback-like pages for ja-jp (fallback flag set manually for the test).
     const allPages = [

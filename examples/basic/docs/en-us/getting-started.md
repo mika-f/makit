@@ -1,8 +1,3 @@
----
-title: Getting Started
-order: 1
----
-
 # Getting Started
 
 Install Makit and run `makit init` to scaffold a new project.

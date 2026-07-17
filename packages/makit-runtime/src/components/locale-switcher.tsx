@@ -1,4 +1,4 @@
-import { getManifest } from "../data/loaders.js";
+import { getHomeRoute, getPageMap } from "../data/loaders.js";
 import type { GeneratedPage, LocaleData, MissingPageBehavior } from "../data/types.js";
 
 /** Switches between translations of the *same* page (spec §16.11, §17). */
@@ -13,21 +13,20 @@ export async function LocaleSwitcher({
 }) {
   if (locales.length < 2) return null;
 
-  const manifest = await getManifest();
-  const entriesForPageId = manifest.pages.filter((entry) => entry.pageId === page.pageId);
+  const pageMap = await getPageMap();
 
   const links: { locale: LocaleData; href: string }[] = [];
   for (const locale of locales) {
-    const ownPage = entriesForPageId.find((entry) => entry.locale === locale.urlLocale);
+    // Same collection + pageId in the target locale — a real translation or
+    // its fallback page (spec §35.6 tiers 1-2).
+    const ownPage = pageMap[locale.urlLocale]?.[page.collectionId]?.[page.pageId];
     if (ownPage) {
       links.push({ locale, href: ownPage.route });
       continue;
     }
     if (missingPageBehavior === "locale-root") {
-      const localeRoot = manifest.pages.find(
-        (entry) => entry.locale === locale.urlLocale && entry.segments.length === 0,
-      );
-      if (localeRoot) links.push({ locale, href: localeRoot.route });
+      const localeRoot = await getHomeRoute(locale.urlLocale);
+      if (localeRoot) links.push({ locale, href: localeRoot });
     }
     // "disabled" (or no root page to fall back to): omit this locale entirely.
   }

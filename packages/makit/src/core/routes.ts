@@ -12,7 +12,7 @@ export function filePathToSegments(relativePath: string): string[] {
   return parts;
 }
 
-/** A `slug` front matter override replaces the file-path-derived segments entirely (spec §14.3). */
+/** A `slug` in `.meta.ts` replaces the file-path-derived segments entirely (spec §28.2). */
 export function resolveSlugSegments(
   slug: string | string[] | undefined,
   fallback: string[],
@@ -25,12 +25,19 @@ export interface BuildRouteOptions {
   basePath: string;
   /** URL-facing locale prefix (e.g. "ja-jp"). Omit when i18n is disabled. */
   localePrefix?: string;
+  /** The collection's URL prefix segments (spec §28.1). */
+  collectionSegments?: readonly string[];
   trailingSlash: boolean;
 }
 
-/** Builds the final route string from segments (spec §15.1-15.2). */
+/** Builds the final route string from segments (spec §28: locale prefix, then collection path, then slug). */
 export function buildRoute(segments: string[], options: BuildRouteOptions): string {
-  const allSegments = options.localePrefix ? [options.localePrefix, ...segments] : segments;
+  const withCollection = options.collectionSegments
+    ? [...options.collectionSegments, ...segments]
+    : segments;
+  const allSegments = options.localePrefix
+    ? [options.localePrefix, ...withCollection]
+    : withCollection;
 
   if (allSegments.length === 0) {
     return options.basePath ? `${options.basePath}/` : "/";
@@ -41,10 +48,15 @@ export function buildRoute(segments: string[], options: BuildRouteOptions): stri
   return `${options.basePath}${withSlash}`;
 }
 
-/** `id` from front matter, falling back to the normalized route segments (spec §14.1, §16.6). */
-export function derivePageId(frontMatterId: string | undefined, segments: string[]): string {
-  if (frontMatterId) return frontMatterId;
-  return segments.length > 0 ? segments.join("/") : "index";
+/**
+ * `id` from `.meta.ts`, falling back to a dot-joined ID derived from the
+ * relative file path — `guides/getting-started.md` → `guides.getting-started`
+ * (spec §18, §29). Auto IDs come from the *file path*, not any `slug`
+ * override, so URLs can change without breaking translation pairing.
+ */
+export function derivePageId(explicitId: string | undefined, pathSegments: string[]): string {
+  if (explicitId) return explicitId;
+  return pathSegments.length > 0 ? pathSegments.join(".") : "index";
 }
 
 interface RouteConflictInfo {
@@ -72,19 +84,20 @@ export function detectDuplicateRoutes(pages: readonly RouteConflictInfo[]): void
 interface PageIdConflictInfo {
   pageId: string;
   locale: string;
+  collectionId: string;
   sourcePath: string;
 }
 
-/** Throws `MakitError("duplicate-page-id", …)` if two pages in the same locale share a pageId (spec §14.1). */
+/** Throws `MakitError("duplicate-page-id", …)` if two pages in the same locale and collection share a pageId (spec §29). */
 export function detectDuplicatePageIds(pages: readonly PageIdConflictInfo[]): void {
   const seen = new Map<string, string>();
   for (const page of pages) {
-    const key = `${page.locale}:${page.pageId}`;
+    const key = `${page.locale}:${page.collectionId}:${page.pageId}`;
     const existing = seen.get(key);
     if (existing) {
       throw new MakitError(
         "duplicate-page-id",
-        `Duplicate page id "${page.pageId}" in locale "${page.locale}":\n  ${existing}\n  ${page.sourcePath}`,
+        `Duplicate page id "${page.pageId}" in locale "${page.locale}", collection "${page.collectionId}":\n  ${existing}\n  ${page.sourcePath}`,
       );
     }
     seen.set(key, page.sourcePath);

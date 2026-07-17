@@ -1,8 +1,13 @@
 import type {
   BuildConfig,
+  CollectionNavigationConfig,
+  CollectionsConfig,
   ExternalLinksConfig,
   FooterConfig,
+  GlobalNavigationGroup,
   HeaderConfig,
+  HomeSectionConfig,
+  MakitCollectionFallbackBehavior,
   MakitColorScheme,
   MakitFallbackBehavior,
   MakitMessages,
@@ -10,7 +15,8 @@ import type {
   MakitRadius,
   MakitRootBehavior,
   MakitFailOnCode,
-  NavigationConfig,
+  NavigationGroup,
+  NavigationMode,
   ShikiUnknownLanguageBehavior,
   UnifiedPluginEntry,
 } from "./config.js";
@@ -41,6 +47,9 @@ export interface ResolvedI18nConfig {
     enabled: boolean;
     behavior: MakitFallbackBehavior;
     showNotice: boolean;
+  };
+  collectionFallback: {
+    behavior: MakitCollectionFallbackBehavior;
   };
   root: {
     behavior: MakitRootBehavior;
@@ -74,6 +83,11 @@ export interface ResolvedThemeConfig {
   colorScheme: MakitColorScheme;
   accentColor?: string;
   radius: MakitRadius;
+  breadcrumbs: {
+    enabled: boolean;
+    showHome: boolean;
+    showCurrentPage: boolean;
+  };
   codeTheme: { light: string; dark: string };
 }
 
@@ -101,8 +115,29 @@ export interface ResolvedPreviewConfig {
   open: boolean;
 }
 
+export interface ResolvedHomeConfig {
+  /** Undefined means "derive from the collection layout" (spec §33). */
+  layout?: "page" | "portal";
+  page?: string;
+  featuredCollections: string[];
+  sections: HomeSectionConfig[];
+}
+
+export interface ResolvedNavigationConfig {
+  mode: NavigationMode;
+  includeFallbackPages: boolean;
+  locales: Record<string, NavigationGroup[]>;
+  collections: Record<string, CollectionNavigationConfig>;
+  global: GlobalNavigationGroup[];
+  pagination: {
+    enabled: boolean;
+    crossSection: boolean;
+  };
+}
+
 export interface ResolvedValidationConfig {
   strict: boolean;
+  disallowFrontMatter: boolean;
   failOn: MakitFailOnCode[];
 }
 
@@ -124,8 +159,11 @@ export interface ResolvedConfig {
   publicDir: string;
   outDir: string;
   basePath: string;
+  /** Raw collections input; resolved separately (async) into `ResolvedCollection[]`. */
+  collections?: CollectionsConfig;
+  home: ResolvedHomeConfig;
   i18n: ResolvedI18nConfig;
-  navigation: Required<NavigationConfig>;
+  navigation: ResolvedNavigationConfig;
   header: HeaderConfig;
   footer: FooterConfig;
   theme: ResolvedThemeConfig;

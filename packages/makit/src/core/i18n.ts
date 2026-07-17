@@ -1,5 +1,6 @@
 import type { GeneratedAlternate, GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import { IMPLICIT_COLLECTION_ID } from "./collections.js";
 import { buildRoute, detectDuplicateRoutes } from "./routes.js";
 
 export interface PageGroup {
@@ -7,11 +8,16 @@ export interface PageGroup {
   byLocale: Map<string, GeneratedPage>;
 }
 
+/** The translation-grouping key: page ids are only unique per collection (spec §29). */
+export function translationKey(page: Pick<GeneratedPage, "collectionId" | "pageId">): string {
+  return `${page.collectionId}:${page.pageId}`;
+}
+
 /**
  * Groups pages that are translations of each other. The matching key is the
- * already-computed `pageId` (front matter `id`, or else the route-derived
- * segments — spec §16.6 tiers 1-2). Tier 3 (matching by raw file path when a
- * `slug` override makes the route diverge from the file path) is not
+ * collection plus the already-computed `pageId` (`.meta.ts` `id`, or else
+ * the path-derived segments — spec §29). Matching by raw file path when a
+ * `slug` override makes the route diverge from the file path is not
  * implemented: it only matters when a `slug` override is used inconsistently
  * across locale siblings, an unusual authoring pattern the spec itself
  * discourages by recommending explicit `id` for translation matching.
@@ -19,10 +25,11 @@ export interface PageGroup {
 export function groupPagesByPageId(pages: readonly GeneratedPage[]): Map<string, PageGroup> {
   const groups = new Map<string, PageGroup>();
   for (const page of pages) {
-    let group = groups.get(page.pageId);
+    const key = translationKey(page);
+    let group = groups.get(key);
     if (!group) {
       group = { byLocale: new Map() };
-      groups.set(page.pageId, group);
+      groups.set(key, group);
     }
     group.byLocale.set(page.locale, page);
   }
@@ -33,19 +40,22 @@ function buildFallbackPage(
   sourcePage: GeneratedPage,
   targetLocale: ResolvedLocaleConfig,
   config: ResolvedConfig,
+  behavior: "render" | "redirect",
 ): GeneratedPage {
+  // `segments` already include the collection prefix, so no collectionSegments here.
   const route = buildRoute(sourcePage.segments, {
     basePath: config.basePath,
     localePrefix: targetLocale.urlLocale,
     trailingSlash: config.build.trailingSlash,
   });
-
-  const isRedirect = config.i18n.fallback.behavior === "redirect";
+  const isRedirect = behavior === "redirect";
 
   return {
     pageId: sourcePage.pageId,
+    collectionId: sourcePage.collectionId,
     route,
     segments: sourcePage.segments,
+    pathSegments: sourcePage.pathSegments,
     locale: targetLocale.urlLocale,
     contentLocale: sourcePage.locale,
     sourcePath: sourcePage.sourcePath,
@@ -53,6 +63,8 @@ function buildFallbackPage(
     fallbackSource: sourcePage.route,
     title: sourcePage.title,
     titleSource: sourcePage.titleSource,
+    pageIdSource: sourcePage.pageIdSource,
+    metadataPath: sourcePage.metadataPath,
     description: sourcePage.description,
     // "render" shows the default-locale content as-is; "redirect" is a static
     // transitional page — the real `<meta refresh>` mechanics belong to the
@@ -67,6 +79,9 @@ function buildFallbackPage(
     tableOfContents: sourcePage.tableOfContents,
     order: sourcePage.order,
     navigation: sourcePage.navigation,
+    taxonomy: sourcePage.taxonomy,
+    hierarchy: [],
+    breadcrumbs: [],
     metadata: {
       ...sourcePage.metadata,
       // Fallback pages point their canonical at the real content (spec §16.12).
@@ -85,7 +100,7 @@ export function generateFallbackPages(
   config: ResolvedConfig,
 ): GeneratedPage[] {
   const fallback = config.i18n.fallback;
-  if (!config.i18n.enabled || !fallback.enabled || fallback.behavior === "not-found") {
+  if (!config.i18n.enabled || !fallback.enabled) {
     return [];
   }
 
@@ -93,6 +108,15 @@ export function generateFallbackPages(
     (locale) => locale.locale === config.i18n.defaultLocale,
   );
   if (!defaultLocale) return [];
+
+  // Which (collection, locale) pairs have at least one real page — when a
+  // locale has *none* for a collection, the whole-collection fallback
+  // behavior applies instead of the per-page one (spec §35.5).
+  const collectionPresence = new Set<string>();
+  for (const page of pages) {
+    collectionPresence.add(`${page.collectionId}:${page.locale}`);
+  }
+  const collectionBehavior = config.i18n.collectionFallback.behavior;
 
   const groups = groupPagesByPageId(pages);
   const fallbackPages: GeneratedPage[] = [];
@@ -105,7 +129,18 @@ export function generateFallbackPages(
       if (locale.urlLocale === defaultLocale.urlLocale) continue;
       if (group.byLocale.has(locale.urlLocale)) continue; // a real translation already exists
 
-      fallbackPages.push(buildFallbackPage(sourcePage, locale, config));
+      // Whole-collection fallback only applies to real (named) collections;
+      // for the implicit collection an empty locale is just "not translated
+      // yet" and the per-page behavior keeps governing (spec §48 compat).
+      const collectionMissing =
+        sourcePage.collectionId !== IMPLICIT_COLLECTION_ID &&
+        !collectionPresence.has(`${sourcePage.collectionId}:${locale.urlLocale}`);
+      const behavior = collectionMissing ? collectionBehavior : fallback.behavior;
+      // "hidden" and "not-found" both mean: no static route in this locale.
+      // The difference (nav/switcher visibility) is applied downstream.
+      if (behavior === "not-found" || behavior === "hidden") continue;
+
+      fallbackPages.push(buildFallbackPage(sourcePage, locale, config, behavior));
     }
   }
 
@@ -140,7 +175,7 @@ export function populateAlternates(
   return pages.map((page) => {
     if (page.isFallback) return page;
 
-    const group = groups.get(page.pageId);
+    const group = groups.get(translationKey(page));
     // No point emitting hreflang for a page with no sibling translations at all.
     if (!group || group.byLocale.size < 2) return page;
 

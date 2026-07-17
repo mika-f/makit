@@ -7,6 +7,7 @@ import {
   gitignoreRequiredEntries,
   gitignoreTemplate,
   indexMarkdownTemplate,
+  indexMetaTemplate,
   makitConfigTemplate,
   packageJsonTemplate,
 } from "./templates.js";
@@ -46,9 +47,12 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
 
   const configPath = join(targetDir, "makit.config.ts");
   const docsIndexPath = join(targetDir, "docs", "index.md");
+  const docsIndexMetaPath = join(targetDir, "docs", "index.meta.ts");
 
   if (!force) {
-    const conflicts = [configPath, docsIndexPath].filter((path) => existsSync(path));
+    const conflicts = [configPath, docsIndexPath, docsIndexMetaPath].filter((path) =>
+      existsSync(path),
+    );
     if (conflicts.length > 0) {
       throw new MakitError(
         "project-exists",
@@ -68,6 +72,9 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
 
   await writeFile(docsIndexPath, indexMarkdownTemplate(title), "utf-8");
   created.push("docs/index.md");
+
+  await writeFile(docsIndexMetaPath, indexMetaTemplate(title), "utf-8");
+  created.push("docs/index.meta.ts");
 
   const publicGitkeepPath = join(targetDir, "public", ".gitkeep");
   if (!existsSync(publicGitkeepPath)) {

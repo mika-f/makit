@@ -1,5 +1,93 @@
 import { z } from "zod";
-import type { NavigationItem } from "../types/config.js";
+import type { GlobalNavigationItem, NavigationItem } from "../types/config.js";
+import type { NavigationNode } from "../metadata/types.js";
+
+const navigationNodeSchema: z.ZodType<NavigationNode> = z.lazy(() =>
+  z.discriminatedUnion("type", [
+    z.strictObject({
+      type: z.literal("page"),
+      page: z.string().min(1),
+      title: z.string().optional(),
+      hidden: z.boolean().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("section"),
+      id: z.string().optional(),
+      title: z.string().min(1),
+      page: z.string().optional(),
+      items: z.array(navigationNodeSchema),
+      collapsible: z.boolean().optional(),
+      collapsed: z.boolean().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("group"),
+      id: z.string().optional(),
+      title: z.string().optional(),
+      items: z.array(navigationNodeSchema),
+      collapsible: z.boolean().optional(),
+      collapsed: z.boolean().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("link"),
+      title: z.string().min(1),
+      href: z.string().min(1),
+      external: z.boolean().optional(),
+    }),
+    z.strictObject({
+      type: z.literal("collection"),
+      collection: z.string().min(1),
+      title: z.string().optional(),
+    }),
+  ]),
+) as z.ZodType<NavigationNode>;
+
+const collectionNavigationConfigSchema = z.union([
+  z.strictObject({
+    mode: z.literal("auto"),
+    includeFallbackPages: z.boolean().optional(),
+  }),
+  z.strictObject({
+    mode: z.literal("manual"),
+    items: z.array(navigationNodeSchema),
+  }),
+]);
+
+const localizedValueSchema = z.union([z.string(), z.record(z.string(), z.string())]);
+
+const collectionSeoSchema = z.strictObject({
+  image: z.string().optional(),
+  noindex: z.boolean().optional(),
+});
+
+const collectionMetadataSchema = z.strictObject({
+  id: z.string().min(1),
+  title: localizedValueSchema,
+  description: localizedValueSchema.optional(),
+  path: z.string().optional(),
+  index: z.string().optional(),
+  icon: z.string().optional(),
+  hidden: z.boolean().optional(),
+  seo: collectionSeoSchema.optional(),
+});
+
+const collectionsConfigSchema = z.union([
+  z.array(collectionMetadataSchema),
+  z.strictObject({ mode: z.literal("discover") }),
+]);
+
+const homeConfigSchema = z.strictObject({
+  layout: z.enum(["page", "portal"]).optional(),
+  page: z.string().optional(),
+  featuredCollections: z.array(z.string()).optional(),
+  sections: z
+    .array(
+      z.strictObject({
+        title: localizedValueSchema.optional(),
+        collections: z.array(z.string()),
+      }),
+    )
+    .optional(),
+});
 
 const localeConfigSchema = z.strictObject({
   locale: z.string().min(1),
@@ -23,6 +111,11 @@ const i18nConfigSchema = z.strictObject({
   defaultLocale: z.string().min(1),
   locales: z.array(localeConfigSchema).min(1),
   fallback: z.union([z.boolean(), localeFallbackConfigSchema]).optional(),
+  collectionFallback: z
+    .strictObject({
+      behavior: z.enum(["render", "redirect", "hidden", "not-found"]).optional(),
+    })
+    .optional(),
   root: z
     .strictObject({
       behavior: z.enum(["default", "detect", "select"]).optional(),
@@ -49,10 +142,35 @@ const navigationGroupSchema = z.strictObject({
   items: z.array(navigationItemSchema),
 });
 
+const globalNavigationItemSchema: z.ZodType<GlobalNavigationItem> = z
+  .strictObject({
+    title: z.string().min(1),
+    href: z.string().optional(),
+    collection: z.string().optional(),
+    external: z.boolean().optional(),
+    items: z.array(z.lazy(() => globalNavigationItemSchema)).optional(),
+  })
+  .refine((item) => !(item.href !== undefined && item.collection !== undefined), {
+    message: "`href` and `collection` cannot be set on the same global navigation item (spec §26)",
+  });
+
+const globalNavigationGroupSchema = z.strictObject({
+  title: z.string().optional(),
+  items: z.array(globalNavigationItemSchema),
+});
+
+const paginationConfigSchema = z.strictObject({
+  enabled: z.boolean().optional(),
+  crossSection: z.boolean().optional(),
+});
+
 const navigationConfigSchema = z.strictObject({
   mode: z.enum(["auto", "manual"]).optional(),
   includeFallbackPages: z.boolean().optional(),
   locales: z.record(z.string(), z.array(navigationGroupSchema)).optional(),
+  collections: z.record(z.string(), collectionNavigationConfigSchema).optional(),
+  global: z.array(globalNavigationGroupSchema).optional(),
+  pagination: paginationConfigSchema.optional(),
 });
 
 const headerLinkSchema = z.strictObject({
@@ -82,6 +200,13 @@ const themeConfigSchema = z.strictObject({
   colorScheme: z.enum(["light", "dark", "system"]).optional(),
   accentColor: z.string().optional(),
   radius: z.enum(["none", "small", "medium", "large"]).optional(),
+  breadcrumbs: z
+    .strictObject({
+      enabled: z.boolean().optional(),
+      showHome: z.boolean().optional(),
+      showCurrentPage: z.boolean().optional(),
+    })
+    .optional(),
   codeTheme: z
     .union([
       z.string(),
@@ -161,6 +286,12 @@ const previewConfigSchema = z.strictObject({
 
 const warningCodeSchema = z.enum([
   "missing-title",
+  "missing-page-metadata",
+  "generated-page-id",
+  "multiple-placement-without-primary",
+  "deep-navigation",
+  "empty-section",
+  "empty-group",
   "missing-translation",
   "unknown-code-language",
   "page-not-in-navigation",
@@ -180,6 +311,7 @@ const failOnCodeSchema = z.union([
 
 const validationConfigSchema = z.strictObject({
   strict: z.boolean().optional(),
+  disallowFrontMatter: z.boolean().optional(),
   failOn: z.array(failOnCodeSchema).optional(),
 });
 
@@ -232,6 +364,8 @@ export const makitConfigSchema = z.strictObject({
   publicDir: z.string().optional(),
   outDir: z.string().optional(),
   basePath: z.string().optional(),
+  collections: collectionsConfigSchema.optional(),
+  home: homeConfigSchema.optional(),
   i18n: i18nConfigSchema.optional(),
   navigation: navigationConfigSchema.optional(),
   header: headerConfigSchema.optional(),

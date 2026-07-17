@@ -82,8 +82,8 @@ describe("derivePageId", () => {
     expect(derivePageId("custom-id", ["guides", "configuration"])).toBe("custom-id");
   });
 
-  it("falls back to joined segments", () => {
-    expect(derivePageId(undefined, ["guides", "configuration"])).toBe("guides/configuration");
+  it("falls back to dot-joined path segments (spec §18)", () => {
+    expect(derivePageId(undefined, ["guides", "configuration"])).toBe("guides.configuration");
   });
 
   it("falls back to 'index' for the root page", () => {
@@ -128,8 +128,8 @@ describe("detectDuplicatePageIds", () => {
   it("throws MakitError('duplicate-page-id') on collision within a locale", () => {
     try {
       detectDuplicatePageIds([
-        { pageId: "guide", locale: "en", sourcePath: "a.md" },
-        { pageId: "guide", locale: "en", sourcePath: "b.md" },
+        { pageId: "guide", locale: "en", collectionId: "default", sourcePath: "a.md" },
+        { pageId: "guide", locale: "en", collectionId: "default", sourcePath: "b.md" },
       ]);
       expect.unreachable();
     } catch (error) {
@@ -141,8 +141,8 @@ describe("detectDuplicatePageIds", () => {
   it("allows the same pageId across different locales", () => {
     expect(() =>
       detectDuplicatePageIds([
-        { pageId: "guide", locale: "en", sourcePath: "en/a.md" },
-        { pageId: "guide", locale: "ja", sourcePath: "ja/a.md" },
+        { pageId: "guide", locale: "en", collectionId: "default", sourcePath: "en/a.md" },
+        { pageId: "guide", locale: "ja", collectionId: "default", sourcePath: "ja/a.md" },
       ]),
     ).not.toThrow();
   });

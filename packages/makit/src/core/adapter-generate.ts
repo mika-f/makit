@@ -1,4 +1,6 @@
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { createMetadataJiti } from "../metadata/loader.js";
+import { resolveCollections } from "./collections.js";
 import type { DeploymentRunResult, WriteDeploymentResult } from "./deployment.js";
 import { runDeploymentAdapter, writeDeploymentFiles } from "./deployment.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
@@ -19,7 +21,8 @@ export async function generateAdapterFiles(
   config: ResolvedConfig,
   options: GenerateAdapterOptions = {},
 ): Promise<GenerateAdapterResult> {
-  const { pages } = await buildAllPages(config);
+  const { collections } = await resolveCollections(config, createMetadataJiti());
+  const { pages } = await buildAllPages(config, collections);
   const productionPages = pages.filter((page) => !page.draft);
   const fallbackPages = generateFallbackPages(productionPages, config);
   const allPages = populateAlternates([...productionPages, ...fallbackPages], config);

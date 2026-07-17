@@ -23,13 +23,22 @@ export interface GeneratedMetadata {
   alternates: GeneratedAlternate[];
 }
 
+export interface PageTaxonomy {
+  topics?: string[];
+  products?: string[];
+  audiences?: string[];
+  tags?: string[];
+}
+
 export interface GeneratedPage {
   pageId: string;
+  collectionId: string;
   route: string;
   segments: string[];
   locale: string;
   contentLocale: string;
   sourcePath: string;
+  metadataPath?: string;
   isFallback: boolean;
   fallbackSource?: string;
   title: string;
@@ -43,24 +52,64 @@ export interface GeneratedPage {
   order?: number;
   navigation?: {
     title?: string;
-    group?: string;
+    primary?: string[];
   };
+  taxonomy?: PageTaxonomy;
   metadata: GeneratedMetadata;
 }
 
-export interface ManifestEntry {
-  pageId: string;
+/** One entry of `indexes/page-map.json`: `pageMap[locale][collectionId][pageId]`. */
+export interface PageMapEntry {
   route: string;
   segments: string[];
-  locale: string;
   title: string;
   draft: boolean;
   hidden: boolean;
+  isFallback: boolean;
 }
 
-export interface Manifest {
-  generatedAt: string;
-  pages: ManifestEntry[];
+/** The per-locale slice of the page map. */
+export type LocalePageMap = Record<string, Record<string, PageMapEntry>>;
+
+/** One entry of `indexes/route-map.json`: `routeMap[locale][joinedSegments]`. */
+export interface RouteMapEntry {
+  collectionId: string;
+  pageId: string;
+  kind: "page";
+}
+
+export type LocaleRouteMap = Record<string, RouteMapEntry>;
+
+/** One entry of `collections.json`. */
+export interface CollectionData {
+  id: string;
+  pathSegments: string[];
+  index: string;
+  icon?: string;
+  hidden: boolean;
+  implicit: boolean;
+  locales: Record<
+    string,
+    {
+      title: string;
+      description?: string;
+      rootRoute: string;
+    }
+  >;
+}
+
+/** `navigation/{locale}/global.json` — collection refs already resolved to hrefs. */
+export interface GlobalNavigationItem {
+  title: string;
+  href?: string;
+  collection?: string;
+  external?: boolean;
+  items?: GlobalNavigationItem[];
+}
+
+export interface GlobalNavigationGroup {
+  title?: string;
+  items: GlobalNavigationItem[];
 }
 
 export interface HeaderLink {
@@ -101,17 +150,28 @@ export interface SeoData {
   defaultImage?: string;
 }
 
+export interface HomeData {
+  layout?: "page" | "portal";
+  page?: string;
+  featuredCollections: string[];
+  sections: { title?: string | Record<string, string>; collections: string[] }[];
+}
+
 export interface SiteData {
   title: string;
   description?: string;
   lang: string;
   siteUrl?: string;
   basePath: string;
+  home: HomeData;
   header: HeaderData;
   footer: FooterData;
   theme: ThemeData;
   seo: SeoData;
   styles: string[];
+  navigation: {
+    pagination: { enabled: boolean; crossSection: boolean };
+  };
   markdown: {
     tableOfContents: { minDepth: number; maxDepth: number };
     code: { copyButton: boolean; lineNumbers: boolean };
@@ -128,6 +188,7 @@ export interface LocaleData {
 }
 
 export type FallbackBehavior = "render" | "redirect" | "not-found";
+export type CollectionFallbackBehavior = "render" | "redirect" | "hidden" | "not-found";
 export type RootBehavior = "default" | "detect" | "select";
 export type MissingPageBehavior = "fallback" | "locale-root" | "disabled";
 
@@ -139,6 +200,9 @@ export interface I18nData {
     enabled: boolean;
     behavior: FallbackBehavior;
     showNotice: boolean;
+  };
+  collectionFallback: {
+    behavior: CollectionFallbackBehavior;
   };
   root: {
     behavior: RootBehavior;

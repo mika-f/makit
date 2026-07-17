@@ -60,6 +60,7 @@ function resolveI18n(parsed: MakitConfigParsed, topLevelLang: string): ResolvedI
       defaultLocale: topLevelLang,
       locales: [singleLocale],
       fallback: { enabled: false, behavior: "render", showNotice: false },
+      collectionFallback: { behavior: "render" },
       root: { behavior: "default" },
       localeSwitcher: { missingPage: "disabled" },
       messages: {},
@@ -122,6 +123,9 @@ function resolveI18n(parsed: MakitConfigParsed, topLevelLang: string): ResolvedI
     defaultLocale: i18n.defaultLocale,
     locales,
     fallback,
+    collectionFallback: {
+      behavior: i18n.collectionFallback?.behavior ?? "render",
+    },
     // Spec §16.10 lists three root behaviors without naming a default;
     // "default" (a static redirect to defaultLocale) is chosen as the
     // zero-JS baseline.
@@ -156,11 +160,24 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
     publicDir: parsed.publicDir ?? DEFAULT_PUBLIC_DIR,
     outDir: parsed.outDir ?? DEFAULT_OUT_DIR,
     basePath: normalizeBasePath(parsed.basePath),
+    collections: parsed.collections,
+    home: {
+      layout: parsed.home?.layout ?? (parsed.home?.page ? "page" : undefined),
+      page: parsed.home?.page,
+      featuredCollections: parsed.home?.featuredCollections ?? [],
+      sections: parsed.home?.sections ?? [],
+    },
     i18n: resolveI18n(parsed, lang),
     navigation: {
       mode: parsed.navigation?.mode ?? "auto",
       includeFallbackPages: parsed.navigation?.includeFallbackPages ?? true,
       locales: parsed.navigation?.locales ?? {},
+      collections: parsed.navigation?.collections ?? {},
+      global: parsed.navigation?.global ?? [],
+      pagination: {
+        enabled: parsed.navigation?.pagination?.enabled ?? true,
+        crossSection: parsed.navigation?.pagination?.crossSection ?? true,
+      },
     },
     header: parsed.header ?? {},
     footer: parsed.footer ?? {},
@@ -168,6 +185,11 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       colorScheme: parsed.theme?.colorScheme ?? "system",
       accentColor: parsed.theme?.accentColor,
       radius: parsed.theme?.radius ?? "medium",
+      breadcrumbs: {
+        enabled: parsed.theme?.breadcrumbs?.enabled ?? true,
+        showHome: parsed.theme?.breadcrumbs?.showHome ?? true,
+        showCurrentPage: parsed.theme?.breadcrumbs?.showCurrentPage ?? true,
+      },
       codeTheme:
         typeof parsed.theme?.codeTheme === "string"
           ? { light: parsed.theme.codeTheme, dark: parsed.theme.codeTheme }
@@ -225,6 +247,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
     },
     validation: {
       strict: parsed.validation?.strict ?? false,
+      disallowFrontMatter: parsed.validation?.disallowFrontMatter ?? true,
       failOn: parsed.validation?.failOn ?? [],
     },
     deployment: {

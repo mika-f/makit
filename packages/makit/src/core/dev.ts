@@ -4,11 +4,14 @@ import { existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import chokidar from "chokidar";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { resolveCollections } from "./collections.js";
 import { writeGeneratedData } from "./generate.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { resolvePackageRoot } from "./link-runtime-deps.js";
 import type { Logger } from "./logger.js";
+import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 
@@ -22,13 +25,22 @@ export interface DevServer {
 }
 
 async function regenerateContent(config: ResolvedConfig, logger: Logger): Promise<void> {
-  // Unlike `makit build`, dev keeps draft pages visible (spec §14.4).
-  const { pages, warnings } = await buildAllPages(config);
+  // A fresh jiti per regeneration so edited metadata files re-evaluate.
+  const jiti = createMetadataJiti();
+  const { collections, warnings: collectionWarnings } = await resolveCollections(config, jiti);
+  // Unlike `makit build`, dev keeps draft pages visible (spec §16).
+  const { pages, warnings } = await buildAllPages(config, collections);
   const fallbackPages = generateFallbackPages(pages, config);
-  const allPages = populateAlternates([...pages, ...fallbackPages], config);
-  const { byLocale } = generateAllNavigation(allPages, config);
-  await writeGeneratedData(config, allPages, byLocale);
-  for (const warning of warnings) logger.warn(warning);
+  const undecoratedPages = populateAlternates([...pages, ...fallbackPages], config);
+  const { byLocale } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  const { pages: allPages } = decoratePagesWithNavigation(
+    undecoratedPages,
+    byLocale,
+    config,
+    collections,
+  );
+  await writeGeneratedData(config, allPages, collections, byLocale);
+  for (const warning of [...collectionWarnings, ...warnings]) logger.warn(warning);
   logger.success(`Regenerated ${allPages.length} page(s)`);
 }
 

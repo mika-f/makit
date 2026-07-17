@@ -1,6 +1,26 @@
 import { readFile } from "node:fs/promises";
-import { localesPath, manifestPath, navigationPath, pagePath, sitePath } from "./paths.js";
-import type { GeneratedPage, I18nData, Manifest, NavigationGroup, SiteData } from "./types.js";
+import {
+  collectionMapPath,
+  collectionNavigationPath,
+  collectionsPath,
+  globalNavigationPath,
+  localesPath,
+  pageMapPath,
+  pagePath,
+  routeMapPath,
+  sitePath,
+  translationMapPath,
+} from "./paths.js";
+import type {
+  CollectionData,
+  GeneratedPage,
+  GlobalNavigationGroup,
+  I18nData,
+  LocalePageMap,
+  LocaleRouteMap,
+  NavigationGroup,
+  SiteData,
+} from "./types.js";
 
 // A static production build reads each generated file exactly once per
 // unique path, so caching avoids re-parsing the same JSON across many page
@@ -21,10 +41,6 @@ async function readJson<T>(path: string): Promise<T> {
   return promise;
 }
 
-export function getManifest(): Promise<Manifest> {
-  return readJson(manifestPath());
-}
-
 export function getSiteData(): Promise<SiteData> {
   return readJson(sitePath());
 }
@@ -33,16 +49,50 @@ export function getLocalesData(): Promise<I18nData> {
   return readJson(localesPath());
 }
 
-export function getNavigation(locale: string): Promise<NavigationGroup[]> {
-  return readJson(navigationPath(locale));
+export function getCollections(): Promise<CollectionData[]> {
+  return readJson(collectionsPath());
 }
 
-export function getPageById(locale: string, pageId: string): Promise<GeneratedPage> {
-  return readJson(pagePath(locale, pageId));
+export function getGlobalNavigation(locale: string): Promise<GlobalNavigationGroup[]> {
+  return readJson(globalNavigationPath(locale));
 }
 
-function segmentsEqual(a: readonly string[], b: readonly string[]): boolean {
-  return a.length === b.length && a.every((segment, index) => segment === b[index]);
+export function getCollectionNavigation(
+  locale: string,
+  collectionId: string,
+): Promise<NavigationGroup[]> {
+  // A collection can be absent in a locale (spec §35.5) — treat as empty.
+  return readJson<NavigationGroup[]>(collectionNavigationPath(locale, collectionId)).catch(
+    () => [],
+  );
+}
+
+export function getPageById(
+  locale: string,
+  collectionId: string,
+  pageId: string,
+): Promise<GeneratedPage> {
+  return readJson(pagePath(locale, collectionId, pageId));
+}
+
+/** `pageMap[locale][collectionId][pageId]` (spec §40 `indexes/page-map.json`). */
+export function getPageMap(): Promise<Record<string, LocalePageMap>> {
+  return readJson(pageMapPath());
+}
+
+/** `routeMap[locale][joinedSegments]` (spec §40 `indexes/route-map.json`). */
+export function getRouteMap(): Promise<Record<string, LocaleRouteMap>> {
+  return readJson(routeMapPath());
+}
+
+/** `collectionMap[collectionId][locale]` → collection root route. */
+export function getCollectionMap(): Promise<Record<string, Record<string, string>>> {
+  return readJson(collectionMapPath());
+}
+
+/** `translationMap["{collectionId}:{pageId}"][locale]` → route (real translations only). */
+export function getTranslationMap(): Promise<Record<string, Record<string, string>>> {
+  return readJson(translationMapPath());
 }
 
 /** Finds the page for a given `(locale, slug)` App Router param pair, or `undefined` if none matches. */
@@ -50,12 +100,21 @@ export async function getPageForRoute(
   locale: string,
   slug: readonly string[],
 ): Promise<GeneratedPage | undefined> {
-  const manifest = await getManifest();
-  const entry = manifest.pages.find(
-    (page) => page.locale === locale && segmentsEqual(page.segments, slug),
-  );
+  const routeMap = await getRouteMap();
+  const entry = routeMap[locale]?.[slug.join("/")];
   if (!entry) return undefined;
-  return getPageById(locale, entry.pageId);
+  return getPageById(locale, entry.collectionId, entry.pageId);
+}
+
+/** The locale's home route (the page with zero segments), if one exists. */
+export async function getHomeRoute(locale: string): Promise<string | undefined> {
+  const pageMap = await getPageMap();
+  for (const byPageId of Object.values(pageMap[locale] ?? {})) {
+    for (const entry of Object.values(byPageId)) {
+      if (entry.segments.length === 0) return entry.route;
+    }
+  }
+  return undefined;
 }
 
 export interface StaticParam {
@@ -63,10 +122,17 @@ export interface StaticParam {
   slug: string[];
 }
 
-/** Params for every non-draft page, for `generateStaticParams` (spec §33.3). */
+/** Params for every non-draft page, for `generateStaticParams` (spec §41). */
 export async function getAllStaticParams(): Promise<StaticParam[]> {
-  const manifest = await getManifest();
-  return manifest.pages
-    .filter((page) => !page.draft)
-    .map((page) => ({ locale: page.locale, slug: page.segments }));
+  const pageMap = await getPageMap();
+  const params: StaticParam[] = [];
+  for (const [locale, byCollection] of Object.entries(pageMap)) {
+    for (const byPageId of Object.values(byCollection)) {
+      for (const entry of Object.values(byPageId)) {
+        if (entry.draft) continue;
+        params.push({ locale, slug: entry.segments });
+      }
+    }
+  }
+  return params;
 }

@@ -1,7 +1,3 @@
----
-title: Welcome
----
-
 # Welcome to Makit
 
 This is the **home page** of the English documentation.

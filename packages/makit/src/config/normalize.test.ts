@@ -141,7 +141,7 @@ describe("resolveConfig defaults", () => {
       rel: "noopener noreferrer",
     });
     expect(resolved.theme.colorScheme).toBe("system");
-    expect(resolved.validation).toEqual({ strict: false, failOn: [] });
+    expect(resolved.validation).toEqual({ strict: false, disallowFrontMatter: true, failOn: [] });
   });
 
   it("honors a single shiki theme override for both light and dark", () => {

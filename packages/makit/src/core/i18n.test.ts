@@ -3,9 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
+import type { PageMetadata } from "../metadata/types.js";
+import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
 import type { MakitConfigParsed } from "../config/schema.js";
 import { generateFallbackPages, groupPagesByPageId, populateAlternates } from "./i18n.js";
-import { buildAllPages } from "./pages.js";
 
 let dir: string;
 
@@ -21,6 +22,13 @@ async function write(relativePath: string, content: string): Promise<void> {
   const fullPath = join(dir, relativePath);
   await mkdir(join(fullPath, ".."), { recursive: true });
   await writeFile(fullPath, content, "utf-8");
+}
+
+async function writeMeta(markdownRelativePath: string, metadata: PageMetadata): Promise<void> {
+  await write(
+    markdownRelativePath.replace(/\.(md|markdown)$/i, ".meta.ts"),
+    pageMetaSource(metadata),
+  );
 }
 
 function i18nConfig(overrides: Partial<MakitConfigParsed> = {}) {
@@ -44,24 +52,26 @@ describe("groupPagesByPageId", () => {
     await write("docs/en-us/index.md", "# Home");
     await write("docs/ja-jp/index.md", "# ホーム");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const groups = groupPagesByPageId(pages);
     expect(groups.size).toBe(1);
-    const group = groups.get("index")!;
+    const group = groups.get("default:index")!;
     expect(group.byLocale.get("en-us")?.locale).toBe("en-us");
     expect(group.byLocale.get("ja-jp")?.locale).toBe("ja-jp");
   });
 
-  it("matches translations by explicit front matter id even with different filenames", async () => {
-    await write("docs/en-us/deployment.md", "---\nid: deploy\n---\n# Deploy");
-    await write("docs/ja-jp/config.md", "---\nid: deploy\nslug: settings\n---\n# 設定");
+  it("matches translations by explicit .meta.ts id even with different filenames", async () => {
+    await write("docs/en-us/deployment.md", "# Deploy");
+    await writeMeta("docs/en-us/deployment.md", { id: "deploy" });
+    await write("docs/ja-jp/config.md", "# 設定");
+    await writeMeta("docs/ja-jp/config.md", { id: "deploy", slug: "settings" });
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const groups = groupPagesByPageId(pages);
     expect(groups.size).toBe(1);
-    expect(groups.get("deploy")?.byLocale.size).toBe(2);
+    expect(groups.get("default:deploy")?.byLocale.size).toBe(2);
   });
 });
 
@@ -69,7 +79,7 @@ describe("generateFallbackPages", () => {
   it("generates a render-behavior fallback page for missing translations", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const fallbackPages = generateFallbackPages(pages, config);
     expect(fallbackPages).toHaveLength(1);
@@ -88,7 +98,7 @@ describe("generateFallbackPages", () => {
     await write("docs/en-us/index.md", "# Home EN");
     await write("docs/ja-jp/index.md", "# Home JA");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
   });
@@ -96,7 +106,7 @@ describe("generateFallbackPages", () => {
   it("generates a minimal placeholder body for redirect behavior", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
     const config = i18nConfig({ i18n: { fallback: { behavior: "redirect" } } as never });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const fallbackPages = generateFallbackPages(pages, config);
     expect(fallbackPages[0]?.html).not.toContain("Deployment Guide");
@@ -106,7 +116,7 @@ describe("generateFallbackPages", () => {
   it("generates nothing for not-found behavior", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
     const config = i18nConfig({ i18n: { fallback: { behavior: "not-found" } } as never });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
   });
@@ -114,7 +124,7 @@ describe("generateFallbackPages", () => {
   it("generates nothing when fallback is disabled", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
     const config = i18nConfig({ i18n: { fallback: false } as never });
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
   });
@@ -125,7 +135,7 @@ describe("generateFallbackPages", () => {
       { title: "Test" },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
   });
@@ -133,7 +143,7 @@ describe("generateFallbackPages", () => {
   it("generates nothing when there is no default-locale content to fall back to", async () => {
     await write("docs/ja-jp/only-here.md", "# Only in Japanese");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     expect(generateFallbackPages(pages, config)).toHaveLength(0);
   });
@@ -144,7 +154,7 @@ describe("populateAlternates", () => {
     await write("docs/en-us/index.md", "# Home EN");
     await write("docs/ja-jp/index.md", "# Home JA");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const withAlternates = populateAlternates(pages, config);
     const enPage = withAlternates.find((p) => p.locale === "en-us")!;
@@ -163,7 +173,7 @@ describe("populateAlternates", () => {
   it("leaves fallback pages with no alternates", async () => {
     await write("docs/en-us/guides/deployment.md", "# Deployment Guide");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
     const fallbackPages = generateFallbackPages(pages, config);
 
     const withAlternates = populateAlternates([...pages, ...fallbackPages], config);
@@ -177,7 +187,7 @@ describe("populateAlternates", () => {
       { title: "Test" },
       { root: dir, configPath: join(dir, "makit.config.ts") },
     );
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const withAlternates = populateAlternates(pages, config);
     expect(withAlternates[0]?.metadata.alternates).toEqual([]);
@@ -186,7 +196,7 @@ describe("populateAlternates", () => {
   it("does not add alternates for a page with no translations at all", async () => {
     await write("docs/en-us/only-here.md", "# Only Here");
     const config = i18nConfig();
-    const { pages } = await buildAllPages(config);
+    const { pages } = await buildPagesForTest(config);
 
     const withAlternates = populateAlternates(pages, config);
     expect(withAlternates[0]?.metadata.alternates).toEqual([]);

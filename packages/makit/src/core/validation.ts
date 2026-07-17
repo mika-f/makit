@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { join, sep } from "node:path";
-import type { NavigationGroup, NavigationItem } from "../types/config.js";
+import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { groupPagesByPageId } from "./i18n.js";
@@ -8,6 +8,12 @@ import { groupPagesByPageId } from "./i18n.js";
 export interface Diagnostic {
   code:
     | "missing-title"
+    | "missing-page-metadata"
+    | "generated-page-id"
+    | "multiple-placement-without-primary"
+    | "deep-navigation"
+    | "empty-section"
+    | "empty-group"
     | "unknown-code-language"
     | "page-not-in-navigation"
     | "broken-link"
@@ -128,15 +134,37 @@ export function validateImages(
   return diagnostics;
 }
 
-/** Pages whose title fell all the way back to the filename or pageId (spec §14.2, §31.2). */
+/** Pages whose title fell all the way back to the filename or pageId (spec §17, §46). */
 export function validateTitles(pages: readonly GeneratedPage[]): Diagnostic[] {
   return pages
     .filter((page) => page.titleSource === "filename" || page.titleSource === "pageId")
     .map((page) => ({
       code: "missing-title" as const,
-      message: `No title set (front matter \`title\` or an H1) — falling back to "${page.title}"`,
+      message: `No title set (\`.meta.ts\` \`title\` or an H1) — falling back to "${page.title}"`,
       sourcePath: page.sourcePath,
     }));
+}
+
+/** Pages without a `.meta.ts` and pages whose ID was auto-generated from the file path (spec §46). */
+export function validatePageMetadata(pages: readonly GeneratedPage[]): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+  for (const page of pages) {
+    if (!page.metadataPath) {
+      diagnostics.push({
+        code: "missing-page-metadata",
+        message: "Page has no `.meta.ts` metadata file",
+        sourcePath: page.sourcePath,
+      });
+    }
+    if (page.pageIdSource === "auto") {
+      diagnostics.push({
+        code: "generated-page-id",
+        message: `Page ID "${page.pageId}" was auto-generated from the file path — set an explicit \`id\` in \`.meta.ts\` to keep translations stable`,
+        sourcePath: page.sourcePath,
+      });
+    }
+  }
+  return diagnostics;
 }
 
 /** Site-wide and per-page SEO gaps: missing `siteUrl`, missing OGP image (spec §24, §31.2). */
@@ -153,7 +181,7 @@ export function validateSeo(pages: readonly GeneratedPage[], config: ResolvedCon
       if (!page.metadata.image) {
         diagnostics.push({
           code: "missing-og-image",
-          message: "No OGP image (front matter `image` or `seo.defaultImage`)",
+          message: "No OGP image (`.meta.ts` `image` or `seo.defaultImage`)",
           sourcePath: page.sourcePath,
         });
       }
@@ -163,27 +191,68 @@ export function validateSeo(pages: readonly GeneratedPage[], config: ResolvedCon
   return diagnostics;
 }
 
-function flattenNavigationHrefs(groups: readonly NavigationGroup[]): Set<string> {
+function flattenNavigationHrefs(nodes: readonly ResolvedNavNode[]): Set<string> {
   const hrefs = new Set<string>();
-  const visit = (items: readonly NavigationItem[]) => {
+  const visit = (items: readonly ResolvedNavNode[]) => {
     for (const item of items) {
-      if (item.href && !item.external) hrefs.add(item.href);
-      if (item.items) visit(item.items);
+      if (item.type === "link") {
+        if (!item.external) hrefs.add(item.href);
+        continue;
+      }
+      if (item.href) hrefs.add(item.href);
+      if (item.type === "section" || item.type === "group") visit(item.items);
     }
   };
-  for (const group of groups) visit(group.items);
+  visit(nodes);
   return hrefs;
 }
 
-/** Non-hidden pages that don't appear anywhere in their locale's navigation (spec §31.2). */
-export function validateNavigationCoverage(
-  pages: readonly GeneratedPage[],
-  navigationByLocale: Readonly<Record<string, NavigationGroup[]>>,
+/** Empty sections/groups and excessive nesting depth (spec §46). */
+export function validateNavigationStructure(
+  navigationByLocale: Readonly<Record<string, Record<string, ResolvedNavNode[]>>>,
+  maxDepth = 4,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
 
-  for (const [locale, groups] of Object.entries(navigationByLocale)) {
-    const hrefs = flattenNavigationHrefs(groups);
+  const visit = (nodes: readonly ResolvedNavNode[], depth: number, context: string) => {
+    for (const node of nodes) {
+      if (node.type !== "section" && node.type !== "group") continue;
+      const label = node.title ?? node.id ?? "(untitled)";
+      if (node.items.length === 0) {
+        diagnostics.push({
+          code: node.type === "section" ? "empty-section" : "empty-group",
+          message: `${node.type === "section" ? "Section" : "Group"} "${label}" in ${context} has no items`,
+        });
+      }
+      if (depth + 1 > maxDepth) {
+        diagnostics.push({
+          code: "deep-navigation",
+          message: `Navigation in ${context} nests deeper than ${maxDepth} levels at "${label}"`,
+        });
+        continue; // one report per too-deep branch is enough
+      }
+      visit(node.items, depth + 1, context);
+    }
+  };
+
+  for (const [locale, byCollection] of Object.entries(navigationByLocale)) {
+    for (const [collectionId, nodes] of Object.entries(byCollection)) {
+      visit(nodes, 1, `"${locale}/${collectionId}"`);
+    }
+  }
+
+  return diagnostics;
+}
+
+/** Non-hidden pages that don't appear anywhere in their locale's navigation (spec §46). */
+export function validateNavigationCoverage(
+  pages: readonly GeneratedPage[],
+  navigationByLocale: Readonly<Record<string, Record<string, ResolvedNavNode[]>>>,
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = [];
+
+  for (const [locale, byCollection] of Object.entries(navigationByLocale)) {
+    const hrefs = flattenNavigationHrefs(Object.values(byCollection).flat());
     for (const page of pages) {
       if (page.locale !== locale || page.hidden || page.isFallback) continue;
       if (!hrefs.has(page.route)) {
@@ -265,7 +334,7 @@ export function validateFallbackRatio(
 }
 
 export interface ValidatePagesOptions {
-  navigationByLocale?: Readonly<Record<string, NavigationGroup[]>>;
+  navigationByLocale?: Readonly<Record<string, Record<string, ResolvedNavNode[]>>>;
 }
 
 /** Runs every document-level check (spec §9.7 `makit check` targets, §31.2 warnings). */
@@ -280,6 +349,7 @@ export function validatePages(
     ...validateInternalLinks(allPages),
     ...validateImages(allPages, config),
     ...validateTitles(realPages),
+    ...validatePageMetadata(realPages),
     ...validateSeo(allPages, config),
     ...validateTranslationCoverage(realPages, config),
     ...validateFallbackRatio(allPages, config),
@@ -287,6 +357,7 @@ export function validatePages(
 
   if (options.navigationByLocale) {
     diagnostics.push(...validateNavigationCoverage(allPages, options.navigationByLocale));
+    diagnostics.push(...validateNavigationStructure(options.navigationByLocale));
   }
 
   return diagnostics;
