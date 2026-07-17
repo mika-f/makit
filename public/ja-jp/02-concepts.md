@@ -28,6 +28,44 @@ export default definePageMetadata({
 
 TypeScript にすることで、エディター補完や型検査を利用できます。YAML の構造ファイルを別に管理する必要はありません。
 
+## コードブロックの補足表示
+
+`makit.config.ts` の `markdown.code.lineNumbers` を有効にすると、すべてのコードブロックに行番号を表示できます。特定のブロックだけに表示する場合は、ファイル名の後ろに `lineNumbers` を書きます。
+
+全体設定は次のように書きます。
+
+```ts
+markdown: {
+  code: {
+    lineNumbers: true,
+  },
+},
+```
+
+````markdown
+```typescript src/config.ts lineNumbers
+export const enabled = true;
+```
+````
+
+行の末尾に注釈を書くと、その行を強調したり Git の差分のように表示できます。注釈自体は表示されません。
+
+````markdown
+```typescript
+const changed = true; // [!code highlight]
+const added = true; // [!code ++]
+const removed = false; // [!code --]
+```
+````
+
+`markdown`、`md`、`mdx` のコードフェンス内では、注釈文字列は Markdown のサンプルとしてそのまま表示されます。
+
+````markdown
+```markdown
+const value = true; // [!code highlight]
+```
+````
+
 ## サイトの階層
 
 サイトは次のような階層で考えます。

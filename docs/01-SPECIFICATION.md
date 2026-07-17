@@ -1615,6 +1615,46 @@ var text = File.ReadAllText(path);
 
 空白を含むファイル名は引用符で囲む。`title="src/index.ts"` 形式も使用できる。ファイル名を省略した場合は言語名を表示する。
 
+`markdown.code.lineNumbers: true` を設定すると、すべてのコードブロックに行番号を表示する。特定のブロックだけに表示するには、言語名とファイル名の後ろに `lineNumbers` を指定する。
+
+全体設定の例:
+
+```ts
+markdown: {
+  code: {
+    lineNumbers: true,
+  },
+},
+```
+
+````md
+```typescript src/example.ts lineNumbers
+export const answer = 42;
+```
+````
+
+コード行の末尾には、表示を制御する注釈を付与できる。注釈は出力されたコードから除去される。
+
+````md
+```typescript
+const current = "new"; // [!code highlight]
+const added = true; // [!code ++]
+const removed = false; // [!code --]
+```
+````
+
+* `// [!code highlight]`: 行をハイライトする。
+* `// [!code ++]`: Git の追加差分として表示する。
+* `// [!code --]`: Git の削除差分として表示する。
+
+`markdown`、`md`、`mdx` のコードフェンス内では、これらの文字列は Markdown のサンプルとして扱われ、注釈として解釈しない。
+
+````md
+```markdown
+const value = true; // [!code highlight]
+```
+````
+
 ---
 
 # 38. テーマ要件

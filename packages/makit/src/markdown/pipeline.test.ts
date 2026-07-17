@@ -179,6 +179,37 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(titled.html).toContain('data-filename="src/index.ts"');
   });
 
+  it("enables line numbers globally and per fenced-code metadata", async () => {
+    const global = await render(
+      "```typescript\nconst x = 1;\n```\n",
+      makeConfig({ title: "Test", markdown: { code: { lineNumbers: true } } }),
+    );
+    expect(global.html).toMatch(/class="[^"]*has-line-numbers/);
+    expect(global.html.match(/<pre\b[^>]*>/)?.[0].match(/\sclass=/g)).toHaveLength(1);
+
+    const local = await render("```typescript example.ts lineNumbers\nconst x = 1;\n```\n");
+    expect(local.html).toContain('data-filename="example.ts"');
+    expect(local.html).toMatch(/class="[^"]*has-line-numbers/);
+  });
+
+  it("renders code annotations as line classes and removes their markers", async () => {
+    const result = await render(
+      "```typescript\nconst a = 1; // [!code highlight]\nconst b = 2; // [!code ++]\nconst c = 3; // [!code --]\n```\n",
+    );
+    expect(result.html).toContain('class="line highlighted"');
+    expect(result.html).toContain('class="line diff add"');
+    expect(result.html).toContain('class="line diff remove"');
+    expect(result.html).not.toContain("[!code");
+  });
+
+  it("keeps annotations literal in Markdown code examples", async () => {
+    const result = await render(
+      "````markdown\n```typescript\nconst changed = true; // [!code highlight]\n```\n````\n",
+    );
+    expect(result.html).toContain("[!code highlight]");
+    expect(result.html).not.toContain('class="line highlighted"');
+  });
+
   it("downgrades an unknown language to plain text with a warning by default", async () => {
     const result = await render("```not-a-real-language\nhello\n```\n");
     expect(result.html).toContain("shiki");

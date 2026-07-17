@@ -27,6 +27,26 @@ export default definePageMetadata({
 
 TypeScript gives you editor completion and type checking, without maintaining a separate YAML structure file.
 
+## Code-block annotations
+
+Enable `markdown.code.lineNumbers` in `makit.config.ts` to show line numbers for every code block. To enable them for one block, add `lineNumbers` after its filename.
+
+````markdown
+```typescript src/config.ts lineNumbers
+export const enabled = true;
+```
+````
+
+Add an annotation at the end of a line to highlight it or render it as a Git-style diff. The annotation itself is not shown.
+
+````markdown
+```typescript
+const changed = true; // [!code highlight]
+const added = true; // [!code ++]
+const removed = false; // [!code --]
+```
+````
+
 ## Site hierarchy
 
 Think of a site as the following hierarchy:

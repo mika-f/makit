@@ -80,7 +80,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
 
   applyUnifiedPlugins(processor, config.markdown.rehypePlugins);
 
-  processor.use(rehypeShikiHighlight, config.markdown.shiki);
+  processor.use(rehypeShikiHighlight, config.markdown.shiki, config.markdown.code);
   processor.use(rehypeStringify, { allowDangerousHtml: config.markdown.allowDangerousHtml });
 
   return processor;

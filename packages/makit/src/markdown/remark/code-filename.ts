@@ -6,19 +6,28 @@ interface MarkdownCodeNode {
   data?: Record<string, unknown>;
 }
 
-function extractFilename(meta: string | null | undefined): string | undefined {
+interface CodeMetadata {
+  filename?: string;
+  lineNumbers: boolean;
+}
+
+function extractMetadata(meta: string | null | undefined): CodeMetadata {
   const value = meta?.trim();
-  if (!value) return undefined;
+  if (!value) return { lineNumbers: false };
+
+  const lineNumbers = /(?:^|\s)lineNumbers(?:\s|$)/.test(value);
 
   const title = value.match(/(?:^|\s)title=(?:"([^"]+)"|'([^']+)'|([^\s]+))/);
-  if (title) return title[1] ?? title[2] ?? title[3];
+  if (title) return { filename: title[1] ?? title[2] ?? title[3], lineNumbers };
 
   const quoted = value.match(/^(?:"([^"]+)"|'([^']+)')/);
-  if (quoted) return quoted[1] ?? quoted[2];
+  if (quoted) return { filename: quoted[1] ?? quoted[2], lineNumbers };
 
   const candidate = value.split(/\s+/, 1)[0];
-  if (!candidate || candidate.startsWith("{") || candidate.includes("=")) return undefined;
-  return candidate;
+  if (!candidate || candidate === "lineNumbers" || candidate.startsWith("{") || candidate.includes("=")) {
+    return { lineNumbers };
+  }
+  return { filename: candidate, lineNumbers };
 }
 
 /** Carries a fenced code block's filename metadata through remark-rehype. */
@@ -26,12 +35,16 @@ export function remarkCodeFilename() {
   return (tree: unknown) => {
     visit(tree as never, "code", (rawNode) => {
       const node = rawNode as unknown as MarkdownCodeNode;
-      const filename = extractFilename(node.meta);
-      if (!filename) return;
+      const { filename, lineNumbers } = extractMetadata(node.meta);
+      if (!filename && !lineNumbers) return;
 
       const data = (node.data ??= {});
       const hProperties = data.hProperties as Record<string, unknown> | undefined;
-      data.hProperties = { ...hProperties, dataFilename: filename };
+      data.hProperties = {
+        ...hProperties,
+        ...(filename ? { dataFilename: filename } : {}),
+        ...(lineNumbers ? { dataLineNumbers: true } : {}),
+      };
     });
   };
 }

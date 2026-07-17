@@ -12,6 +12,12 @@ export interface CachedMarkdownResult {
   warnings: string[];
 }
 
+// Increment when a Makit release changes the generated Markdown HTML without
+// necessarily changing the user's source or config. This also keeps local
+// workspace builds from serving stale page HTML while the package version is
+// unchanged during development.
+const MARKDOWN_CACHE_VERSION = "2";
+
 function sha256(input: string): string {
   return createHash("sha256").update(input).digest("hex");
 }
@@ -51,6 +57,7 @@ export class BuildCache {
       const signature = sha256(
         [
           getPackageVersion("@natsuneko-laboratory/makit"),
+          MARKDOWN_CACHE_VERSION,
           getPackageVersion("jiti"),
           process.version,
           configContent,
