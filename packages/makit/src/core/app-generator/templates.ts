@@ -149,18 +149,27 @@ export interface GlobalsCssOptions {
 
 export function globalsCssTemplate(options: GlobalsCssOptions): string {
   const lines = [
-    '@import "tailwindcss";',
+    // `source(none)` is load-bearing: without it, Tailwind's automatic
+    // source detection scans everything under `.makit/` — including
+    // `.next/`, where Turbopack continuously rewrites chunk files that
+    // embed makit-runtime's own class strings. Scanning a chunk mid-write
+    // yields garbage candidates (real class names interleaved with stray
+    // bytes), and Tailwind's dev-mode candidate cache never evicts, so one
+    // torn read permanently corrupts the compiled CSS ("Parsing CSS source
+    // code failed … Unexpected token Delim") until `.next` is deleted.
+    // Every class source must therefore be listed explicitly below.
+    '@import "tailwindcss" source(none);',
     '@plugin "@tailwindcss/typography";',
     "",
     '@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));',
-    // makit-runtime's build emits ESM output as `.mjs` (never plain `.js`,
-    // see its tsdown config) — matching `*.js` here made this directive a
-    // silent no-op, since the glob never matched any file. Tailwind's
-    // component classes were only ever showing up via its own automatic
-    // fallback scanning of whatever broad root Turbopack picked (needed for
-    // `.makit/node_modules`'s symlinks, see `commonAncestorDir` above) —
-    // an uncontrolled, much larger surface than this explicit list intends.
+    // makit-runtime's components (tsdown emits `.mjs`, never plain `.js`).
     `@source "${options.makitRuntimeDistPath}/**/*.mjs";`,
+    // Rendered page HTML (spec §40) — how Tailwind classes written in the
+    // user's own markdown/HTML content get picked up. Safe to scan because
+    // these are written via atomic rename, never in place.
+    '@source "../generated/**/*.json";',
+    // The generated app shell itself (layout.js, page.js, ...).
+    '@source "../app/**/*.js";',
     "",
     "pre.shiki {",
     "  position: relative;",
