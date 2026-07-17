@@ -15,7 +15,7 @@ export default async function RootLayout({ children }) {
   const colorScheme = site.theme.colorScheme;
 
   return (
-    <html lang={site.lang} data-theme={colorScheme !== "system" ? colorScheme : undefined}>
+    <html lang={site.lang} data-theme={colorScheme !== "system" ? colorScheme : undefined} suppressHydrationWarning>
       <body
         data-makit-dev-refresh={
           process.env.NODE_ENV === "development" ? devRefreshToken : undefined
