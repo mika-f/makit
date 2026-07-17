@@ -52,10 +52,15 @@ export function rehypeShikiHighlight(shikiConfig: ResolvedShikiConfig) {
     });
 
     for (const target of targets) {
-      const { hast, warning } = await highlightCode(target.code, target.lang, shikiConfig);
+      const { hast, resolvedLang, warning } = await highlightCode(
+        target.code,
+        target.lang,
+        shikiConfig,
+      );
       const newPre = hast.children[0];
-      if (newPre) {
-        target.parent.children[target.index] = newPre as Element;
+      if (newPre?.type === "element") {
+        newPre.properties["data-language"] = resolvedLang;
+        target.parent.children[target.index] = newPre;
       }
       if (warning) {
         const warnings = (file.data.warnings as string[] | undefined) ?? [];

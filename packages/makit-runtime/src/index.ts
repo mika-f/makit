@@ -12,6 +12,7 @@ export {
   getPageMap,
   getRouteEntry,
   getRouteMap,
+  getSearchIndex,
   getSiteData,
   getTranslationMap,
 } from "./data/loaders.js";
@@ -50,6 +51,7 @@ export type {
   RootBehavior,
   RootLocaleOption,
   RouteMapEntry,
+  SearchEntry,
   SeoData,
   SiteData,
   ThemeData,

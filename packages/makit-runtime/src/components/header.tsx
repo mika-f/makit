@@ -5,17 +5,17 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
   if (item.items && item.items.length > 0) {
     return (
       <details className="relative inline-block">
-        <summary className="cursor-pointer list-none text-sm text-[var(--makit-color-foreground)] opacity-80 hover:opacity-100">
+        <summary className="cursor-pointer list-none text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]">
           {item.title}
         </summary>
-        <div className="absolute z-10 mt-1 min-w-40 rounded-[var(--makit-radius)] border border-[var(--makit-color-border)] bg-[var(--makit-color-background)] p-2 shadow-lg">
+        <div className="absolute z-20 mt-2 min-w-44 rounded-xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-1.5 shadow-xl">
           {item.items.map((child) => (
             <a
               key={child.title}
               href={child.href ?? "#"}
               target={child.external ? "_blank" : undefined}
               rel={child.external ? "noopener noreferrer" : undefined}
-              className="block rounded-[var(--makit-radius)] px-2 py-1 text-sm text-[var(--makit-color-foreground)] hover:bg-[var(--makit-color-muted)]"
+              className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
             >
               {child.title}
             </a>
@@ -29,7 +29,7 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
       href={item.href ?? "#"}
       target={item.external ? "_blank" : undefined}
       rel={item.external ? "noopener noreferrer" : undefined}
-      className="text-sm text-[var(--makit-color-foreground)] opacity-80 hover:opacity-100"
+      className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
     >
       {item.title}
     </a>
@@ -41,7 +41,7 @@ function GlobalNav({ groups }: { groups: readonly GlobalNavigationGroup[] }) {
   const items = groups.flatMap((group) => group.items);
   if (items.length === 0) return null;
   return (
-    <nav className="hidden items-center gap-4 sm:flex" aria-label="Global navigation">
+    <nav className="hidden items-center gap-5 md:flex" aria-label="Global navigation">
       {items.map((item) => (
         <GlobalNavItem key={item.title} item={item} />
       ))}
@@ -66,33 +66,43 @@ export function Header({
   const hasGlobalNav = (globalNavigation?.flatMap((group) => group.items).length ?? 0) > 0;
 
   return (
-    <header className="flex items-center justify-between border-b border-[var(--makit-color-border)] px-4 py-3">
-      <a
-        href={homeHref}
-        className="flex items-center gap-2 font-semibold text-[var(--makit-color-foreground)]"
-      >
-        {header.logo && <img src={header.logo} alt="" className="h-6 w-6" />}
-        <span>{header.title ?? siteTitle}</span>
-      </a>
-      <div className="flex items-center gap-3">
-        {hasGlobalNav ? (
-          <GlobalNav groups={globalNavigation!} />
-        ) : (
-          <nav className="hidden items-center gap-3 sm:flex" aria-label="Header links">
-            {(header.links ?? []).map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                target={link.external ? "_blank" : undefined}
-                rel={link.external ? "noopener noreferrer" : undefined}
-                className="text-sm text-[var(--makit-color-foreground)] opacity-80 hover:opacity-100"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-        )}
-        {actions}
+    <header className="sticky top-0 z-40 border-b border-[var(--makit-color-border)] bg-[color-mix(in_srgb,var(--makit-color-background)_88%,transparent)] backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-7">
+          <a
+            href={homeHref}
+            className="flex min-w-0 items-center gap-2.5 font-semibold tracking-[-0.02em] text-[var(--makit-color-foreground)]"
+          >
+            {header.logo ? (
+              <img src={header.logo} alt="" className="h-7 w-7 rounded-md" />
+            ) : (
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--makit-color-foreground)] text-xs font-bold text-[var(--makit-color-background)]">
+                {(header.title ?? siteTitle).slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <span className="truncate">{header.title ?? siteTitle}</span>
+          </a>
+          {hasGlobalNav ? (
+            <GlobalNav groups={globalNavigation!} />
+          ) : (
+            <nav className="hidden items-center gap-5 md:flex" aria-label="Header links">
+              {(header.links ?? []).map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  target={link.external ? "_blank" : undefined}
+                  rel={link.external ? "noopener noreferrer" : undefined}
+                  className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </nav>
+          )}
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {actions}
+        </div>
       </div>
     </header>
   );

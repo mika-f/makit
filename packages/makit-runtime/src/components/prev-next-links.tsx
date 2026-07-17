@@ -10,14 +10,14 @@ export function PrevNextLinks({ prev, next }: PrevNextLinksProps) {
   if (!prev && !next) return null;
 
   return (
-    <nav className="mt-10 flex items-center justify-between gap-4 border-t border-[var(--makit-color-border)] pt-6">
+    <nav className="mt-14 grid grid-cols-2 gap-4 border-t border-[var(--makit-color-border)] pt-8">
       {prev ? (
         <a
           href={prev.href}
-          className="rounded-[var(--makit-radius)] border border-[var(--makit-color-border)] px-4 py-2 text-sm hover:bg-[var(--makit-color-muted)]"
+          className="group rounded-xl border border-[var(--makit-color-border)] px-4 py-3 text-sm transition hover:border-[var(--makit-color-border-strong)] hover:bg-[var(--makit-color-muted)]"
         >
-          <span className="block text-xs opacity-60">Previous</span>
-          {prev.title}
+          <span className="mb-1 block text-xs text-[var(--makit-color-subtle)]">← Previous</span>
+          <span className="font-medium">{prev.title}</span>
         </a>
       ) : (
         <span />
@@ -25,10 +25,10 @@ export function PrevNextLinks({ prev, next }: PrevNextLinksProps) {
       {next ? (
         <a
           href={next.href}
-          className="rounded-[var(--makit-radius)] border border-[var(--makit-color-border)] px-4 py-2 text-right text-sm hover:bg-[var(--makit-color-muted)]"
+          className="group rounded-xl border border-[var(--makit-color-border)] px-4 py-3 text-right text-sm transition hover:border-[var(--makit-color-border-strong)] hover:bg-[var(--makit-color-muted)]"
         >
-          <span className="block text-xs opacity-60">Next</span>
-          {next.title}
+          <span className="mb-1 block text-xs text-[var(--makit-color-subtle)]">Next →</span>
+          <span className="font-medium">{next.title}</span>
         </a>
       ) : (
         <span />

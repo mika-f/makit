@@ -1,4 +1,4 @@
-import { getCollections, getGlobalNavigation, getHomeRoute } from "../data/loaders.js";
+import { getCollections, getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
 import type { GeneratedPage, I18nData, ResolvedNavNode, SiteData } from "../data/types.js";
 import { Breadcrumbs } from "./breadcrumbs.js";
 import { CollectionSwitcher } from "./collection-switcher.js";
@@ -8,6 +8,7 @@ import { Header } from "./header.js";
 import { LocaleSwitcher } from "./locale-switcher.js";
 import { PageContent } from "./page-content.js";
 import { PrevNextLinks } from "./prev-next-links.js";
+import { SearchDialog } from "./search-dialog.js";
 import { Sidebar } from "./sidebar.js";
 import { TableOfContents } from "./table-of-contents.js";
 import { ThemeToggle } from "./theme-toggle.js";
@@ -21,17 +22,26 @@ export interface DocsPageProps {
 
 /** The standard theme's page shell (spec §21.1): header, sidebar, content, ToC, footer. */
 export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) {
-  const [homeHref, collections, globalNavigation] = await Promise.all([
+  const [homeHref, collections, globalNavigation, searchEntries] = await Promise.all([
     getHomeRoute(page.locale).then((href) => href ?? `${site.basePath}/`),
     getCollections(),
     getGlobalNavigation(page.locale),
+    getSearchIndex(page.locale),
   ]);
 
   const prev = page.navigationPosition?.prev;
   const next = page.navigationPosition?.next;
+  const shellColumns = page.sidebar
+    ? page.tableOfContents
+      ? "md:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_15rem]"
+      : "md:grid-cols-[17rem_minmax(0,1fr)]"
+    : page.tableOfContents
+      ? "xl:grid-cols-[minmax(0,1fr)_15rem]"
+      : "grid-cols-1";
 
   const headerActions = (
     <>
+      <SearchDialog entries={searchEntries} />
       <CollectionSwitcher
         collections={collections}
         currentCollectionId={page.collectionId}
@@ -57,12 +67,19 @@ export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) 
         actions={headerActions}
         globalNavigation={globalNavigation}
       />
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col md:flex-row">
+      <div className={`mx-auto grid w-full max-w-[96rem] flex-1 grid-cols-1 ${shellColumns}`}>
         {page.sidebar && <Sidebar navigation={navigation} currentRoute={page.route} />}
-        <main className="min-w-0 flex-1 px-4 py-8 md:px-8">
+        <main className="min-w-0 px-5 py-10 sm:px-8 md:py-14 lg:px-12 xl:px-14">
           <FallbackNotice page={page} i18n={i18n} />
           <Breadcrumbs items={page.breadcrumbs} />
-          <h1 className="mb-4 text-3xl font-bold">{page.title}</h1>
+          <h1 className="mb-4 text-4xl font-semibold tracking-[-0.035em] sm:text-[2.75rem] sm:leading-[1.1]">
+            {page.title}
+          </h1>
+          {page.description && (
+            <p className="mb-9 max-w-3xl text-lg leading-8 text-[var(--makit-color-subtle)]">
+              {page.description}
+            </p>
+          )}
           <PageContent html={page.html} copyButton={site.markdown.code.copyButton} />
           <PrevNextLinks prev={prev} next={next} />
         </main>

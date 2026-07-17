@@ -4,8 +4,8 @@ export function Footer({ footer }: { footer: FooterData }) {
   if (!footer.copyright && (!footer.links || footer.links.length === 0)) return null;
 
   return (
-    <footer className="border-t border-[var(--makit-color-border)] px-4 py-6 text-sm text-[var(--makit-color-foreground)] opacity-70">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <footer className="border-t border-[var(--makit-color-border)] px-6 py-7 text-sm text-[var(--makit-color-subtle)]">
+      <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-3">
         {footer.copyright && <span>{footer.copyright}</span>}
         <nav className="flex gap-4" aria-label="Footer links">
           {(footer.links ?? []).map((link) => (
@@ -14,7 +14,7 @@ export function Footer({ footer }: { footer: FooterData }) {
               href={link.href}
               target={link.external ? "_blank" : undefined}
               rel={link.external ? "noopener noreferrer" : undefined}
-              className="hover:underline"
+              className="transition hover:text-[var(--makit-color-foreground)]"
             >
               {link.label}
             </a>

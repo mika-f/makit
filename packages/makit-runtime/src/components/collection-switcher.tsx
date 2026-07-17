@@ -19,10 +19,10 @@ export function CollectionSwitcher({
 
   return (
     <details className="relative inline-block">
-      <summary className="cursor-pointer list-none rounded-[var(--makit-radius)] border border-[var(--makit-color-border)] px-3 py-1 text-sm text-[var(--makit-color-foreground)]">
+      <summary className="hidden h-9 cursor-pointer list-none items-center rounded-lg border border-[var(--makit-color-border)] px-3 text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)] lg:flex">
         {current?.locales[locale]?.title ?? "Collections"}
       </summary>
-      <div className="absolute z-10 mt-1 min-w-40 rounded-[var(--makit-radius)] border border-[var(--makit-color-border)] bg-[var(--makit-color-background)] p-2 shadow-lg">
+      <div className="absolute right-0 z-20 mt-2 min-w-44 rounded-xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-1.5 shadow-xl">
         {visible.map((collection) => (
           <a
             key={collection.id}
@@ -30,8 +30,8 @@ export function CollectionSwitcher({
             aria-current={collection.id === currentCollectionId ? "page" : undefined}
             className={
               collection.id === currentCollectionId
-                ? "block rounded-[var(--makit-radius)] bg-[var(--makit-color-muted)] px-2 py-1 text-sm font-medium text-[var(--makit-color-accent)]"
-                : "block rounded-[var(--makit-radius)] px-2 py-1 text-sm text-[var(--makit-color-foreground)] hover:bg-[var(--makit-color-muted)]"
+                ? "block rounded-lg bg-[var(--makit-color-muted)] px-2.5 py-2 text-sm font-medium text-[var(--makit-color-foreground)]"
+                : "block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
             }
           >
             {collection.locales[locale]!.title}

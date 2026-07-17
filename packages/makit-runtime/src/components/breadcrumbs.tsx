@@ -7,15 +7,15 @@ export function Breadcrumbs({ items }: { items: readonly GeneratedBreadcrumb[] }
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-4 flex flex-wrap items-center gap-1 text-sm text-[var(--makit-color-foreground)] opacity-70"
+      className="mb-5 flex flex-wrap items-center gap-1.5 text-sm text-[var(--makit-color-subtle)]"
     >
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
         return (
           <span key={`${item.title}-${index}`} className="flex items-center gap-1">
-            {index > 0 && <span aria-hidden="true">/</span>}
+            {index > 0 && <span className="text-[var(--makit-color-border-strong)]" aria-hidden="true">/</span>}
             {item.href && !isLast ? (
-              <a href={item.href} className="hover:underline">
+              <a href={item.href} className="transition hover:text-[var(--makit-color-foreground)]">
                 {item.title}
               </a>
             ) : (

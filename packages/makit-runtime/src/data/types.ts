@@ -9,6 +9,16 @@ export interface GeneratedHeading {
   text: string;
 }
 
+/** A compact, precomputed page record consumed by the client-side search dialog. */
+export interface SearchEntry {
+  pageId: string;
+  title: string;
+  route: string;
+  locale: string;
+  headings: string[];
+  content: string;
+}
+
 export interface GeneratedAlternate {
   urlLocale: string;
   hreflang: string;

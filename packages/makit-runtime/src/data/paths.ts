@@ -32,6 +32,10 @@ export function homePath(locale: string): string {
   return join(GENERATED_DIR, "home", `${locale}.json`);
 }
 
+export function searchPath(locale: string): string {
+  return join(GENERATED_DIR, "search", `${locale}.json`);
+}
+
 export function pageMapPath(): string {
   return join(GENERATED_DIR, "indexes", "page-map.json");
 }

@@ -123,12 +123,14 @@ describe("createMarkdownProcessor / processMarkdown", () => {
   it("highlights known languages with Shiki", async () => {
     const result = await render("```typescript\nconst x: number = 1;\n```\n");
     expect(result.html).toContain("shiki");
+    expect(result.html).toContain('data-language="typescript"');
     expect(result.html).toContain("const");
   });
 
   it("downgrades an unknown language to plain text with a warning by default", async () => {
     const result = await render("```not-a-real-language\nhello\n```\n");
     expect(result.html).toContain("shiki");
+    expect(result.html).toContain('data-language="text"');
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]).toContain("not-a-real-language");
   });

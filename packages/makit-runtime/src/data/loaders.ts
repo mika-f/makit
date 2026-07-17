@@ -9,6 +9,7 @@ import {
   pageMapPath,
   pagePath,
   routeMapPath,
+  searchPath,
   sitePath,
   translationMapPath,
 } from "./paths.js";
@@ -22,6 +23,7 @@ import type {
   PortalHomeData,
   ResolvedNavNode,
   RouteMapEntry,
+  SearchEntry,
   SiteData,
 } from "./types.js";
 
@@ -121,6 +123,11 @@ export async function getPageForRoute(
 /** The resolved payload for a synthesized portal home (spec §33.2, `home/{locale}.json`). */
 export function getHomeData(locale: string): Promise<PortalHomeData> {
   return readJson(homePath(locale));
+}
+
+/** The locale-specific static search corpus. Missing indexes behave as empty. */
+export function getSearchIndex(locale: string): Promise<SearchEntry[]> {
+  return readJson<SearchEntry[]>(searchPath(locale)).catch(() => []);
 }
 
 /** The locale's home route — whatever occupies `segments: []` (a page, an aliased page, or a portal). */

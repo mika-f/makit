@@ -34,7 +34,7 @@ export async function LocaleSwitcher({
   if (links.length < 2) return null;
 
   return (
-    <div className="flex items-center gap-1 text-sm">
+    <div className="hidden items-center gap-1 text-sm sm:flex">
       {links.map(({ locale, href }) => (
         <a
           key={locale.urlLocale}
@@ -42,8 +42,8 @@ export async function LocaleSwitcher({
           aria-current={locale.urlLocale === page.locale ? "true" : undefined}
           className={
             locale.urlLocale === page.locale
-              ? "rounded-[var(--makit-radius)] bg-[var(--makit-color-muted)] px-2 py-1 font-medium text-[var(--makit-color-accent)]"
-              : "rounded-[var(--makit-radius)] px-2 py-1 text-[var(--makit-color-foreground)] opacity-80 hover:opacity-100"
+              ? "rounded-lg bg-[var(--makit-color-muted)] px-2 py-1.5 font-medium text-[var(--makit-color-foreground)]"
+              : "rounded-lg px-2 py-1.5 text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
           }
         >
           {locale.label}
