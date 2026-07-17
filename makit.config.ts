@@ -2,8 +2,8 @@ import { defineConfig } from "./packages/makit/src/index.ts";
 
 export default defineConfig({
   title: "Makit",
-  description: "Markdown から静的なドキュメントサイトを生成する CLI",
-  lang: "ja-JP",
+  description: "A CLI for generating static documentation sites from Markdown.",
+  lang: "en-US",
   sourceDir: "public",
   publicDir: "assets",
   outDir: "dist",
@@ -41,6 +41,25 @@ export default defineConfig({
   },
   llms: {
     enabled: true,
+  },
+  i18n: {
+    defaultLocale: "en-US",
+    locales: [
+      { locale: "en-US", label: "English" },
+      { locale: "ja-JP", label: "日本語" },
+    ],
+    root: { behavior: "detect" },
+    messages: {
+      "ja-JP": {
+        fallbackNotice: "このページはまだ翻訳されていません。既定の言語版を表示しています。",
+        home: "ホーム",
+      },
+      "en-US": {
+        fallbackNotice:
+          "This page has not been translated yet. Showing the default language version.",
+        home: "Home",
+      },
+    },
   },
   navigation: {
     auto: {
