@@ -124,13 +124,30 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     const result = await render("```typescript\nconst x: number = 1;\n```\n");
     expect(result.html).toContain("shiki");
     expect(result.html).toContain('data-language="typescript"');
+    expect(result.html).toContain('data-label="typescript"');
     expect(result.html).toContain("const");
+  });
+
+  it("renders a filename from fenced code metadata", async () => {
+    const result = await render("```csharp TextFile.cs\nvar text = File.ReadAllText(path);\n```\n");
+    expect(result.html).toContain('data-language="csharp"');
+    expect(result.html).toContain('data-filename="TextFile.cs"');
+    expect(result.html).toContain('data-label="TextFile.cs"');
+  });
+
+  it("supports quoted and title-style filenames", async () => {
+    const quoted = await render('```typescript "hello world.ts"\nexport {};\n```\n');
+    expect(quoted.html).toContain('data-filename="hello world.ts"');
+
+    const titled = await render('```typescript title="src/index.ts"\nexport {};\n```\n');
+    expect(titled.html).toContain('data-filename="src/index.ts"');
   });
 
   it("downgrades an unknown language to plain text with a warning by default", async () => {
     const result = await render("```not-a-real-language\nhello\n```\n");
     expect(result.html).toContain("shiki");
     expect(result.html).toContain('data-language="text"');
+    expect(result.html).toContain('data-label="text"');
     expect(result.warnings).toHaveLength(1);
     expect(result.warnings[0]).toContain("not-a-real-language");
   });

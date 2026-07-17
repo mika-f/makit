@@ -12,6 +12,7 @@ import { rehypeCollectHeadings } from "./rehype/collect-headings.js";
 import { rehypeExternalLinks } from "./rehype/external-links.js";
 import { rehypeRewriteMarkdownLinks, type LinkRewriteContext } from "./rehype/rewrite-links.js";
 import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
+import { remarkCodeFilename } from "./remark/code-filename.js";
 
 export interface MarkdownProcessResult {
   html: string;
@@ -61,6 +62,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   }
 
   applyUnifiedPlugins(processor, config.markdown.remarkPlugins);
+  processor.use(remarkCodeFilename);
 
   processor.use(remarkRehype, { allowDangerousHtml: config.markdown.allowDangerousHtml });
 

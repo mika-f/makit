@@ -20,11 +20,17 @@ function extractLang(codeNode: Element): string | undefined {
   return undefined;
 }
 
+function extractFilename(codeNode: Element): string | undefined {
+  const value = codeNode.properties.dataFilename ?? codeNode.properties["data-filename"];
+  return typeof value === "string" ? value : undefined;
+}
+
 interface HighlightTarget {
   parent: Root | Element;
   index: number;
   code: string;
   lang: string | undefined;
+  filename: string | undefined;
 }
 
 /**
@@ -48,6 +54,7 @@ export function rehypeShikiHighlight(shikiConfig: ResolvedShikiConfig) {
         index,
         code: hastToString(codeChild).replace(/\n$/, ""),
         lang: extractLang(codeChild),
+        filename: extractFilename(codeChild),
       });
     });
 
@@ -60,6 +67,8 @@ export function rehypeShikiHighlight(shikiConfig: ResolvedShikiConfig) {
       const newPre = hast.children[0];
       if (newPre?.type === "element") {
         newPre.properties["data-language"] = resolvedLang;
+        newPre.properties["data-label"] = target.filename ?? resolvedLang;
+        if (target.filename) newPre.properties["data-filename"] = target.filename;
         target.parent.children[target.index] = newPre;
       }
       if (warning) {
