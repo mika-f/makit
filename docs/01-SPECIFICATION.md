@@ -1814,6 +1814,8 @@ export function generateStaticParams() {
 | CSS                 | スタイル再読込                   |
 | Public Asset        | アセット再同期                   |
 
+再生成が完了するたびに、Makit は `.makit/app/` 内のリフレッシュマーカーモジュールを書き換える。ルートレイアウトがこのモジュールを参照しているため、Next.js の HMR がブラウザを自動リフレッシュし、編集内容が手動リロードなしで反映される。マーカーは静的ビルドでは初期値のまま変化せず、成果物に影響しない。
+
 ---
 
 # 44. Deployment Adapter

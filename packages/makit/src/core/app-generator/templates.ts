@@ -1,7 +1,13 @@
 import type { ResolvedConfig } from "../../types/resolved-config.js";
 
 export function rootLayoutTemplate(): string {
+  // The dev-refresh token must be *rendered*, not just imported for side
+  // effects: Turbopack tree-shakes an unused export, so both versions of the
+  // marker compile to the same empty module and no HMR update ever reaches
+  // the browser. Gating on NODE_ENV lets production builds drop the
+  // reference (and the attribute) entirely.
   return `import "../styles/globals.css";
+import { devRefreshToken } from "./dev-refresh.js";
 import { ThemeScript, ThemeVariables, getSiteData } from "@natsuneko-laboratory/makit-runtime";
 
 export default async function RootLayout({ children }) {
@@ -10,7 +16,11 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang={site.lang} data-theme={colorScheme !== "system" ? colorScheme : undefined}>
-      <body>
+      <body
+        data-makit-dev-refresh={
+          process.env.NODE_ENV === "development" ? devRefreshToken : undefined
+        }
+      >
         <ThemeVariables theme={site.theme} />
         {colorScheme === "system" && <ThemeScript />}
         {children}
@@ -18,6 +28,20 @@ export default async function RootLayout({ children }) {
     </html>
   );
 }
+`;
+}
+
+/**
+ * Generated page data lives in \`.makit/generated/*.json\` and is read with
+ * \`fs.readFile\` at request time — outside Turbopack's module graph — so
+ * editing content alone never tells the browser anything changed. The root
+ * layout imports this marker module instead: \`makit dev\` rewrites it after
+ * every successful content regeneration, which invalidates the server
+ * component graph and makes Next.js refresh the browser (spec §43). Static
+ * builds keep the initial token, so \`makit build\` output is unaffected.
+ */
+export function devRefreshTemplate(token: string): string {
+  return `export const devRefreshToken = ${JSON.stringify(token)};
 `;
 }
 

@@ -10,6 +10,7 @@ import {
   resolvePackageRoot,
 } from "../link-runtime-deps.js";
 import {
+  devRefreshTemplate,
   globalsCssTemplate,
   nextConfigTemplate,
   notFoundTemplate,
@@ -65,6 +66,13 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
 
   await writeText(join(appDir, "layout.js"), rootLayoutTemplate());
   await writeText(join(appDir, "not-found.js"), notFoundTemplate());
+  // Only seeded when absent: in dev this file carries a per-regeneration
+  // token (see dev.ts), and a config reload re-running generateApp must not
+  // reset it — that would fire a redundant refresh on top of the one the
+  // follow-up content regeneration already triggers.
+  if (!existsSync(join(appDir, "dev-refresh.js"))) {
+    await writeText(join(appDir, "dev-refresh.js"), devRefreshTemplate("initial"));
+  }
 
   if (config.i18n.enabled) {
     await writeText(join(appDir, "page.js"), rootPageTemplate());

@@ -7,6 +7,8 @@ import type { ResolvedConfig } from "../types/resolved-config.js";
 import { loadConfig } from "../config/load.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { devRefreshTemplate } from "./app-generator/templates.js";
+import { atomicWriteFile } from "./atomic-write.js";
 import { MetadataCache } from "./cache.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import type { ResolvedCollection } from "./collections.js";
@@ -102,6 +104,15 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
     );
   }
   logger.success(`Regenerated ${allPages.length} page(s)`);
+
+  // Generated JSON is read via fs at request time, invisible to Turbopack's
+  // watcher — rewriting this layout-imported marker is what actually pushes
+  // the refresh to the browser (spec §43). Written last, so the refresh only
+  // ever fires over fully regenerated data.
+  await atomicWriteFile(
+    join(config.root, ".makit", "app", "dev-refresh.js"),
+    devRefreshTemplate(Date.now().toString(36)),
+  );
 
   return collectMetadataWatchPaths(collections, pageMetadataPaths, navMetadataPaths);
 }
