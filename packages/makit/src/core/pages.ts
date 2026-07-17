@@ -3,6 +3,7 @@ import { basename, extname } from "node:path";
 import type { Jiti } from "jiti";
 import { createMetadataJiti, loadMetadataFile } from "../metadata/loader.js";
 import type { PageMetadata } from "../metadata/types.js";
+import { parseFrontMatter } from "../markdown/frontmatter.js";
 import { createMarkdownProcessor, processMarkdown } from "../markdown/pipeline.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
@@ -26,24 +27,52 @@ export interface BuildPageResult {
   warnings: string[];
 }
 
-/** Matches a YAML front matter block at the very start of a file. */
-const FRONT_MATTER_RE = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
-
 /**
- * YAML front matter is not page metadata in v0.2 (spec §17): with
- * `validation.disallowFrontMatter` (the default) a leading `---` block is a
- * build error pointing at `.meta.ts`; otherwise it stays in the body as
- * ordinary Markdown.
+ * Resolves page metadata from `.meta.ts` and/or Markdown front matter (spec
+ * §17 extension): `.meta.ts` is the primary mechanism, but a flat
+ * (non-nested) front matter block is accepted as a lightweight alternative
+ * for pages that only need scalar overrides. The two are mutually
+ * exclusive — a page must not define both. `validation.disallowFrontMatter`
+ * forbids front matter entirely, forcing metadata through `.meta.ts`.
  */
-function checkFrontMatter(raw: string, file: SourceFile, config: ResolvedConfig): void {
-  if (!config.validation.disallowFrontMatter) return;
-  if (!FRONT_MATTER_RE.test(raw)) return;
-  throw new MakitError(
-    "front-matter-not-supported",
-    `${file.absolutePath} starts with a YAML front matter block. ` +
-      `Move page metadata into "${basename(file.relativePath).replace(/\.(md|markdown)$/i, ".meta.ts")}" ` +
-      "(definePageMetadata), or set validation.disallowFrontMatter to false to keep the block as body text.",
-  );
+async function resolvePageMetadata(
+  raw: string,
+  file: SourceFile,
+  config: ResolvedConfig,
+  jiti?: Jiti,
+): Promise<{ metadata: PageMetadata; content: string; warnings: string[] }> {
+  const warnings: string[] = [];
+  const frontMatter = parseFrontMatter(raw, file.absolutePath);
+
+  if (frontMatter.metadata && config.validation.disallowFrontMatter) {
+    throw new MakitError(
+      "front-matter-not-supported",
+      `${file.absolutePath} starts with a YAML front matter block, but validation.disallowFrontMatter ` +
+        `is enabled. Move page metadata into "${basename(file.relativePath).replace(/\.(md|markdown)$/i, ".meta.ts")}" ` +
+        "(definePageMetadata) instead.",
+    );
+  }
+
+  let metadata: PageMetadata = {};
+  if (file.metadataPath) {
+    if (frontMatter.metadata) {
+      throw new MakitError(
+        "front-matter-conflicts-with-metadata",
+        `${file.absolutePath} defines both front matter and "${basename(file.metadataPath)}". ` +
+          "Use only one source of page metadata for a given page.",
+      );
+    }
+    const loaded = await loadMetadataFile<PageMetadata>(file.metadataPath, "page", {
+      projectRoot: config.root,
+      jiti,
+    });
+    metadata = loaded.value;
+    warnings.push(...loaded.warnings.map((warning) => warning.message));
+  } else if (frontMatter.metadata) {
+    metadata = frontMatter.metadata;
+  }
+
+  return { metadata, content: frontMatter.content, warnings };
 }
 
 /** Assembles one `GeneratedPage` from a scanned source file. */
@@ -55,18 +84,7 @@ export async function buildPage(
   jiti?: Jiti,
 ): Promise<BuildPageResult> {
   const raw = await readFile(file.absolutePath, "utf-8");
-  checkFrontMatter(raw, file, config);
-
-  const warnings: string[] = [];
-  let metadata: PageMetadata = {};
-  if (file.metadataPath) {
-    const loaded = await loadMetadataFile<PageMetadata>(file.metadataPath, "page", {
-      projectRoot: config.root,
-      jiti,
-    });
-    metadata = loaded.value;
-    warnings.push(...loaded.warnings.map((warning) => warning.message));
-  }
+  const { metadata, content, warnings } = await resolvePageMetadata(raw, file, config, jiti);
 
   const pathSegments = filePathToSegments(file.relativePath);
   const slugSegments = resolveSlugSegments(metadata.slug, pathSegments);
@@ -84,14 +102,14 @@ export async function buildPage(
   // change without breaking translation pairing (spec §18, §29).
   const pageId = derivePageId(metadata.id, pathSegments);
 
-  const cached = await cache?.get(raw, file.relativePath, localePrefix);
+  const cached = await cache?.get(content, file.relativePath, localePrefix);
   const processed =
     cached ??
-    (await processMarkdown(processor, raw, config, {
+    (await processMarkdown(processor, content, config, {
       currentRelativePath: file.relativePath,
       localePrefix,
     }));
-  if (!cached) await cache?.set(raw, file.relativePath, localePrefix, processed);
+  if (!cached) await cache?.set(content, file.relativePath, localePrefix, processed);
 
   // Title resolution chain (spec §17): .meta.ts -> first H1 -> filename -> pageId.
   const firstH1 = processed.headings.find((heading) => heading.depth === 1)?.text;

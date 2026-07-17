@@ -784,15 +784,18 @@ export function definePageMetadata(
 ページメタデータは以下の順で解決する。
 
 1. `{filename}.meta.ts`
-2. Markdown の最初の H1
-3. ファイル名
-4. 自動生成値
+2. Markdown 自身の YAML Front Matter(フラットな1階層のみ)
+3. Markdown の最初の H1
+4. ファイル名
+5. 自動生成値
 
-MVP では YAML Front Matter をページメタデータとして使用しない。
+`{filename}.meta.ts` は構造化メタデータの主手段だが、`order` や `title` など数個のスカラー値だけを上書きしたい単純なページのために、Markdown 自身の Front Matter を軽量な代替手段として許容する。
 
-Markdown 内の `---` ブロックは通常の本文として扱うか、明示的な設定でエラーとする。
+Front Matter で指定できるのは `PageMetadata` のうちスカラー値のフィールド(`id`, `title`, `description`, `slug`, `order`, `draft`, `hidden`, `sidebar`, `tableOfContents`, `layout`, `canonical`, `image`, `noindex`, `nofollow`)に限る。`navigation` や `taxonomy` などネストしたフィールドはビルドエラーとし、`{filename}.meta.ts` の使用を促す。
 
-推奨設定:
+1つのページで `{filename}.meta.ts` と Front Matter を同時に定義することはできない(どちらか一方)。両方存在する場合はビルドエラーとする。
+
+Front Matter を完全に禁止し、メタデータを `{filename}.meta.ts` のみに限定したい場合:
 
 ```ts
 validation: {
@@ -800,9 +803,7 @@ validation: {
 }
 ```
 
-標準値は `true` とする。
-
-既存サイト移行用として、将来的に Front Matter 読み込み互換プラグインを提供できる。
+標準値は `false`(フラットな Front Matter を許容)とする。
 
 ---
 
@@ -1962,7 +1963,9 @@ docs/
 
 ## 48.3 YAML Front Matter
 
-MVP の標準仕様では非対応とする。
+フラットな(1階層の)スカラー値のみの Front Matter は §17 の通り標準でサポートする。
+
+`navigation` や `taxonomy` のようなネストした値を含む既存サイトの Front Matter は非対応とする。
 
 既存サイト移行向けに、将来以下のような互換プラグインを提供可能とする。
 
@@ -2098,7 +2101,7 @@ packages/
 
 * 非同期メタデータ
 * YAML 構造メタデータ
-* YAML Front Matter
+* ネストした値を含む YAML Front Matter(フラットな Front Matter は §17 の通りサポート)
 * MDX
 * ユーザー定義 React コンポーネント
 * Collection ごとの独立テーマ

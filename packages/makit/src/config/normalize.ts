@@ -247,7 +247,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
     },
     validation: {
       strict: parsed.validation?.strict ?? false,
-      disallowFrontMatter: parsed.validation?.disallowFrontMatter ?? true,
+      disallowFrontMatter: parsed.validation?.disallowFrontMatter ?? false,
       failOn: parsed.validation?.failOn ?? [],
     },
     deployment: {

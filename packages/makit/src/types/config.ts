@@ -344,10 +344,20 @@ export type MakitFailOnCode = MakitWarningCode | "duplicate-route" | "duplicate-
 export interface ValidationConfig {
   strict?: boolean;
   /**
-   * Treat a leading YAML `---` block in Markdown as a build error (spec §17).
-   * When `false`, the block is kept in the body as ordinary text.
+   * Reject a leading YAML `---` block in Markdown instead of parsing it.
    *
-   * @default true
+   * When `false` (the default), a leading front matter block is treated as
+   * a lightweight, flat (non-nested) alternative to `{page}.meta.ts` —
+   * useful for pages that only need a couple of scalar overrides (e.g.
+   * `title`, `order`). Nested fields (`navigation`, `taxonomy`) and fields
+   * with object/array-of-object values are not supported this way and
+   * always raise a build error asking for `.meta.ts`. A page may not define
+   * both a `.meta.ts` file and non-empty front matter — pick one.
+   *
+   * Set to `true` to forbid front matter entirely and force all page
+   * metadata through `.meta.ts`.
+   *
+   * @default false
    */
   disallowFrontMatter?: boolean;
   failOn?: MakitFailOnCode[];

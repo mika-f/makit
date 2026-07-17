@@ -135,19 +135,37 @@ describe("buildAllPages", () => {
     expect(pages[0]?.metadataPath).toBe(join(dir, "docs", "index.meta.ts"));
   });
 
-  it("rejects YAML front matter by default (spec §17)", async () => {
+  it("parses flat front matter as page metadata by default", async () => {
+    await write("docs/index.md", "---\ntitle: Old Style\norder: 3\n---\n# Heading\n");
+    const { pages } = await buildPagesForTest(configFor(dir));
+    expect(pages[0]?.title).toBe("Old Style");
+    expect(pages[0]?.order).toBe(3);
+    // The front matter block itself must not leak into the rendered body.
+    expect(pages[0]?.html).not.toContain("Old Style");
+    expect(pages[0]?.html).toContain("Heading");
+  });
+
+  it("rejects front matter when disallowFrontMatter is true", async () => {
     await write("docs/index.md", "---\ntitle: Old Style\n---\n# Heading\n");
-    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({
+    const config = configFor(dir, { validation: { disallowFrontMatter: true } });
+    await expect(buildPagesForTest(config)).rejects.toMatchObject({
       code: "front-matter-not-supported",
     });
   });
 
-  it("keeps a front matter block as body text when disallowFrontMatter is false", async () => {
+  it("rejects nested front matter fields (spec extension: flat only)", async () => {
+    await write("docs/index.md", "---\nnavigation:\n  title: Custom\n---\n# Heading\n");
+    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({
+      code: "front-matter-too-deep",
+    });
+  });
+
+  it("rejects a page that defines both front matter and .meta.ts", async () => {
     await write("docs/index.md", "---\ntitle: Old Style\n---\n# Heading\n");
-    const config = configFor(dir, { validation: { disallowFrontMatter: false } });
-    const { pages } = await buildPagesForTest(config);
-    // The block is not metadata: the title comes from the H1.
-    expect(pages[0]?.title).toBe("Heading");
+    await writeMeta("docs/index.md", { title: "New Style" });
+    await expect(buildPagesForTest(configFor(dir))).rejects.toMatchObject({
+      code: "front-matter-conflicts-with-metadata",
+    });
   });
 
   it("throws MakitError('duplicate-route') when two files produce the same route", async () => {
