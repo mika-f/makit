@@ -3,6 +3,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { SearchEntry } from "../data/types.js";
 
+interface PagefindResultData {
+  url: string;
+  plain_excerpt: string;
+  meta: { title?: string };
+}
+
+interface PagefindModule {
+  init(): Promise<void>;
+  search(query: string): Promise<{ results: { data(): Promise<PagefindResultData> }[] }>;
+}
+
+interface SearchResult {
+  title: string;
+  route: string;
+  excerpt?: string;
+}
+
 function SearchIcon({ className = "h-4 w-4" }: { className?: string }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className={className}>
@@ -24,10 +41,22 @@ function scoreEntry(entry: SearchEntry, query: string): number {
   return 0;
 }
 
-export function SearchDialog({ entries }: { entries: readonly SearchEntry[] }) {
+export function SearchDialog({
+  entries,
+  pagefindEnabled,
+  pagefindBundlePath,
+}: {
+  entries: readonly SearchEntry[];
+  /** Pagefind is generated only by the production static build. */
+  pagefindEnabled: boolean;
+  pagefindBundlePath: string;
+}) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [pagefindResults, setPagefindResults] = useState<SearchResult[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const pagefindRef = useRef<PagefindModule | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -47,7 +76,56 @@ export function SearchDialog({ entries }: { entries: readonly SearchEntry[] }) {
     return () => cancelAnimationFrame(frame);
   }, [open]);
 
-  const results = useMemo(() => {
+  useEffect(() => {
+    const normalized = query.trim();
+    if (!normalized) {
+      setPagefindResults(null);
+      setIsSearching(false);
+      return;
+    }
+    if (!pagefindEnabled) {
+      setPagefindResults(null);
+      setIsSearching(false);
+      return;
+    }
+
+    let active = true;
+    setIsSearching(true);
+    void (async () => {
+      try {
+        const pagefind =
+          pagefindRef.current ??
+          ((await import(
+            /* webpackIgnore: true */ `${pagefindBundlePath}pagefind.js`
+          )) as PagefindModule);
+        pagefindRef.current = pagefind;
+        await pagefind.init();
+        const search = await pagefind.search(normalized);
+        const data = await Promise.all(search.results.slice(0, 8).map((result) => result.data()));
+        if (active) {
+          setPagefindResults(
+            data.map((result) => ({
+              title: result.meta.title ?? result.url,
+              route: result.url,
+              excerpt: result.plain_excerpt,
+            })),
+          );
+        }
+      } catch {
+        // Pagefind is only emitted by production builds. The local corpus
+        // keeps search useful during `makit dev` and if the bundle is absent.
+        if (active) setPagefindResults(null);
+      } finally {
+        if (active) setIsSearching(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [pagefindBundlePath, pagefindEnabled, query]);
+
+  const fallbackResults = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     if (!normalized) return entries.slice(0, 6);
     return entries
@@ -57,6 +135,14 @@ export function SearchDialog({ entries }: { entries: readonly SearchEntry[] }) {
       .slice(0, 8)
       .map((result) => result.entry);
   }, [entries, query]);
+
+  const results: SearchResult[] =
+    pagefindResults ??
+    fallbackResults.map((entry) => ({
+      title: entry.title,
+      route: entry.route,
+      excerpt: entry.headings.length > 1 ? entry.headings.slice(1, 4).join(" · ") : undefined,
+    }));
 
   return (
     <>
@@ -107,16 +193,16 @@ export function SearchDialog({ entries }: { entries: readonly SearchEntry[] }) {
               {results.length > 0 ? (
                 <ul>
                   {results.map((entry) => (
-                    <li key={`${entry.locale}:${entry.pageId}`}>
+                    <li key={entry.route}>
                       <a
                         href={entry.route}
                         className="group flex items-center justify-between gap-4 rounded-xl px-3 py-3 transition hover:bg-[var(--makit-color-muted)]"
                       >
                         <span className="min-w-0">
                           <span className="block font-medium">{entry.title}</span>
-                          {entry.headings.length > 1 && (
+                          {entry.excerpt && (
                             <span className="mt-0.5 block truncate text-xs text-[var(--makit-color-subtle)]">
-                              {entry.headings.slice(1, 4).join(" · ")}
+                              {entry.excerpt}
                             </span>
                           )}
                         </span>
@@ -127,6 +213,10 @@ export function SearchDialog({ entries }: { entries: readonly SearchEntry[] }) {
                     </li>
                   ))}
                 </ul>
+              ) : isSearching ? (
+                <p className="px-3 py-10 text-center text-sm text-[var(--makit-color-subtle)]">
+                  Searching…
+                </p>
               ) : (
                 <p className="px-3 py-10 text-center text-sm text-[var(--makit-color-subtle)]">
                   No results for “{query}”

@@ -17,6 +17,7 @@ import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
 import { generateSitemapXml } from "./sitemap.js";
 import { writeLlmsFiles } from "./llms.js";
+import { writePagefindIndex } from "./pagefind.js";
 import type { Diagnostic } from "./validation.js";
 import { selectPromotedDiagnostics, validatePages } from "./validation.js";
 import {
@@ -177,6 +178,9 @@ export async function build(
   await mkdir(join(outDirAbsolute, ".."), { recursive: true });
   await rm(outDirAbsolute, { recursive: true, force: true });
   await cp(exportedDir, outDirAbsolute, { recursive: true });
+
+  await writePagefindIndex(outDirAbsolute);
+  logger.success("Built Pagefind search index");
 
   const sitemapXml = generateSitemapXml(allPages, config);
   if (sitemapXml) {

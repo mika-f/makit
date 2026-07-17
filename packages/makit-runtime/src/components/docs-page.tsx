@@ -1,4 +1,9 @@
-import { getCollections, getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
+import {
+  getCollections,
+  getGlobalNavigation,
+  getHomeRoute,
+  getSearchIndex,
+} from "../data/loaders.js";
 import type { GeneratedPage, I18nData, ResolvedNavNode, SiteData } from "../data/types.js";
 import { Breadcrumbs } from "./breadcrumbs.js";
 import { CollectionSwitcher } from "./collection-switcher.js";
@@ -41,7 +46,11 @@ export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) 
 
   const headerActions = (
     <>
-      <SearchDialog entries={searchEntries} />
+      <SearchDialog
+        entries={searchEntries}
+        pagefindEnabled={process.env.NODE_ENV === "production"}
+        pagefindBundlePath={`${site.basePath}/pagefind/`}
+      />
       <CollectionSwitcher
         collections={collections}
         currentCollectionId={page.collectionId}
@@ -69,7 +78,7 @@ export async function DocsPage({ page, site, i18n, navigation }: DocsPageProps) 
       />
       <div className={`mx-auto grid w-full max-w-[96rem] flex-1 grid-cols-1 ${shellColumns}`}>
         {page.sidebar && <Sidebar navigation={navigation} currentRoute={page.route} />}
-        <main className="min-w-0 px-5 py-10 sm:px-8 md:py-14 lg:px-12 xl:px-14">
+        <main data-pagefind-body className="min-w-0 px-5 py-10 sm:px-8 md:py-14 lg:px-12 xl:px-14">
           <FallbackNotice page={page} i18n={i18n} />
           <Breadcrumbs items={page.breadcrumbs} />
           <h1 className="mb-4 text-4xl font-semibold tracking-[-0.035em] sm:text-[2.75rem] sm:leading-[1.1]">

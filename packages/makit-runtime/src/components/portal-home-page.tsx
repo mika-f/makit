@@ -12,10 +12,18 @@ function CollectionCard({ card }: { card: PortalCollectionCard }) {
       className="group block rounded-2xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--makit-color-border-strong)] hover:shadow-lg"
     >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-lg font-semibold tracking-tight text-[var(--makit-color-foreground)]">{card.title}</h3>
-        <span className="text-[var(--makit-color-subtle)] transition group-hover:translate-x-1 group-hover:text-[var(--makit-color-accent)]">→</span>
+        <h3 className="text-lg font-semibold tracking-tight text-[var(--makit-color-foreground)]">
+          {card.title}
+        </h3>
+        <span className="text-[var(--makit-color-subtle)] transition group-hover:translate-x-1 group-hover:text-[var(--makit-color-accent)]">
+          →
+        </span>
       </div>
-      {card.description && <p className="mt-2 text-sm leading-6 text-[var(--makit-color-subtle)]">{card.description}</p>}
+      {card.description && (
+        <p className="mt-2 text-sm leading-6 text-[var(--makit-color-subtle)]">
+          {card.description}
+        </p>
+      )}
     </a>
   );
 }
@@ -58,7 +66,11 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
 
   const headerActions = (
     <>
-      <SearchDialog entries={searchEntries} />
+      <SearchDialog
+        entries={searchEntries}
+        pagefindEnabled={process.env.NODE_ENV === "production"}
+        pagefindBundlePath={`${site.basePath}/pagefind/`}
+      />
       {localeLinks.length > 1 && (
         <div className="flex items-center gap-1 text-sm">
           {localeLinks.map(({ locale: candidate, href }) => (
@@ -90,13 +102,20 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
         actions={headerActions}
         globalNavigation={globalNavigation}
       />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-16 sm:px-8 md:py-24">
+      <main
+        data-pagefind-body
+        className="mx-auto w-full max-w-6xl flex-1 px-5 py-16 sm:px-8 md:py-24"
+      >
         <div className="max-w-3xl">
-          <span className="mb-5 inline-flex rounded-full border border-[var(--makit-color-border)] bg-[var(--makit-color-muted)] px-3 py-1 text-xs font-medium text-[var(--makit-color-subtle)]">Documentation</span>
+          <span className="mb-5 inline-flex rounded-full border border-[var(--makit-color-border)] bg-[var(--makit-color-muted)] px-3 py-1 text-xs font-medium text-[var(--makit-color-subtle)]">
+            Documentation
+          </span>
           <h1 className="text-5xl font-semibold tracking-[-0.045em] sm:text-6xl">{site.title}</h1>
-        {site.description && (
-            <p className="mt-5 max-w-2xl text-xl leading-8 text-[var(--makit-color-subtle)]">{site.description}</p>
-        )}
+          {site.description && (
+            <p className="mt-5 max-w-2xl text-xl leading-8 text-[var(--makit-color-subtle)]">
+              {site.description}
+            </p>
+          )}
         </div>
 
         <div className="mt-14">
@@ -105,7 +124,9 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
 
         {home.sections.map((section, index) => (
           <section key={section.title ?? `section-${index}`} className="mt-16">
-            {section.title && <h2 className="mb-5 text-xl font-semibold tracking-tight">{section.title}</h2>}
+            {section.title && (
+              <h2 className="mb-5 text-xl font-semibold tracking-tight">{section.title}</h2>
+            )}
             <CardGrid cards={section.collections} />
           </section>
         ))}
