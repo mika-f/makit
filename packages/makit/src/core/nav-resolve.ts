@@ -7,6 +7,7 @@ import type { CategoryMetadata, NavigationMetadata, NavigationNode } from "../me
 import type { NavigationGroup, NavigationItem } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import type { MetadataCache } from "./cache.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
@@ -22,6 +23,7 @@ export interface ResolveNavigationContext {
   collection: ResolvedCollection;
   collections: readonly ResolvedCollection[];
   jiti: Jiti;
+  metadataCache?: MetadataCache;
 }
 
 export interface ResolveNavigationResult {
@@ -178,6 +180,7 @@ async function scanCategories(
   dir: string,
   projectRoot: string,
   jiti: Jiti,
+  metadataCache: MetadataCache | undefined,
 ): Promise<{ byDir: Map<string, CategoryEntry>; diagnostics: Diagnostic[] }> {
   const byDir = new Map<string, CategoryEntry>();
   const diagnostics: Diagnostic[] = [];
@@ -189,6 +192,7 @@ async function scanCategories(
     const loaded = await loadMetadataFile<CategoryMetadata>(metadataPath, "category", {
       projectRoot,
       jiti,
+      cache: metadataCache,
     });
     diagnostics.push(...metadataLoadDiagnostics(loaded));
     const dirKey = relPath.split("/").slice(0, -1).join("/");
@@ -338,7 +342,7 @@ export async function resolveAutoNavigation(
     ];
 
   const { byDir: categories, diagnostics } = collectionLocale
-    ? await scanCategories(collectionLocale.dir, ctx.config.root, ctx.jiti)
+    ? await scanCategories(collectionLocale.dir, ctx.config.root, ctx.jiti, ctx.metadataCache)
     : { byDir: new Map<string, CategoryEntry>(), diagnostics: [] as Diagnostic[] };
   const autoCtx: AutoContext = { ...ctx, categories };
 
@@ -485,6 +489,7 @@ export async function resolveCollectionNavigation(
     const loaded = await loadMetadataFile<NavigationMetadata>(navFilePath, "navigation", {
       projectRoot: ctx.config.root,
       jiti: ctx.jiti,
+      cache: ctx.metadataCache,
     });
     return {
       items: resolveManualNavigation(loaded.value.items, ctx),

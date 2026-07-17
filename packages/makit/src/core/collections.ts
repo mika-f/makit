@@ -5,6 +5,7 @@ import type { Jiti } from "jiti";
 import { loadMetadataFile, metadataLoadDiagnostics } from "../metadata/loader.js";
 import type { CollectionMetadata } from "../metadata/types.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import type { MetadataCache } from "./cache.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
 import type { Diagnostic } from "./validation.js";
@@ -183,6 +184,7 @@ export function resolveCollectionLocale(
 async function discoverCollectionSources(
   config: ResolvedConfig,
   jiti: Jiti,
+  metadataCache: MetadataCache | undefined,
 ): Promise<{ sources: CollectionSource[]; diagnostics: Diagnostic[] }> {
   const sources: CollectionSource[] = [];
   const diagnostics: Diagnostic[] = [];
@@ -201,6 +203,7 @@ async function discoverCollectionSources(
       const loaded = await loadMetadataFile<CollectionMetadata>(metadataPath, "collection", {
         projectRoot: config.root,
         jiti,
+        cache: metadataCache,
       });
       diagnostics.push(...metadataLoadDiagnostics(loaded));
       sources.push({
@@ -268,6 +271,7 @@ function implicitCollection(config: ResolvedConfig): ResolvedCollection {
 export async function resolveCollections(
   config: ResolvedConfig,
   jiti: Jiti,
+  metadataCache?: MetadataCache,
 ): Promise<ResolveCollectionsResult> {
   const warnings: string[] = [];
   const diagnostics: Diagnostic[] = [];
@@ -280,7 +284,7 @@ export async function resolveCollections(
   if (Array.isArray(config.collections)) {
     sources = explicitCollectionSources(config, config.collections);
   } else {
-    const discovered = await discoverCollectionSources(config, jiti);
+    const discovered = await discoverCollectionSources(config, jiti, metadataCache);
     diagnostics.push(...discovered.diagnostics);
     sources = discovered.sources;
   }

@@ -1,4 +1,5 @@
 import { createJiti, type Jiti } from "jiti";
+import type { MetadataCache } from "../core/cache.js";
 import { MakitError } from "../core/errors.js";
 import { getMetadataKind, type MetadataKind } from "./define.js";
 import { scanDependencies, type MetadataWarning } from "./deps.js";
@@ -9,7 +10,7 @@ export interface LoadedMetadata<T> {
   /** Absolute paths of local files (transitively) imported by the metadata file. */
   dependencies: string[];
   warnings: MetadataWarning[];
-  /** Wall-clock evaluation time, for the slow-metadata-eval diagnostic. */
+  /** Wall-clock evaluation time, for the slow-metadata-eval diagnostic — `0` on a cache hit. */
   evalDurationMs: number;
 }
 
@@ -21,6 +22,8 @@ export interface LoadMetadataOptions {
    * pass. Create a fresh one per rebuild so changed files re-evaluate.
    */
   jiti?: Jiti;
+  /** Skips re-evaluation when the file and its dependencies are unchanged (spec §22). */
+  cache?: MetadataCache;
 }
 
 /** Above this, metadata evaluation is slow enough to warn about (spec §46 `slow-metadata-eval`). */
@@ -82,6 +85,17 @@ export async function loadMetadataFile<T>(
   const jiti = options.jiti ?? createMetadataJiti();
   const defineFunction = DEFINE_FUNCTION_BY_KIND[expectedKind];
 
+  // The dependency scan is a cheap static parse (no evaluation), and must
+  // run before any cache lookup — the cache key folds in every dependency's
+  // content (spec §22) — so it always reflects the current import graph,
+  // cache hit or not.
+  const { dependencies, warnings } = await scanDependencies(filePath, jiti, options.projectRoot);
+
+  const cached = await options.cache?.get(expectedKind, filePath, dependencies);
+  if (cached) {
+    return { value: cached.value as T, filePath, dependencies, warnings, evalDurationMs: 0 };
+  }
+
   const start = performance.now();
   let mod: unknown;
   try {
@@ -132,7 +146,7 @@ export async function loadMetadataFile<T>(
 
   assertSerializable(value, filePath);
 
-  const { dependencies, warnings } = await scanDependencies(filePath, jiti, options.projectRoot);
+  await options.cache?.set(expectedKind, filePath, dependencies, value);
 
   return { value: value as T, filePath, dependencies, warnings, evalDurationMs };
 }

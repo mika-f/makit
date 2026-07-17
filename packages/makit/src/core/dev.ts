@@ -7,6 +7,7 @@ import type { ResolvedConfig } from "../types/resolved-config.js";
 import { loadConfig } from "../config/load.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { MetadataCache } from "./cache.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import type { ResolvedCollection } from "./collections.js";
 import { resolveCollections } from "./collections.js";
@@ -46,20 +47,24 @@ function collectMetadataWatchPaths(
 }
 
 async function regenerateContent(config: ResolvedConfig, logger: Logger): Promise<string[]> {
-  // A fresh jiti per regeneration so edited metadata files re-evaluate.
+  // A fresh jiti per regeneration so edited metadata files re-evaluate; the
+  // metadata cache is disk-backed and content-addressed (spec §22), so
+  // recreating the handle here is cheap and still lets unchanged files
+  // across the whole dev session skip re-evaluation.
   const jiti = createMetadataJiti();
+  const metadataCache = await MetadataCache.create(config);
   const {
     collections,
     warnings: collectionWarnings,
     diagnostics: collectionDiagnostics,
-  } = await resolveCollections(config, jiti);
+  } = await resolveCollections(config, jiti, metadataCache);
   // Unlike `makit build`, dev keeps draft pages visible (spec §16).
   const {
     pages,
     warnings,
     diagnostics: pageDiagnostics,
     metadataPaths: pageMetadataPaths,
-  } = await buildAllPages(config, collections);
+  } = await buildAllPages(config, collections, { metadataCache });
   const fallbackPages = generateFallbackPages(pages, config);
   const collectionTopPages = synthesizeCollectionTopPages(
     [...pages, ...fallbackPages],
@@ -74,7 +79,7 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
     byLocale,
     diagnostics: navigationMetadataDiagnostics,
     metadataPaths: navMetadataPaths,
-  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti, metadataCache);
   const { pages: allPages } = decoratePagesWithNavigation(
     undecoratedPages,
     byLocale,

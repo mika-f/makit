@@ -11,7 +11,7 @@ import { parseFrontMatter } from "../markdown/frontmatter.js";
 import { createMarkdownProcessor, processMarkdown } from "../markdown/pipeline.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
-import { BuildCache } from "./cache.js";
+import { BuildCache, MetadataCache } from "./cache.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import {
@@ -48,6 +48,7 @@ async function resolvePageMetadata(
   file: SourceFile,
   config: ResolvedConfig,
   jiti?: Jiti,
+  metadataCache?: MetadataCache,
 ): Promise<{
   metadata: PageMetadata;
   content: string;
@@ -79,6 +80,7 @@ async function resolvePageMetadata(
     const loaded = await loadMetadataFile<PageMetadata>(file.metadataPath, "page", {
       projectRoot: config.root,
       jiti,
+      cache: metadataCache,
     });
     metadata = loaded.value;
     diagnostics.push(...metadataLoadDiagnostics(loaded));
@@ -97,6 +99,7 @@ export async function buildPage(
   processor: ReturnType<typeof createMarkdownProcessor>,
   cache?: BuildCache,
   jiti?: Jiti,
+  metadataCache?: MetadataCache,
 ): Promise<BuildPageResult> {
   const raw = await readFile(file.absolutePath, "utf-8");
   const { metadata, content, diagnostics, dependencies } = await resolvePageMetadata(
@@ -104,6 +107,7 @@ export async function buildPage(
     file,
     config,
     jiti,
+    metadataCache,
   );
 
   const pathSegments = filePathToSegments(file.relativePath);
@@ -199,8 +203,10 @@ export interface BuildAllPagesResult {
 }
 
 export interface BuildAllPagesOptions {
-  /** Reuses cached remark/rehype/Shiki output across invocations (spec §22). Defaults to `true`. */
+  /** Reuses cached remark/rehype/Shiki output and evaluated metadata across invocations (spec §22). Defaults to `true`. */
   cache?: boolean;
+  /** Shares one metadata cache instance across an entire build pass (collections, pages, navigation). Overrides `cache`. */
+  metadataCache?: MetadataCache;
 }
 
 /**
@@ -215,7 +221,10 @@ export async function buildAllPages(
 ): Promise<BuildAllPagesResult> {
   const sourceFiles = await scanSourceFiles(config, collections);
   const processor = createMarkdownProcessor(config);
-  const cache = options.cache === false ? undefined : await BuildCache.create(config);
+  const cacheEnabled = options.cache !== false;
+  const cache = cacheEnabled ? await BuildCache.create(config) : undefined;
+  const metadataCache =
+    options.metadataCache ?? (cacheEnabled ? await MetadataCache.create(config) : undefined);
   // One jiti instance per build pass; fresh per rebuild so edits re-evaluate.
   const jiti = createMetadataJiti();
 
@@ -225,7 +234,7 @@ export async function buildAllPages(
   const metadataPaths: string[] = [];
 
   for (const file of sourceFiles) {
-    const result = await buildPage(file, config, processor, cache, jiti);
+    const result = await buildPage(file, config, processor, cache, jiti, metadataCache);
     pages.push(result.page);
     warnings.push(...result.warnings);
     diagnostics.push(...result.diagnostics);

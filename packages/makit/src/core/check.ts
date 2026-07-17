@@ -1,5 +1,6 @@
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
+import { MetadataCache } from "./cache.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
 import { resolveHome } from "./home.js";
@@ -36,16 +37,17 @@ export interface CheckResult {
  */
 export async function check(config: ResolvedConfig): Promise<CheckResult> {
   const jiti = createMetadataJiti();
+  const metadataCache = await MetadataCache.create(config);
   const {
     collections,
     warnings: collectionWarnings,
     diagnostics: collectionDiagnostics,
-  } = await resolveCollections(config, jiti);
+  } = await resolveCollections(config, jiti, metadataCache);
   const {
     pages,
     warnings: pipelineWarnings,
     diagnostics: pageDiagnostics,
-  } = await buildAllPages(config, collections);
+  } = await buildAllPages(config, collections, { metadataCache });
   const fallbackPages = generateFallbackPages(pages, config);
   const collectionTopPages = synthesizeCollectionTopPages(
     [...pages, ...fallbackPages],
@@ -60,7 +62,7 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     byLocale: navigationByLocale,
     warnings: navigationWarnings,
     diagnostics: navigationMetadataDiagnostics,
-  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti, metadataCache);
   const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(
     undecoratedPages,
     navigationByLocale,

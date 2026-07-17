@@ -2,6 +2,7 @@ import type { Jiti } from "jiti";
 import type { GlobalNavigationGroup, GlobalNavigationItem } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig, ResolvedLocaleConfig } from "../types/resolved-config.js";
+import type { MetadataCache } from "./cache.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import type { ResolvedNavNode } from "./nav-nodes.js";
@@ -25,6 +26,7 @@ export async function generateNavigation(
   collection: ResolvedCollection,
   collections: readonly ResolvedCollection[],
   jiti: Jiti,
+  metadataCache?: MetadataCache,
 ): Promise<GenerateNavigationResult> {
   const result = await resolveCollectionNavigation({
     pages,
@@ -33,6 +35,7 @@ export async function generateNavigation(
     collection,
     collections,
     jiti,
+    metadataCache,
   });
   return {
     navigation: result.items,
@@ -114,6 +117,7 @@ export async function generateAllNavigation(
   config: ResolvedConfig,
   collections: readonly ResolvedCollection[],
   jiti: Jiti,
+  metadataCache?: MetadataCache,
 ): Promise<GenerateAllNavigationResult> {
   const byLocale: Record<string, Record<string, ResolvedNavNode[]>> = {};
   const warnings: string[] = [];
@@ -123,7 +127,15 @@ export async function generateAllNavigation(
   for (const locale of config.i18n.locales) {
     byLocale[locale.urlLocale] = {};
     for (const collection of collections) {
-      const result = await generateNavigation(pages, locale, config, collection, collections, jiti);
+      const result = await generateNavigation(
+        pages,
+        locale,
+        config,
+        collection,
+        collections,
+        jiti,
+        metadataCache,
+      );
       byLocale[locale.urlLocale]![collection.id] = result.navigation;
       warnings.push(...result.warnings);
       diagnostics.push(...result.diagnostics);

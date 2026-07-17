@@ -4,6 +4,7 @@ import { join } from "node:path";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import { generateApp } from "./app-generator/index.js";
+import { MetadataCache } from "./cache.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
 import { MakitError } from "./errors.js";
@@ -74,18 +75,22 @@ export async function build(
   }
 
   const jiti = createMetadataJiti();
+  // One metadata cache for the whole build pass (spec §22): collections,
+  // pages, and navigation all evaluate `.meta.ts`/`*.makit.ts` files through
+  // it, so a file touched by two of those phases is only evaluated once.
+  const metadataCache = await MetadataCache.create(config);
   const {
     collections,
     warnings: collectionWarnings,
     diagnostics: collectionDiagnostics,
-  } = await resolveCollections(config, jiti);
+  } = await resolveCollections(config, jiti, metadataCache);
   logger.info(`Resolved ${collections.length} collection(s)`);
 
   const {
     pages: scannedPages,
     warnings: pipelineWarnings,
     diagnostics: pageDiagnostics,
-  } = await buildAllPages(config, collections);
+  } = await buildAllPages(config, collections, { metadataCache });
   // Draft pages are visible in `makit dev` but excluded from production output (spec §14.4).
   const productionPages = scannedPages.filter((page) => !page.draft);
   logger.success(
@@ -115,7 +120,7 @@ export async function build(
     byLocale: navigationByLocale,
     warnings: navigationWarnings,
     diagnostics: navigationMetadataDiagnostics,
-  } = await generateAllNavigation(undecoratedPages, config, collections, jiti);
+  } = await generateAllNavigation(undecoratedPages, config, collections, jiti, metadataCache);
   const { pages: allPages, diagnostics: navigationDiagnostics } = decoratePagesWithNavigation(
     undecoratedPages,
     navigationByLocale,

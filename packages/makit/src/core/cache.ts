@@ -106,3 +106,86 @@ export class BuildCache {
     await writeFile(entryPath, JSON.stringify(result), "utf-8");
   }
 }
+
+/**
+ * Caches evaluated metadata (`.meta.ts`, `collection.makit.ts`,
+ * `navigation.makit.ts`, `category.makit.ts` — spec §22): the expensive
+ * step is the jiti evaluation, not the (cheap, static) dependency scan, so
+ * `metadata/loader.ts` scans dependencies first and only consults this
+ * cache once it knows the full set of files whose content must be folded
+ * into the key. A hit skips evaluation entirely.
+ */
+export class MetadataCache {
+  private constructor(
+    private readonly cacheDir: string,
+    private readonly signature: string,
+  ) {}
+
+  /** Same never-throw contract as {@link BuildCache.create} — caching is a pure optimization. */
+  static async create(config: ResolvedConfig): Promise<MetadataCache | undefined> {
+    try {
+      const cacheDir = join(config.root, ".makit", "cache", "metadata");
+      const configContent = await readFile(config.configPath, "utf-8");
+      const signature = sha256(
+        [
+          getPackageVersion("@natsuneko-laboratory/makit"),
+          getPackageVersion("jiti"),
+          process.version,
+          configContent,
+        ].join("\n"),
+      );
+      return new MetadataCache(cacheDir, signature);
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Content-addresses the metadata file plus every local file it (transitively)
+   * imports — `undefined` if any of them can no longer be read (e.g. a
+   * dependency was deleted mid-build; treat the call as uncacheable rather
+   * than risk a stale hit).
+   */
+  private async keyFor(
+    kind: string,
+    filePath: string,
+    dependencies: readonly string[],
+  ): Promise<string | undefined> {
+    const files = [filePath, ...dependencies];
+    try {
+      const contents = await Promise.all(files.map((file) => readFile(file, "utf-8")));
+      return sha256(`${this.signature}\n${kind}\n${files.join("\n")}\n${contents.join("\n")}`);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async get(
+    kind: string,
+    filePath: string,
+    dependencies: readonly string[],
+  ): Promise<{ value: unknown } | undefined> {
+    const key = await this.keyFor(kind, filePath, dependencies);
+    if (!key) return undefined;
+    const entryPath = join(this.cacheDir, `${key}.json`);
+    if (!existsSync(entryPath)) return undefined;
+    try {
+      return JSON.parse(await readFile(entryPath, "utf-8")) as { value: unknown };
+    } catch {
+      return undefined;
+    }
+  }
+
+  async set(
+    kind: string,
+    filePath: string,
+    dependencies: readonly string[],
+    value: unknown,
+  ): Promise<void> {
+    const key = await this.keyFor(kind, filePath, dependencies);
+    if (!key) return;
+    const entryPath = join(this.cacheDir, `${key}.json`);
+    await mkdir(this.cacheDir, { recursive: true });
+    await writeFile(entryPath, JSON.stringify({ value }), "utf-8");
+  }
+}
