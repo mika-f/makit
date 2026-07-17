@@ -30,28 +30,42 @@ describe("negotiateLocale", () => {
     expect(negotiateLocale(loc("en-US", "ja-JP"), ["en-US", "ja"])?.locale).toBe("en-US");
   });
 
-  describe("multi-region (en-US / en-GB)", () => {
+  describe("multi-region (both en-US and en-GB present)", () => {
+    // Declaration order is en-US before en-GB — used as the tiebreak of last resort.
     const locales = loc("en-US", "en-GB", "ja-JP");
 
-    it("distinguishes regions when the tag carries one", () => {
-      expect(negotiateLocale(locales, ["en-GB"])?.locale).toBe("en-GB");
-      expect(negotiateLocale(locales, ["en-US"])?.locale).toBe("en-US");
+    // Full request × default matrix against a fixed candidate set.
+    it.each([
+      // requested,            default,   expected,  why
+      [["en-US"], undefined, "en-US", "exact region"],
+      [["en-GB"], undefined, "en-GB", "exact region"],
+      [["en-US", "en-GB"], undefined, "en-US", "priority order (both exact)"],
+      [["en-GB", "en-US"], undefined, "en-GB", "priority order (both exact)"],
+      [["en"], undefined, "en-US", "bare tie → declaration order"],
+      [["en"], "en-GB", "en-GB", "bare tie → default"],
+      [["en"], "en-US", "en-US", "bare tie → default"],
+      [["en-AU"], undefined, "en-US", "sibling tie → declaration order"],
+      [["en-AU"], "en-GB", "en-GB", "sibling tie → default"],
+      [["en-AU"], "en-US", "en-US", "sibling tie → default"],
+      [["en-GB"], "en-US", "en-GB", "exact match outranks the default's nudge"],
+      [["en-US"], "en-GB", "en-US", "exact match outranks the default's nudge"],
+      [["fr", "en-GB"], "en-US", "en-GB", "skip unmatched language, then exact region"],
+      [["fr", "en"], "en-GB", "en-GB", "skip unmatched language, then bare tie → default"],
+      [["ja", "en-GB"], "en-US", "ja-JP", "cross-language priority beats a later exact region"],
+    ] as const)("requested=%j default=%s → %s (%s)", (requested, def, expected) => {
+      const options = def === undefined ? undefined : { default: def };
+      expect(negotiateLocale(locales, [...requested], options)?.locale).toBe(expected);
     });
 
-    it("prefers an exact region over a sibling region", () => {
-      // en-AU: no exact/generic match → both en-US and en-GB are siblings; the
-      // default breaks the tie.
-      expect(negotiateLocale(locales, ["en-AU"], { default: "en-GB" })?.locale).toBe("en-GB");
-      expect(negotiateLocale(locales, ["en-AU"], { default: "en-US" })?.locale).toBe("en-US");
+    it("ranks by match quality, not declaration order", () => {
+      // en-GB declared first, but an exact en-US request must still win.
+      const reordered = loc("en-GB", "en-US", "ja-JP");
+      expect(negotiateLocale(reordered, ["en-US"])?.locale).toBe("en-US");
     });
 
-    it("uses the default locale to break a bare-language tie", () => {
-      expect(negotiateLocale(locales, ["en"], { default: "en-GB" })?.locale).toBe("en-GB");
-      expect(negotiateLocale(locales, ["en"], { default: "en-US" })?.locale).toBe("en-US");
-    });
-
-    it("falls back to declaration order when no default disambiguates", () => {
-      expect(negotiateLocale(locales, ["en"])?.locale).toBe("en-US");
+    it("falls back to a sibling region when the exact region is absent", () => {
+      // Only en-GB is offered; an en-US visitor still gets English.
+      expect(negotiateLocale(loc("en-GB", "ja-JP"), ["en-US"])?.locale).toBe("en-GB");
     });
 
     it("never lets the default nudge cross a language boundary", () => {
