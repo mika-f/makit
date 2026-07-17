@@ -1,0 +1,31 @@
+:root {
+  --makit-brand-glow: color-mix(in srgb, var(--makit-color-accent) 18%, transparent);
+}
+
+::selection {
+  background: var(--makit-brand-glow);
+}
+
+main h1 {
+  letter-spacing: -0.04em;
+}
+
+main > article > h1:first-child {
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.08;
+  max-width: 12ch;
+}
+
+main > article > h1:first-child + p {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  max-width: 48rem;
+}
+
+main > article a {
+  text-underline-offset: 0.18em;
+}
+
+main > article pre {
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}

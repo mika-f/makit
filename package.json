@@ -8,6 +8,7 @@
   },
   "scripts": {
     "build": "turbo run build",
+    "docs:build": "pnpm --filter @natsuneko-laboratory/makit build && node packages/makit/dist/cli/index.mjs build --clean",
     "dev": "turbo run dev",
     "test": "turbo run test",
     "lint": "oxlint .",
