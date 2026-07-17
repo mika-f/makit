@@ -6,13 +6,21 @@ export interface RootPageProps {
   behavior: RootBehavior;
   locales: RootLocaleOption[];
   defaultHref: string;
+  /** BCP-47 tag of the site's default locale (`i18n.defaultLocale`). */
+  defaultLocale: string;
   siteTitle: string;
 }
 
 /** The `/` route's behavior when i18n is enabled (spec §16.10). */
-export function RootPage({ behavior, locales, defaultHref, siteTitle }: RootPageProps) {
+export function RootPage({
+  behavior,
+  locales,
+  defaultHref,
+  defaultLocale,
+  siteTitle,
+}: RootPageProps) {
   if (behavior === "detect") {
-    return <RootDetect locales={locales} defaultHref={defaultHref} />;
+    return <RootDetect locales={locales} defaultHref={defaultHref} defaultLocale={defaultLocale} />;
   }
 
   if (behavior === "select") {

@@ -23,6 +23,7 @@
     "build": "tsdown",
     "dev": "tsdown --watch",
     "prepublishOnly": "pnpm run build",
+    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {

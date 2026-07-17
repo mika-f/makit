@@ -74,7 +74,7 @@ export default async function Page() {
   );
 
   return (
-    <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} siteTitle={site.title} />
+    <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} defaultLocale={i18n.defaultLocale} siteTitle={site.title} />
   );
 }
 `;
