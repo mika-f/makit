@@ -22,6 +22,7 @@ import { buildAllPages } from "./pages.js";
 export interface DevOptions {
   port: number;
   host: string;
+  silent?: boolean;
 }
 
 export interface DevServer {
@@ -227,7 +228,7 @@ export async function startDevServer(
   const child = spawn(
     process.execPath,
     [nextBin, "dev", "--port", String(options.port), "--hostname", options.host],
-    { cwd: makitDir, stdio: "inherit" },
+    { cwd: makitDir, stdio: options.silent ? "ignore" : "inherit" },
   );
 
   return {

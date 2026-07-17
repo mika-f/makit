@@ -134,7 +134,12 @@ describe("resolveConfig defaults", () => {
     expect(resolved.seo.titleTemplate).toBe("%s | My Docs");
     expect(resolved.sitemap).toEqual({ enabled: true, includeFallbackPages: false });
     expect(resolved.build).toEqual({ clean: true, trailingSlash: true });
-    expect(resolved.dev).toEqual({ port: 3000, host: "localhost", open: false });
+    expect(resolved.dev).toEqual({
+      port: 3000,
+      host: "localhost",
+      open: false,
+      silentNext: false,
+    });
     expect(resolved.markdown.shiki.themes).toEqual({ light: "github-light", dark: "github-dark" });
     expect(resolved.markdown.externalLinks).toEqual({
       target: "_blank",

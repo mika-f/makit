@@ -17,6 +17,10 @@ export const devCommand = defineCommand({
     host: { type: "string", description: "Host to bind to (default: localhost)" },
     open: { type: "boolean", description: "Open the browser automatically" },
     "no-open": { type: "boolean", description: "Do not open the browser" },
+    "silent-next": {
+      type: "boolean",
+      description: "Suppress `next dev`'s own output, keeping makit's logs",
+    },
   },
   async run({ args }) {
     const ctx = createCliContext(args);
@@ -28,7 +32,8 @@ export const devCommand = defineCommand({
       const host = args.host ?? config.dev.host;
       const open = args["no-open"] ? false : (args.open ?? config.dev.open);
 
-      const server = await startDevServer(config, { port, host }, ctx.logger);
+      const silentNext = args.silent || args["silent-next"] || config.dev.silentNext;
+      const server = await startDevServer(config, { port, host, silent: silentNext }, ctx.logger);
       const url = `http://${host}:${port}${config.basePath}/`;
       ctx.logger.success(`Dev server running at ${url}`);
 

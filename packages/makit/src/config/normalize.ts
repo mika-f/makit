@@ -241,6 +241,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       port: parsed.dev?.port ?? DEFAULT_DEV_PORT,
       host: parsed.dev?.host ?? DEFAULT_DEV_HOST,
       open: parsed.dev?.open ?? false,
+      silentNext: parsed.dev?.silentNext ?? false,
     },
     preview: {
       port: parsed.preview?.port ?? DEFAULT_DEV_PORT,

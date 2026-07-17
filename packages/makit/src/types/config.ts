@@ -300,6 +300,8 @@ export interface DevConfig {
   port?: number;
   host?: string;
   open?: boolean;
+  /** Suppress `next dev`'s own output, keeping makit's logs. */
+  silentNext?: boolean;
 }
 
 export interface PreviewConfig {

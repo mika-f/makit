@@ -277,6 +277,7 @@ const devConfigSchema = z.strictObject({
   port: z.number().int().min(1).max(65535).optional(),
   host: z.string().optional(),
   open: z.boolean().optional(),
+  silentNext: z.boolean().optional(),
 });
 
 const previewConfigSchema = z.strictObject({

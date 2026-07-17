@@ -107,6 +107,7 @@ export interface ResolvedDevConfig {
   port: number;
   host: string;
   open: boolean;
+  silentNext: boolean;
 }
 
 export interface ResolvedPreviewConfig {
