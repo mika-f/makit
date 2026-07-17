@@ -52,7 +52,7 @@ describe("negotiateLocale", () => {
       [["fr", "en-GB"], "en-US", "en-GB", "skip unmatched language, then exact region"],
       [["fr", "en"], "en-GB", "en-GB", "skip unmatched language, then bare tie → default"],
       [["ja", "en-GB"], "en-US", "ja-JP", "cross-language priority beats a later exact region"],
-    ] as const)("requested=%j default=%s → %s (%s)", (requested, def, expected) => {
+    ] as const)("requested=%j default=%s → %s (%s)", (requested, def, expected, _why) => {
       const options = def === undefined ? undefined : { default: def };
       expect(negotiateLocale(locales, [...requested], options)?.locale).toBe(expected);
     });
