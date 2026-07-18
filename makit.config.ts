@@ -37,6 +37,9 @@ export default defineConfig({
     radius: "medium",
   },
   styles: ["styles/custom.css"],
+  analytics: {
+    googleAnalytics: { measurementId: "G-1WTVCR7P5R" }
+  },
   markdown: {
     code: {
       copyButton: true,
