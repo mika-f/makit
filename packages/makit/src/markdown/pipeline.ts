@@ -13,6 +13,7 @@ import { rehypeExternalLinks } from "./rehype/external-links.js";
 import { rehypeGitHubAlerts } from "./rehype/github-alerts.js";
 import { rehypeRewriteMarkdownLinks, type LinkRewriteContext } from "./rehype/rewrite-links.js";
 import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
+import { rehypeTableCellAlign } from "./rehype/table-cell-align.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
 
 export interface MarkdownProcessResult {
@@ -79,6 +80,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   processor.use(rehypeExternalLinks, config.markdown.externalLinks);
   processor.use(rehypeRewriteMarkdownLinks);
   processor.use(rehypeGitHubAlerts);
+  processor.use(rehypeTableCellAlign);
 
   applyUnifiedPlugins(processor, config.markdown.rehypePlugins);
 

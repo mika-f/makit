@@ -116,4 +116,19 @@ Rendered result:
 | `title`   | Site name  |
 | `siteUrl` | Public URL |
 
+Use colons in the separator row to align each column. A colon on the left,
+both sides, or right aligns the column left, center, or right respectively.
+
+```markdown
+| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    | b      | c     |
+```
+
+Rendered result:
+
+| Left | Center | Right |
+| :--- | :----: | ----: |
+| a    | b      | c     |
+
 Raw HTML is disabled by default. Configure HTML, Shiki, external links, plugins, and the table-of-contents range in the [configuration reference](../04-reference/configuration.md#markdown).
