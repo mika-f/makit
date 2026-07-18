@@ -50,6 +50,12 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toMatch(/<td style="text-align:\s*right">c<\/td>/);
   });
 
+  it("wraps tables in a scrollable container", async () => {
+    const result = await render("| a | b |\n| - | - |\n| 1 | 2 |\n");
+
+    expect(result.html).toContain('<div class="makit-table-wrapper"><table>');
+  });
+
   it.each(["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"])(
     "renders GitHub %s alerts as labelled asides",
     async (type) => {
