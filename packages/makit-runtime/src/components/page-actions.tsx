@@ -1,8 +1,9 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
-type IconName = "edit" | "top" | "copy" | "chat" | "ai" | "external";
+type IconName = "edit" | "top" | "copy" | "chat" | "ai";
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
@@ -18,9 +19,6 @@ function Icon({ name }: { name: IconName }) {
     ),
     ai: (
       <path d="m12 3-1.3 5.7L5 10l5.7 1.3L12 17l1.3-5.7L19 10l-5.7-1.3L12 3Zm7 12-.7 3.3L15 19l3.3.7L19 23l.7-3.3L23 19l-3.3-.7L19 15ZM5 16l-.8 2.2L2 19l2.2.8L5 22l.8-2.2L8 19l-2.2-.8L5 16Z" />
-    ),
-    external: (
-      <path d="M14 4h6v6m-1-5L10 14M17 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h5" />
     ),
   };
 
@@ -160,7 +158,7 @@ export function PageActions({
         >
           <Icon name="edit" />
           Edit on GitHub
-          <Icon name="external" />
+          <ExternalLink aria-hidden="true" className="size-4 shrink-0" />
         </a>
       )}
       <button
@@ -201,7 +199,7 @@ export function PageActions({
                 >
                   {link.icon}
                   {link.label}
-                  <Icon name="external" />
+                  <ExternalLink aria-hidden="true" className="size-4 shrink-0" />
                 </a>
               ))}
             </div>

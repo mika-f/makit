@@ -59,12 +59,15 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     const result = await render("[external](https://example.com)");
     expect(result.html).toContain('target="_blank"');
     expect(result.html).toContain('rel="noopener noreferrer"');
+    expect(result.html).toContain('class="makit-external-link-icon"');
+    expect(result.html).toMatch(/external<svg[^>]*makit-external-link-icon/);
   });
 
   it("does not touch root-relative or anchor-only links", async () => {
     const result = await render("[a](/already/absolute/) [b](#anchor)");
     expect(result.html).toContain('href="/already/absolute/"');
     expect(result.html).toContain('href="#anchor"');
+    expect(result.html).not.toContain("makit-external-link-icon");
   });
 
   it("rewrites relative markdown links into routes", async () => {

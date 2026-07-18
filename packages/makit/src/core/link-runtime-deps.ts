@@ -14,6 +14,7 @@ export const RUNTIME_PACKAGES = [
   "next",
   "react",
   "react-dom",
+  "lucide-react",
   "@natsuneko-laboratory/makit-runtime",
   "tailwindcss",
   "@tailwindcss/postcss",

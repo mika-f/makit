@@ -31,6 +31,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
+  "dependencies": {
+    "lucide-react": "^0.468.0"
+  },
   "devDependencies": {
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",

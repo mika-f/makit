@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "../data/types.js";
 
 function containsRoute(node: ResolvedNavNode, currentRoute: string): boolean {
@@ -38,6 +39,7 @@ function ItemLink({
       }
     >
       {title}
+      <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
     </a>
   ) : (
     <Link
