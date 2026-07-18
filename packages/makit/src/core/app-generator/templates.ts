@@ -231,7 +231,6 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     "}",
     "",
     ".makit-prose :where(h2, h3, h4) {",
-    "  scroll-margin-top: 6rem;",
     "  letter-spacing: -0.02em;",
     "}",
     "",
