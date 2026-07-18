@@ -37,6 +37,19 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toContain("data-footnote-ref");
   });
 
+  it("preserves GFM table column alignment", async () => {
+    const result = await render(
+      "| Left | Center | Right |\n| :--- | :----: | ----: |\n| a | b | c |\n",
+    );
+
+    expect(result.html).toMatch(/<th style="text-align:\s*left">Left<\/th>/);
+    expect(result.html).toMatch(/<th style="text-align:\s*center">Center<\/th>/);
+    expect(result.html).toMatch(/<th style="text-align:\s*right">Right<\/th>/);
+    expect(result.html).toMatch(/<td style="text-align:\s*left">a<\/td>/);
+    expect(result.html).toMatch(/<td style="text-align:\s*center">b<\/td>/);
+    expect(result.html).toMatch(/<td style="text-align:\s*right">c<\/td>/);
+  });
+
   it.each(["NOTE", "TIP", "IMPORTANT", "WARNING", "CAUTION"])(
     "renders GitHub %s alerts as labelled asides",
     async (type) => {

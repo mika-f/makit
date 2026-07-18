@@ -65,7 +65,13 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   applyUnifiedPlugins(processor, config.markdown.remarkPlugins);
   processor.use(remarkCodeFilename);
 
-  processor.use(remarkRehype, { allowDangerousHtml: config.markdown.allowDangerousHtml });
+  processor.use(remarkRehype, {
+    allowDangerousHtml: config.markdown.allowDangerousHtml,
+    // Render GFM table delimiter alignment (`:---`, `:---:`, `---:`) as
+    // styles so it is preserved even when the site's typography CSS sets a
+    // default alignment for table cells.
+    tableCellAlignToStyle: true,
+  });
 
   if (config.markdown.allowDangerousHtml) {
     processor.use(rehypeRaw);
