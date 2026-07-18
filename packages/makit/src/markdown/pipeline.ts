@@ -13,6 +13,7 @@ import { rehypeExternalLinks } from "./rehype/external-links.js";
 import { rehypeGitHubAlerts } from "./rehype/github-alerts.js";
 import { rehypeRewriteMarkdownLinks, type LinkRewriteContext } from "./rehype/rewrite-links.js";
 import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
+import { rehypeTableCellAlign } from "./rehype/table-cell-align.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
 
 export interface MarkdownProcessResult {
@@ -65,13 +66,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   applyUnifiedPlugins(processor, config.markdown.remarkPlugins);
   processor.use(remarkCodeFilename);
 
-  processor.use(remarkRehype, {
-    allowDangerousHtml: config.markdown.allowDangerousHtml,
-    // Render GFM table delimiter alignment (`:---`, `:---:`, `---:`) as
-    // styles so it is preserved even when the site's typography CSS sets a
-    // default alignment for table cells.
-    tableCellAlignToStyle: true,
-  });
+  processor.use(remarkRehype, { allowDangerousHtml: config.markdown.allowDangerousHtml });
 
   if (config.markdown.allowDangerousHtml) {
     processor.use(rehypeRaw);
@@ -85,6 +80,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   processor.use(rehypeExternalLinks, config.markdown.externalLinks);
   processor.use(rehypeRewriteMarkdownLinks);
   processor.use(rehypeGitHubAlerts);
+  processor.use(rehypeTableCellAlign);
 
   applyUnifiedPlugins(processor, config.markdown.rehypePlugins);
 
