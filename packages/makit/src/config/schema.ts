@@ -282,7 +282,7 @@ const llmsConfigSchema = z.strictObject({
 const githubConfigSchema = z.strictObject({
   repository: z
     .string()
-    .regex(/^[^/\\s]+\/[^/\\s]+$/, "repository must be in owner/repository form"),
+    .regex(/^[^/\s]+\/[^/\s]+$/, "repository must be in owner/repository form"),
   branch: z.string().min(1).optional(),
 });
 
