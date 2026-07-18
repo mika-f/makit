@@ -1,7 +1,3 @@
-![Makit — Markdown-based static site generator and documentation platform](/makit-lockup.svg)
-
-![Makit — Markdown-based static site generator and documentation platform](/makit-monochrome.svg)
-
 # Welcome to Makit
 
 Makit is a Node.js CLI for creating static documentation sites from Markdown. Write content in Markdown and use TypeScript for site structure and detailed configuration.

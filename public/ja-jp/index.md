@@ -1,6 +1,4 @@
-![Makit — Markdown ベースの静的サイトジェネレーターとドキュメントプラットフォーム](/makit-lockup.svg)
 
-![Makit — Markdown ベースの静的サイトジェネレーターとドキュメントプラットフォーム](/makit-monochrome.svg)
 
 # Makit へようこそ
 

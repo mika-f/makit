@@ -8,9 +8,10 @@ export default defineConfig({
   // Keep the documentation site's visual identity in the brand package.
   publicDir: "packages/makit-brand/src",
   outDir: "dist",
+  siteUrl: "https://makit.natsuneko.com",
   header: {
     title: "Makit",
-    logo: "/makit-mark-monochrome.svg",
+    logo: "/makit-mark.svg",
     logoDark: "/makit-mark.svg",
     links: [
       {
@@ -39,7 +40,6 @@ export default defineConfig({
   markdown: {
     code: {
       copyButton: true,
-      lineNumbers: true,
     },
   },
   llms: {
