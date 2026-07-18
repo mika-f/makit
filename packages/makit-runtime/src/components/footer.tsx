@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import type { FooterData } from "../data/types.js";
 
 export function Footer({ footer }: { footer: FooterData }) {
@@ -19,6 +20,7 @@ export function Footer({ footer }: { footer: FooterData }) {
                 className="transition hover:text-[var(--makit-color-foreground)]"
               >
                 {link.label}
+                <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
               </a>
             ) : (
               <Link

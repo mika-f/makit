@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import type { GlobalNavigationGroup, GlobalNavigationItem, HeaderData } from "../data/types.js";
 
@@ -20,6 +21,7 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
                 className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
               >
                 {child.title}
+                <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
               </a>
             ) : (
               <Link
@@ -43,6 +45,7 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
       className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
     >
       {item.title}
+      <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
     </a>
   ) : (
     <Link
@@ -127,6 +130,7 @@ export function Header({
                     className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
                   >
                     {link.label}
+                    <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
                   </a>
                 ) : (
                   <Link
