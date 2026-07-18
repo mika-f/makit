@@ -26,6 +26,8 @@ export interface MakitConfig {
   markdown?: MarkdownConfig;
   styles?: string[];
   seo?: SeoConfig;
+  /** Third-party analytics that are injected only into production builds. */
+  analytics?: AnalyticsConfig;
   sitemap?: SitemapConfig;
   /** Generate LLM-oriented Markdown endpoints plus llms.txt files. */
   llms?: LlmsConfig;
@@ -40,6 +42,60 @@ export interface MakitConfig {
   headers?: GeneratedHeaderRule[];
   experimental?: ExperimentalConfig;
 }
+
+// #region analytics
+
+/** Production-only third-party analytics integrations. */
+export interface AnalyticsConfig {
+  googleAnalytics?: GoogleAnalyticsConfig;
+  googleTagManager?: GoogleTagManagerConfig;
+  posthog?: PostHogConfig;
+  umami?: UmamiConfig;
+  vercel?: VercelWebAnalyticsConfig;
+  /** Additional production-only external scripts. */
+  scripts?: AnalyticsScriptConfig[];
+}
+
+export type AnalyticsScriptStrategy =
+  | "afterInteractive"
+  | "beforeInteractive"
+  | "lazyOnload"
+  | "worker";
+
+export interface AnalyticsScriptConfig {
+  src: string;
+  /** Defaults to `"afterInteractive"`. */
+  strategy?: AnalyticsScriptStrategy;
+  /** Additional attributes such as `data-*`, `crossOrigin`, or `integrity`. */
+  attributes?: Record<string, string>;
+}
+
+export interface GoogleAnalyticsConfig {
+  measurementId: string;
+}
+
+export interface GoogleTagManagerConfig {
+  containerId: string;
+}
+
+export interface PostHogConfig {
+  apiKey: string;
+  /** Defaults to PostHog Cloud US (`https://us.i.posthog.com`). */
+  apiHost?: string;
+}
+
+export interface UmamiConfig {
+  websiteId: string;
+  /** Defaults to Umami Cloud (`https://cloud.umami.is/script.js`). */
+  scriptUrl?: string;
+}
+
+export interface VercelWebAnalyticsConfig {
+  /** Defaults to Vercel's production Web Analytics endpoint. */
+  scriptUrl?: string;
+}
+
+// #endregion
 
 // #region collections / home
 

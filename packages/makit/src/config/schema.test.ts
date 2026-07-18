@@ -22,6 +22,33 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts configured analytics providers and validates their URLs", () => {
+    const valid = makitConfigSchema.safeParse({
+      title: "My Docs",
+      analytics: {
+        googleAnalytics: { measurementId: "G-123" },
+        googleTagManager: { containerId: "GTM-123" },
+        posthog: { apiKey: "phc_123", apiHost: "https://eu.i.posthog.com" },
+        umami: { websiteId: "website-123", scriptUrl: "https://stats.example.com/script.js" },
+        vercel: {},
+        scripts: [
+          {
+            src: "https://analytics.example.com/script.js",
+            strategy: "lazyOnload",
+            attributes: { "data-site": "docs", crossOrigin: "anonymous" },
+          },
+        ],
+      },
+    });
+    const invalid = makitConfigSchema.safeParse({
+      title: "My Docs",
+      analytics: { posthog: { apiKey: "phc_123", apiHost: "not-a-url" } },
+    });
+
+    expect(valid.success).toBe(true);
+    expect(invalid.success).toBe(false);
+  });
+
   it("accepts a GitHub repository name containing dots", () => {
     const result = makitConfigSchema.safeParse({
       title: "My Docs",

@@ -1,5 +1,6 @@
 import type {
   BuildConfig,
+  AnalyticsConfig,
   CollectionNavigationConfig,
   CollectionsConfig,
   ExternalLinksConfig,
@@ -183,6 +184,7 @@ export interface ResolvedConfig {
   markdown: ResolvedMarkdownConfig;
   styles: string[];
   seo: ResolvedSeoConfig;
+  analytics: AnalyticsConfig;
   sitemap: ResolvedSitemapConfig;
   llms: ResolvedLlmsConfig;
   github?: ResolvedGitHubConfig;

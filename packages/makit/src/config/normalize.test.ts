@@ -124,6 +124,32 @@ describe("resolveConfig with i18n", () => {
 });
 
 describe("resolveConfig defaults", () => {
+  it("preserves configured production analytics", () => {
+    const resolved = resolveConfig(
+      {
+        title: "My Docs",
+        analytics: {
+          googleAnalytics: { measurementId: "G-123" },
+          googleTagManager: { containerId: "GTM-123" },
+          posthog: { apiKey: "phc_123", apiHost: "https://eu.i.posthog.com" },
+          umami: { websiteId: "website-123", scriptUrl: "https://stats.example.com/script.js" },
+          vercel: {},
+          scripts: [{ src: "/analytics.js", attributes: { "data-site": "docs" } }],
+        },
+      },
+      ctx,
+    );
+
+    expect(resolved.analytics).toEqual({
+      googleAnalytics: { measurementId: "G-123" },
+      googleTagManager: { containerId: "GTM-123" },
+      posthog: { apiKey: "phc_123", apiHost: "https://eu.i.posthog.com" },
+      umami: { websiteId: "website-123", scriptUrl: "https://stats.example.com/script.js" },
+      vercel: {},
+      scripts: [{ src: "/analytics.js", attributes: { "data-site": "docs" } }],
+    });
+  });
+
   it("fills in every default value", () => {
     const resolved = resolveConfig({ title: "My Docs" }, ctx);
 

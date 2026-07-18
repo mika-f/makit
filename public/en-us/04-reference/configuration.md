@@ -93,6 +93,10 @@ Fallback behavior is `render`, `redirect`, or `not-found`; a missing collection 
 
 ## SEO, build, and validation
 
+## Production analytics
+
+See [Production analytics](../03-guides/analytics.md) for all `analytics` options and provider-specific setup.
+
 | Option                               | Default                                      | Description                                                                                                               |
 | ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `seo.titleTemplate`                  | `"%s                                         | <site title>"`                                                                                                            | Page-title template; `seo.defaultImage` is the fallback social image. |

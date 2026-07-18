@@ -7,12 +7,17 @@ export type {
 } from "./types/adapter.js";
 export type {
   BuildConfig,
+  AnalyticsConfig,
+  AnalyticsScriptConfig,
+  AnalyticsScriptStrategy,
   CodeBlockConfig,
   DevConfig,
   ExperimentalConfig,
   ExternalLinksConfig,
   FooterConfig,
   FooterLink,
+  GoogleAnalyticsConfig,
+  GoogleTagManagerConfig,
   HeaderConfig,
   HeaderLink,
   MakitColorScheme,
@@ -33,6 +38,7 @@ export type {
   NavigationItem,
   NavigationMode,
   PreviewConfig,
+  PostHogConfig,
   SeoConfig,
   ShikiConfig,
   ShikiDualTheme,
@@ -40,5 +46,7 @@ export type {
   SitemapConfig,
   TableOfContentsConfig,
   ThemeConfig,
+  UmamiConfig,
   ValidationConfig,
+  VercelWebAnalyticsConfig,
 } from "./types/config.js";

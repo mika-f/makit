@@ -204,6 +204,33 @@ const footerConfigSchema = z.strictObject({
   links: z.array(footerLinkSchema).optional(),
 });
 
+const analyticsConfigSchema = z.strictObject({
+  googleAnalytics: z.strictObject({ measurementId: z.string().min(1) }).optional(),
+  googleTagManager: z.strictObject({ containerId: z.string().min(1) }).optional(),
+  posthog: z
+    .strictObject({
+      apiKey: z.string().min(1),
+      apiHost: z.string().url().optional(),
+    })
+    .optional(),
+  umami: z
+    .strictObject({
+      websiteId: z.string().min(1),
+      scriptUrl: z.string().url().optional(),
+    })
+    .optional(),
+  vercel: z.strictObject({ scriptUrl: z.string().url().optional() }).optional(),
+  scripts: z
+    .array(
+      z.strictObject({
+        src: z.string().min(1),
+        strategy: z.enum(["afterInteractive", "beforeInteractive", "lazyOnload", "worker"]).optional(),
+        attributes: z.record(z.string(), z.string()).optional(),
+      }),
+    )
+    .optional(),
+});
+
 const themeConfigSchema = z.strictObject({
   colorScheme: z.enum(["light", "dark", "system"]).optional(),
   accentColor: z.string().optional(),
@@ -399,6 +426,7 @@ export const makitConfigSchema = z.strictObject({
   markdown: markdownConfigSchema.optional(),
   styles: z.array(z.string()).optional(),
   seo: seoConfigSchema.optional(),
+  analytics: analyticsConfigSchema.optional(),
   sitemap: sitemapConfigSchema.optional(),
   llms: llmsConfigSchema.optional(),
   github: githubConfigSchema.optional(),
