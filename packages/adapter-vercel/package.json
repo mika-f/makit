@@ -1,6 +1,6 @@
 {
   "name": "@natsuneko-laboratory/makit-adapter-vercel",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "repository": "https://github.com/mika-f/makit.git",
   "publishConfig": {
     "access": "public"

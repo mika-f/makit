@@ -1,6 +1,6 @@
 {
   "name": "@natsuneko-laboratory/makit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Generate static documentation sites from Markdown, powered by Next.js.",
   "license": "MIT",
   "repository": "https://github.com/mika-f/makit.git",

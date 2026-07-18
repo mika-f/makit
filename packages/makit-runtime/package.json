@@ -1,6 +1,6 @@
 {
   "name": "@natsuneko-laboratory/makit-runtime",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "React components and Next.js integration used by Makit's generated .makit/ app.",
   "license": "MIT",
   "repository": "https://github.com/mika-f/makit.git",
