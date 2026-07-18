@@ -22,6 +22,22 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a GitHub repository name containing dots", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      github: { repository: "mika-f/docs.natsuneko.cat" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a GitHub repository with whitespace", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      github: { repository: "mika-f/docs natsuneko" },
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an invalid locale dir value", () => {
     const result = makitConfigSchema.safeParse({
       title: "My Docs",
