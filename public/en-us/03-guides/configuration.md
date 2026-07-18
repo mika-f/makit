@@ -69,3 +69,5 @@ export default defineConfig({
 ## After changing configuration
 
 `makit dev` detects configuration-file changes during development. Before publishing, run `makit check` followed by `makit build`.
+
+For every option, default, and focused example, see the [configuration reference](../04-reference/configuration.md). See [Markdown syntax](./markdown-syntax.md) for source and rendering examples.

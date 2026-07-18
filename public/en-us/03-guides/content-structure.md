@@ -33,6 +33,26 @@ export default definePageMetadata({
 });
 ```
 
+## Use lightweight front matter
+
+For simple page-level values, put YAML front matter at the start of the Markdown file. This is useful when a small page does not warrant a separate `.meta.ts` file.
+
+```markdown
+---
+title: Installation
+description: Add Makit to a project.
+order: 1
+---
+
+# Install Makit
+
+Makit requires Node.js 20 or later.
+```
+
+Front matter supports flat page metadata such as `id`, `title`, `description`, `slug`, `order`, `draft`, `hidden`, `sidebar`, `tableOfContents`, `layout`, `canonical`, `image`, `noindex`, and `nofollow`. `slug` may additionally be an array of strings for multiple URL segments.
+
+It cannot represent nested configuration or arrays of objects. Unknown keys are ignored, and invalid or nested values are warned about and dropped. A page cannot combine non-empty front matter with a `.meta.ts` file. Prefer `.meta.ts` for complex metadata, type checking, or reusable values. Set `validation.disallowFrontMatter: true` to require metadata files instead.
+
 ## When to use collections
 
 Use collections when a single portal contains several products or services. Every collection can have its own home page, URL prefix, and navigation.

@@ -31,7 +31,7 @@ export default defineConfig({
 });
 ```
 
-現在想定している公式 Adapter は Cloudflare Pages、GitHub Pages、Netlify、Vercel です。
+現在想定している公式 Adapter は Cloudflare Pages、GitHub Pages、Netlify、Vercel です。各 Adapter のインストール方法、生成されるファイル、設定項目と制約は[Adapter リファレンス](../04-reference/adapters.md)を参照してください。
 
 ## 認証情報について
 

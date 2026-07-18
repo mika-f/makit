@@ -31,7 +31,7 @@ export default defineConfig({
 });
 ```
 
-The official adapters currently target Cloudflare Pages, GitHub Pages, Netlify, and Vercel.
+The official adapters currently target Cloudflare Pages, GitHub Pages, Netlify, and Vercel. The [Adapter reference](../04-reference/adapters.md) documents their installation, options, generated files, and platform limitations.
 
 ## Credentials
 

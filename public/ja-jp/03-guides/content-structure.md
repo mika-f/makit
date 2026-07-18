@@ -34,6 +34,26 @@ export default definePageMetadata({
 });
 ```
 
+## 簡易的な front matter を使う
+
+タイトル、説明、表示順のような単純な値だけを指定したい場合は、Markdown の先頭に YAML front matter を書けます。小さなページで `.meta.ts` を増やしたくないときに便利です。
+
+```markdown
+---
+title: インストール
+description: Makit をプロジェクトへ追加する方法。
+order: 1
+---
+
+# Makit をインストールする
+
+Node.js 20 以降が必要です。
+```
+
+front matter では、`id`、`title`、`description`、`slug`、`order`、`draft`、`hidden`、`sidebar`、`tableOfContents`、`layout`、`canonical`、`image`、`noindex`、`nofollow` のようなページ単位のフラットな値を指定できます。`slug` だけは URL の複数セグメントを表す文字列配列も指定できます。
+
+ネストした設定やオブジェクトの配列は front matter では扱えません。未知のキーは無視され、型に合わない値やネストした値は警告して除外されます。また、同じページに non-empty の front matter と `.meta.ts` を併用することもできません。複雑な設定、型検査、再利用する値が必要な場合は `.meta.ts` を選んでください。`validation.disallowFrontMatter: true` を設定すると、front matter を禁止してメタデータファイルへ統一できます。
+
 ## Collection を使うタイミング
 
 複数の製品やサービスを同じポータルで扱う場合は Collection を使います。Collection ごとにトップページ、URL の接頭辞、ナビゲーションを持てます。
