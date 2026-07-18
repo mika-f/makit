@@ -65,6 +65,8 @@ export { NotFoundPage } from "./components/not-found-page.js";
 export { PortalHomePage } from "./components/portal-home-page.js";
 export { RootPage } from "./components/root-page.js";
 export { ThemeScript } from "./theme/theme-script.js";
+export { AnalyticsScripts } from "./analytics/analytics-scripts.js";
+export type { AnalyticsScriptsConfig } from "./analytics/analytics-scripts.js";
 export { ThemeVariables } from "./theme/theme-variables.js";
 
 export { findPrevNext, flattenNavigation } from "./navigation/flatten.js";

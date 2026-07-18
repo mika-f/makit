@@ -64,7 +64,7 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
   await writeText(join(makitDir, "next.config.mjs"), nextConfigTemplate(config, turbopackRoot));
   await writeText(join(makitDir, "postcss.config.mjs"), postcssConfigTemplate());
 
-  await writeText(join(appDir, "layout.js"), rootLayoutTemplate());
+  await writeText(join(appDir, "layout.js"), rootLayoutTemplate(config));
   await writeText(join(appDir, "not-found.js"), notFoundTemplate());
   // Only seeded when absent: in dev this file carries a per-regeneration
   // token (see dev.ts), and a config reload re-running generateApp must not

@@ -1,6 +1,6 @@
 import type { ResolvedConfig } from "../../types/resolved-config.js";
 
-export function rootLayoutTemplate(): string {
+export function rootLayoutTemplate(config: ResolvedConfig): string {
   // The dev-refresh token must be *rendered*, not just imported for side
   // effects: Turbopack tree-shakes an unused export, so both versions of the
   // marker compile to the same empty module and no HMR update ever reaches
@@ -8,7 +8,9 @@ export function rootLayoutTemplate(): string {
   // reference (and the attribute) entirely.
   return `import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
-import { ThemeScript, ThemeVariables, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, ThemeScript, ThemeVariables, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+
+const analytics = ${JSON.stringify(config.analytics)};
 
 export default async function RootLayout({ children }) {
   const site = await getSiteData();
@@ -23,6 +25,7 @@ export default async function RootLayout({ children }) {
       >
         <ThemeVariables theme={site.theme} />
         {colorScheme === "system" && <ThemeScript />}
+        {process.env.NODE_ENV === "production" && <AnalyticsScripts config={analytics} />}
         {children}
       </body>
     </html>

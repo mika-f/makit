@@ -229,6 +229,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       rehypePlugins: parsed.markdown?.rehypePlugins ?? [],
     },
     styles: parsed.styles ?? [],
+    analytics: parsed.analytics ?? {},
     seo: {
       titleTemplate: parsed.seo?.titleTemplate ?? `%s | ${parsed.title}`,
       defaultImage: parsed.seo?.defaultImage,
