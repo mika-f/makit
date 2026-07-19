@@ -248,6 +248,7 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     "",
     ".makit-prose .makit-table-wrapper > table {",
     "  width: max-content;",
+    "  min-width: 100%;",
     "}",
     "",
     ".makit-prose .makit-alert {",
