@@ -14,6 +14,7 @@ import { rehypeGitHubAlerts } from "./rehype/github-alerts.js";
 import { rehypeRewriteMarkdownLinks, type LinkRewriteContext } from "./rehype/rewrite-links.js";
 import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
 import { rehypeTableCellAlign } from "./rehype/table-cell-align.js";
+import { rehypeWrapTables } from "./rehype/wrap-tables.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
 
 export interface MarkdownProcessResult {
@@ -81,6 +82,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   processor.use(rehypeRewriteMarkdownLinks);
   processor.use(rehypeGitHubAlerts);
   processor.use(rehypeTableCellAlign);
+  processor.use(rehypeWrapTables);
 
   applyUnifiedPlugins(processor, config.markdown.rehypePlugins);
 
