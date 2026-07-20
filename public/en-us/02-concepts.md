@@ -85,3 +85,15 @@ The file above becomes:
 ```
 
 You can reorganize the display order without changing URLs or page IDs.
+
+A directory wrapped in parentheses, such as `(marketing)`, goes further and is left out of the URL entirely, while still forming its own section in the sidebar by default:
+
+```text
+docs/(marketing)/about.md
+```
+
+```text
+/about/
+```
+
+See [Content structure](./03-guides/content-structure.md#route-groups) for how to also drop the sidebar grouping.

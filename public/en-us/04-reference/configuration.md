@@ -89,7 +89,7 @@ i18n: {
 
 Fallback behavior is `render`, `redirect`, or `not-found`; a missing collection can also be `hidden`. Root behavior is `default`, `detect`, or `select`; a missing-page locale switcher may use `fallback`, `locale-root`, or `disabled`.
 
-`collections` accepts explicit collection metadata or `{ mode: "discover" }`. `home` chooses a `page` or `portal` layout. `navigation` controls automatic/manual navigation, global links, fallback pages, pagination, and numeric filename prefixes. `navigation.auto.numericPrefixes` defaults to `true`, and unprefixed items default to `last`.
+`collections` accepts explicit collection metadata or `{ mode: "discover" }`. `home` chooses a `page` or `portal` layout. `navigation` controls automatic/manual navigation, global links, fallback pages, pagination, numeric filename prefixes, and route groups. `navigation.auto.numericPrefixes` defaults to `true`, and unprefixed items default to `last`. A directory wrapped in parentheses, such as `(marketing)`, is never included in the URL; `navigation.auto.routeGroups` controls how it affects the sidebar — `"url"` (default) keeps it as its own section, `"flatten"` removes that section and promotes its pages into the parent level, and `false` disables route groups entirely. See [Content structure](../03-guides/content-structure.md#route-groups) for an example.
 
 ## SEO, build, and validation
 

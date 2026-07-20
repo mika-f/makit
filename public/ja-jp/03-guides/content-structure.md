@@ -20,6 +20,22 @@ docs/
 数字のプレフィックスはサイドバーの順番だけに使われ、URL からは取り除かれます。
 プレフィックスがないファイルは、既定では同じ階層の最後に並びます。
 
+## 仮想グループ（Route Group）
+
+ディレクトリ名を `(` `)` で囲むと、URL にセグメントを追加せずにファイルを整理できます。Next.js の Route Group と同じ仕組みです。
+
+```text
+docs/
+├── index.md
+├── (marketing)/
+│   ├── about.md
+│   └── pricing.md
+└── (product)/
+    └── overview.md
+```
+
+`docs/(marketing)/about.md` は `/marketing/about/` ではなく `/about/` になります。既定（`navigation.auto.routeGroups: "url"`）では、`(marketing)` と `(product)` はサイドバー上でそれぞれ独立したセクションとして残ります。`routeGroups: "flatten"` を指定すると、そのグループ化も外れて子ページが親の階層へ直接繰り上がります。`false` にすると Route Group 自体を無効化し、`(name)` を通常のディレクトリ名として扱います。
+
 ## ページのタイトルを制御する
 
 Markdown の先頭見出しは、そのままページタイトルになります。検索結果やナビゲーション用に別のタイトルを指定したい場合はメタデータを追加します。
