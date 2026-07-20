@@ -1,7 +1,8 @@
 import posix from "node:path/posix";
 import type { Element, Root } from "hast";
 import { visit } from "unist-util-visit";
-import { buildRoute, filePathToSegments } from "../../core/routes.js";
+import type { RouteGroupsMode } from "../../core/routes.js";
+import { buildRoute, filePathToRouteSegments } from "../../core/routes.js";
 
 export interface LinkRewriteContext {
   /** Current file's path relative to its collection's directory, forward-slash separated (e.g. "guides/configuration.md"). */
@@ -14,6 +15,8 @@ export interface LinkRewriteContext {
   trailingSlash: boolean;
   /** Whether numeric ordering prefixes are stripped when resolving `.md` links (ORDER-PREFIX §18, §21). */
   numericPrefixes?: boolean;
+  /** Whether `(group)` directories are omitted when resolving `.md` links (ROUTE-GROUPS §9, §18). Both modes omit from the URL, so only `false` (disabled) changes link resolution. */
+  routeGroups?: RouteGroupsMode;
 }
 
 // Matches a relative (non-absolute, non-scheme, non-anchor-only) link ending in .md/.markdown,
@@ -33,7 +36,10 @@ export function rewriteMarkdownLinkHref(href: string, ctx: LinkRewriteContext): 
     // Leave the href untouched; link validation (a later phase) reports it.
     return undefined;
   }
-  const segments = filePathToSegments(resolved, { numericPrefixes: ctx.numericPrefixes });
+  const segments = filePathToRouteSegments(resolved, {
+    numericPrefixes: ctx.numericPrefixes,
+    routeGroups: ctx.routeGroups,
+  });
   const route = buildRoute(segments, {
     basePath: ctx.basePath,
     localePrefix: ctx.localePrefix,

@@ -1253,6 +1253,20 @@ URL:
 
 両者は一致する必要がない。
 
+## 28.4 Route Group
+
+`(` `)` で囲んだディレクトリ名は URL に現れない。既定（`routeGroups: "url"`）ではナビゲーション上は通常のディレクトリと同様に Section / Group を構成するが、`routeGroups: "flatten"` を選ぶとナビゲーション上のコンテナも作らず、ファイルシステム上にのみ存在する。詳細は [ROUTE-GROUPS](./04-ROUTE-GROUPS.md) を参照。
+
+```text
+docs/en-us/makit/(marketing)/about.md
+```
+
+生成 URL:
+
+```text
+/en-us/makit/about/
+```
+
 ---
 
 # 29. ページ ID

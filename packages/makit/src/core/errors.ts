@@ -18,6 +18,7 @@ export type MakitErrorCode =
   | "duplicate-collection-path"
   | "empty-name-after-order-prefix"
   | "order-prefix-out-of-range"
+  | "empty-name-in-route-group"
   | "duplicate-normalized-directory"
   | "front-matter-not-supported"
   | "front-matter-conflicts-with-metadata"

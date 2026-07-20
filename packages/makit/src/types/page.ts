@@ -62,7 +62,12 @@ export interface GeneratedPage {
   route: string;
   /** Full URL path segments below the locale prefix (collection prefix + slug). */
   segments: string[];
-  /** File-path-derived segments relative to the collection dir — drives auto navigation (spec §27). Internal. */
+  /**
+   * File-path-derived segments relative to the collection dir — drives auto
+   * navigation (spec §27). Unlike `segments`, route-group directories
+   * (`(marketing)`) are kept (unwrapped) here so they still form a
+   * navigation tree node (ROUTE-GROUPS §3). Internal.
+   */
   pathSegments: string[];
   /** URL-facing locale this page is served under (e.g. "ja-jp"). */
   locale: string;

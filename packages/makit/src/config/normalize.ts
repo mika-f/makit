@@ -35,6 +35,14 @@ export function normalizeLocaleForUrl(locale: string): string {
   return locale.toLowerCase();
 }
 
+/** Normalizes `navigation.auto.routeGroups`: `true`/`undefined` -> `"url"` (ROUTE-GROUPS §9). */
+export function normalizeRouteGroups(
+  routeGroups: boolean | "url" | "flatten" | undefined,
+): "url" | "flatten" | false {
+  if (routeGroups === undefined || routeGroups === true) return "url";
+  return routeGroups;
+}
+
 interface ResolveContext {
   root: string;
   configPath: string;
@@ -182,6 +190,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       },
       auto: {
         numericPrefixes: parsed.navigation?.auto?.numericPrefixes ?? true,
+        routeGroups: normalizeRouteGroups(parsed.navigation?.auto?.routeGroups),
         unorderedPosition: parsed.navigation?.auto?.unorderedPosition ?? "last",
       },
     },

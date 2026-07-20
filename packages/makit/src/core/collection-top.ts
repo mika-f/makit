@@ -53,7 +53,12 @@ export function synthesizeCollectionTopPages(
       const localePages = pages.filter(
         (page) => page.locale === locale.urlLocale && page.collectionId === collection.id,
       );
-      const hasRealTop = localePages.some((page) => page.pathSegments.length === 0);
+      // Compares against the URL, not `pathSegments` (which keeps route-group
+      // directories) — a page nested inside a route group can still resolve
+      // to the collection root (ROUTE-GROUPS §4).
+      const hasRealTop = localePages.some(
+        (page) => page.segments.length === collection.pathSegments.length,
+      );
       if (hasRealTop) continue;
 
       const route = buildRoute([], {

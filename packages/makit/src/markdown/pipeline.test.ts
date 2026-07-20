@@ -139,6 +139,35 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     expect(result.html).toContain('href="/01-installation/"');
   });
 
+  it("omits a route group when rewriting links to a page inside it (ROUTE-GROUPS §4)", async () => {
+    const result = await render("[About](./(marketing)/about.md)", makeConfig(), "index.md");
+    expect(result.html).toContain('href="/about/"');
+  });
+
+  it("resolves a link from inside a route group to a sibling outside it", async () => {
+    const result = await render(
+      "[Home](../index.md)",
+      makeConfig(),
+      "(marketing)/about.md",
+    );
+    expect(result.html).toContain('href="/"');
+  });
+
+  it("keeps the route group literal in rewritten links when routeGroups is disabled", async () => {
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: false } },
+    });
+    const processor = createMarkdownProcessor(config);
+    const result = await processMarkdown(
+      processor,
+      "[About](./(marketing)/about.md)",
+      config,
+      { currentRelativePath: "index.md" },
+    );
+    expect(result.html).toContain('href="/(marketing)/about/"');
+  });
+
   it("prefixes rewritten links with the locale when i18n is enabled", async () => {
     const config = makeConfig({
       title: "Test",

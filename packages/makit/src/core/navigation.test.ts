@@ -296,6 +296,154 @@ describe("generateNavigation (auto mode)", () => {
     expect(titles(navigation)).toEqual(["A", "B"]);
   });
 
+  it("omits a route group from the URL but keeps it as a nav section (ROUTE-GROUPS §3, §4)", async () => {
+    await write("docs/(marketing)/about.md", "# About");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const page = pages.find((p) => p.pageId === "marketing.about");
+    expect(page?.route).toBe("/about/");
+
+    const navigation = await navFor(pages, config, collections);
+    const section = navigation.find((n): n is ResolvedNavContainerNode => n.type === "section");
+    expect(section?.id).toBe("marketing");
+    expect(section?.title).toBe("Marketing");
+    expect(titles(section?.items ?? [])).toEqual(["About"]);
+  });
+
+  it("resolves a route group's own index page to the collection root", async () => {
+    await write("docs/(marketing)/index.md", "# Home");
+    const config = makeConfig({ title: "Test" });
+    const { pages } = await buildPagesForTest(config);
+
+    const page = pages.find((p) => p.pageId === "marketing");
+    expect(page?.route).toBe("/");
+  });
+
+  it("applies category.makit.ts placed inside a route group directory", async () => {
+    await write("docs/(marketing)/about.md", "# About");
+    await writeCategory("docs/(marketing)", { title: "Marketing Pages", order: 1 });
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const navigation = await navFor(pages, config, collections);
+    const section = navigation.find((n): n is ResolvedNavContainerNode => n.type === "section");
+    expect(section?.title).toBe("Marketing Pages");
+  });
+
+  it("keeps sibling groups distinct in the nav tree while still detecting a real URL collision", async () => {
+    await write("docs/(marketing)/index.md", "# Marketing Home");
+    await write("docs/(product)/index.md", "# Product Home");
+    const config = makeConfig({ title: "Test" });
+
+    // Both groups resolve their index page to the collection root, which is
+    // a genuine URL collision (spec §15.3) — route groups don't bypass it.
+    await expect(buildPagesForTest(config)).rejects.toThrow(/duplicate-route|Duplicate route/);
+  });
+
+  it("keeps sibling groups as separate nav sections", async () => {
+    await write("docs/(marketing)/about.md", "# Marketing About");
+    await write("docs/(product)/pricing.md", "# Product Pricing");
+    const config = makeConfig({ title: "Test" });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    expect(pages.map((p) => p.route).sort()).toEqual(["/about/", "/pricing/"]);
+
+    const navigation = await navFor(pages, config, collections);
+    const sections = navigation.filter(
+      (n): n is ResolvedNavContainerNode => n.type === "section",
+    );
+    expect(sections.map((s) => s.id).sort()).toEqual(["marketing", "product"]);
+  });
+
+  it("treats route groups as literal directory names when routeGroups is disabled", async () => {
+    await write("docs/(marketing)/about.md", "# About");
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: false } },
+    });
+    const { pages } = await buildPagesForTest(config);
+
+    const page = pages.find((p) => p.pageId === "(marketing).about");
+    expect(page?.route).toBe("/(marketing)/about/");
+  });
+
+  it('omits the group from the URL and the nav tree under routeGroups: "flatten" (ROUTE-GROUPS §9)', async () => {
+    await write("docs/(marketing)/about.md", "# About");
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: "flatten" } },
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const page = pages.find((p) => p.pageId === "about");
+    expect(page?.route).toBe("/about/");
+
+    // No "marketing" section — the page is promoted straight to the top level.
+    const navigation = await navFor(pages, config, collections);
+    expect(navigation.some((n) => n.type === "section")).toBe(false);
+    expect(navigation).toMatchObject([{ type: "page", title: "About", href: "/about/" }]);
+  });
+
+  it('flattens a route group nested under an ordinary directory under "flatten" mode', async () => {
+    await write("docs/guides/(internal)/setup.md", "# Setup");
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: "flatten" } },
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const page = pages.find((p) => p.pageId === "guides.setup");
+    expect(page?.route).toBe("/guides/setup/");
+
+    const navigation = await navFor(pages, config, collections);
+    const section = navigation.find((n): n is ResolvedNavContainerNode => n.type === "section");
+    expect(section?.id).toBe("guides");
+    // "setup" sits directly under "guides" — no intermediate "internal" group.
+    expect(section?.items.every((n) => n.type !== "group")).toBe(true);
+    expect(titles(section?.items ?? [])).toEqual(["Setup"]);
+  });
+
+  it('still detects a colliding directory identity between two flattened groups under "flatten" mode', async () => {
+    // The pages themselves don't collide (different URLs)...
+    await write("docs/(a)/shared/one.md", "# One");
+    await write("docs/(b)/shared/two.md", "# Two");
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: "flatten" } },
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+    expect(pages.map((p) => p.route).sort()).toEqual(["/shared/one/", "/shared/two/"]);
+
+    // ...but both directories named "shared" normalize to the same nav
+    // dirKey once their (a)/(b) parents are flattened away, which would
+    // otherwise silently merge two distinct directories' metadata.
+    await expect(navFor(pages, config, collections)).rejects.toThrow(
+      /duplicate-normalized-directory|both normalize to/,
+    );
+  });
+
+  it('ignores category.makit.ts inside a "flatten"-mode route group with a warning', async () => {
+    await write("docs/(marketing)/about.md", "# About");
+    await writeCategory("docs/(marketing)", { title: "Marketing Pages" });
+    const config = makeConfig({
+      title: "Test",
+      navigation: { auto: { routeGroups: "flatten" } },
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const { navigation, diagnostics } = await generateNavigation(
+      pages,
+      config.i18n.locales[0]!,
+      config,
+      collections[0]!,
+      collections,
+      createMetadataJiti(),
+    );
+    expect(navigation.some((n) => n.type === "section" || n.type === "group")).toBe(false);
+    expect(diagnostics.some((d) => d.code === "route-group-category-ignored")).toBe(true);
+  });
+
   it("uses navigation.title as a label override", async () => {
     await write("docs/getting-started.md", "# Getting Started");
     await writeMeta("docs/getting-started.md", {

@@ -12,8 +12,8 @@ import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
 import { localizeValue } from "./localize.js";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "./nav-nodes.js";
-import { parseOrderedSegment } from "./order-prefix.js";
-import { buildRoute } from "./routes.js";
+import type { ParsedSegment, RouteGroupsMode } from "./routes.js";
+import { buildRoute, parseSegmentName } from "./routes.js";
 import { humanizeSlug } from "./text.js";
 import type { Diagnostic } from "./validation.js";
 
@@ -177,13 +177,29 @@ interface CategoryEntry {
   metadataPath: string;
 }
 
-/** Normalizes a raw (possibly prefixed) directory path into the tree's dirKey (ORDER-PREFIX §4, §12). */
-function normalizeDirKey(rawDirPath: string, numericPrefixes: boolean, sourcePath: string): string {
+/** Drops segments that are route groups under `"flatten"` mode (ROUTE-GROUPS §9) — they form no tree node. */
+function dropFlattenedSegments(
+  parts: readonly ParsedSegment[],
+  routeGroups: RouteGroupsMode,
+): ParsedSegment[] {
+  return routeGroups === "flatten" ? parts.filter((part) => !part.isRouteGroup) : [...parts];
+}
+
+/**
+ * Normalizes a raw (possibly prefixed, possibly route-grouped) directory
+ * path into the tree's dirKey (ORDER-PREFIX §4, §12; ROUTE-GROUPS §7, §9).
+ */
+function normalizeDirKey(
+  rawDirPath: string,
+  numericPrefixes: boolean,
+  routeGroups: RouteGroupsMode,
+  sourcePath: string,
+): string {
   const rawParts = rawDirPath.split("/").filter((part) => part.length > 0);
-  const parts = numericPrefixes
-    ? rawParts.map((part) => parseOrderedSegment(part, sourcePath).name)
-    : rawParts;
-  return parts.join("/");
+  const parsed = rawParts.map((part) => parseSegmentName(part, sourcePath, { numericPrefixes, routeGroups }));
+  return dropFlattenedSegments(parsed, routeGroups)
+    .map((part) => part.name)
+    .join("/");
 }
 
 async function scanCategories(
@@ -192,6 +208,7 @@ async function scanCategories(
   jiti: Jiti,
   metadataCache: MetadataCache | undefined,
   numericPrefixes: boolean,
+  routeGroups: RouteGroupsMode,
 ): Promise<{ byDir: Map<string, CategoryEntry>; diagnostics: Diagnostic[] }> {
   const byDir = new Map<string, CategoryEntry>();
   const diagnostics: Diagnostic[] = [];
@@ -207,7 +224,24 @@ async function scanCategories(
     });
     diagnostics.push(...metadataLoadDiagnostics(loaded));
     const rawDirPath = relPath.split("/").slice(0, -1).join("/");
-    const dirKey = normalizeDirKey(rawDirPath, numericPrefixes, metadataPath);
+    const rawParts = rawDirPath.split("/").filter((part) => part.length > 0);
+    const ownName = rawParts[rawParts.length - 1];
+    const ownParsed =
+      ownName !== undefined
+        ? parseSegmentName(ownName, metadataPath, { numericPrefixes, routeGroups })
+        : undefined;
+    if (routeGroups === "flatten" && ownParsed?.isRouteGroup) {
+      // The directory itself forms no tree node under "flatten" mode, so
+      // there is nothing for this category to attach to (ROUTE-GROUPS §9).
+      diagnostics.push({
+        code: "route-group-category-ignored",
+        message:
+          `"${relPath}" (${metadataPath}) is inside a route group with routeGroups: "flatten", ` +
+          "which has no navigation node to attach to. This category.makit.ts is ignored.",
+      });
+      continue;
+    }
+    const dirKey = normalizeDirKey(rawDirPath, numericPrefixes, routeGroups, metadataPath);
     byDir.set(dirKey, { metadata: loaded.value, metadataPath });
   }
   return { byDir, diagnostics };
@@ -218,15 +252,18 @@ async function scanCategories(
  * numeric ordering prefix on its own (deepest) segment, for use as a
  * directory's navigation order fallback (ORDER-PREFIX §12, §19). Two raw
  * directory paths that normalize to the same dirKey are a build error
- * (ORDER-PREFIX §22) — they would otherwise silently merge into one
- * navigation node.
+ * (ORDER-PREFIX §22; ROUTE-GROUPS §7) — they would otherwise silently merge
+ * into one navigation node. Runs whenever either normalization affects
+ * directory names, so a bare `foo` and a route group `(foo)` colliding is
+ * still caught even with `numericPrefixes` disabled.
  */
 async function scanDirectoryOrders(
   dir: string,
   numericPrefixes: boolean,
+  routeGroups: RouteGroupsMode,
 ): Promise<Map<string, number>> {
   const orders = new Map<string, number>();
-  if (!numericPrefixes || !existsSync(dir)) return orders;
+  if ((!numericPrefixes && routeGroups === false) || !existsSync(dir)) return orders;
 
   const rawDirPaths: string[] = await fg("**", { cwd: dir, onlyDirectories: true, dot: false });
   const seenRawByKey = new Map<string, string>();
@@ -234,21 +271,34 @@ async function scanDirectoryOrders(
   for (const rawDirPath of rawDirPaths.sort()) {
     const sourcePath = join(dir, rawDirPath);
     const rawParts = rawDirPath.split("/").filter((part) => part.length > 0);
-    const parsedParts = rawParts.map((part) => parseOrderedSegment(part, sourcePath));
-    const dirKey = parsedParts.map((part) => part.name).join("/");
+    const parsedParts = rawParts.map((part) =>
+      parseSegmentName(part, sourcePath, { numericPrefixes, routeGroups }),
+    );
+
+    // A directory flattened away under "flatten" mode forms no container of
+    // its own — it's a transparent pass-through whose children surface under
+    // the same dirKey as its nearest real ancestor, so it isn't a competing
+    // node and must not participate in the collision check below (its
+    // descendants are still visited as their own entries in this walk).
+    const own = parsedParts[parsedParts.length - 1];
+    if (own?.isRouteGroup && routeGroups === "flatten") continue;
+
+    const dirKey = dropFlattenedSegments(parsedParts, routeGroups)
+      .map((part) => part.name)
+      .join("/");
 
     const existingRaw = seenRawByKey.get(dirKey);
     if (existingRaw !== undefined && existingRaw !== rawDirPath) {
       throw new MakitError(
         "duplicate-normalized-directory",
         `Directories "${existingRaw}" and "${rawDirPath}" under "${dir}" both normalize to ` +
-          `"${dirKey}" (ORDER-PREFIX §22).`,
+          `"${dirKey}".`,
       );
     }
     seenRawByKey.set(dirKey, rawDirPath);
 
-    const ownOrder = parsedParts[parsedParts.length - 1]?.order;
-    if (ownOrder !== undefined) orders.set(dirKey, ownOrder);
+    if (!numericPrefixes) continue;
+    if (own?.order !== undefined) orders.set(dirKey, own.order);
   }
 
   return orders;
@@ -438,6 +488,7 @@ export async function resolveAutoNavigation(
     ];
 
   const numericPrefixes = ctx.config.navigation.auto.numericPrefixes;
+  const routeGroups = ctx.config.navigation.auto.routeGroups;
   const { byDir: categories, diagnostics } = collectionLocale
     ? await scanCategories(
         collectionLocale.dir,
@@ -445,10 +496,11 @@ export async function resolveAutoNavigation(
         ctx.jiti,
         ctx.metadataCache,
         numericPrefixes,
+        routeGroups,
       )
     : { byDir: new Map<string, CategoryEntry>(), diagnostics: [] as Diagnostic[] };
   const directoryOrders = collectionLocale
-    ? await scanDirectoryOrders(collectionLocale.dir, numericPrefixes)
+    ? await scanDirectoryOrders(collectionLocale.dir, numericPrefixes, routeGroups)
     : new Map<string, number>();
   const autoCtx: AutoContext = { ...ctx, categories, directoryOrders, diagnostics: [] };
 

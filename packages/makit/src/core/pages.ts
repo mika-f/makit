@@ -21,6 +21,7 @@ import {
   detectDuplicatePageIds,
   detectDuplicateRoutes,
   fileNameOrder,
+  filePathToRouteSegments,
   filePathToSegments,
   resolveSlugSegments,
 } from "./routes.js";
@@ -122,9 +123,17 @@ export async function buildPage(
   );
 
   const numericPrefixes = config.navigation.auto.numericPrefixes;
-  const pathSegments = filePathToSegments(file.relativePath, { numericPrefixes });
+  const routeGroups = config.navigation.auto.routeGroups;
+  // Nav-facing: route-group directories keep their unwrapped name so they
+  // still form a navigation tree node (ROUTE-GROUPS §3).
+  const pathSegments = filePathToSegments(file.relativePath, { numericPrefixes, routeGroups });
   const filenameOrder = fileNameOrder(file.relativePath, { numericPrefixes });
-  const slugSegments = resolveSlugSegments(metadata.slug, pathSegments);
+  // URL-facing: route-group directories are entirely omitted (ROUTE-GROUPS §4).
+  const routeSegments = filePathToRouteSegments(file.relativePath, {
+    numericPrefixes,
+    routeGroups,
+  });
+  const slugSegments = resolveSlugSegments(metadata.slug, routeSegments);
   // Full URL segments below the locale prefix: collection path, then slug (spec §28.1).
   const segments = [...file.collection.pathSegments, ...slugSegments];
   const localePrefix = config.i18n.enabled ? file.locale.urlLocale : undefined;

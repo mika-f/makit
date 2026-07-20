@@ -141,6 +141,33 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts navigation.auto.routeGroups as a boolean (ROUTE-GROUPS §18)", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      navigation: { auto: { routeGroups: false } },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it.each(["url", "flatten"])(
+    "accepts navigation.auto.routeGroups: %s (ROUTE-GROUPS §9, §18)",
+    (routeGroups) => {
+      const result = makitConfigSchema.safeParse({
+        title: "My Docs",
+        navigation: { auto: { routeGroups } },
+      });
+      expect(result.success).toBe(true);
+    },
+  );
+
+  it("rejects an invalid navigation.auto.routeGroups value", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      navigation: { auto: { routeGroups: "everything" } },
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an invalid navigation.auto.unorderedPosition", () => {
     const result = makitConfigSchema.safeParse({
       title: "My Docs",

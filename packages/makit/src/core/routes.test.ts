@@ -6,6 +6,7 @@ import {
   detectDuplicatePageIds,
   detectDuplicateRoutes,
   fileNameOrder,
+  filePathToRouteSegments,
   filePathToSegments,
   resolveSlugSegments,
 } from "./routes.js";
@@ -53,6 +54,90 @@ describe("filePathToSegments", () => {
     expect(
       filePathToSegments("02-getting-started/01-installation.md", { numericPrefixes: false }),
     ).toEqual(["02-getting-started", "01-installation"]);
+  });
+
+  it("keeps a route group's unwrapped name as a segment (ROUTE-GROUPS §3)", () => {
+    expect(filePathToSegments("(marketing)/about.md")).toEqual(["marketing", "about"]);
+  });
+
+  it("keeps nested route groups unwrapped", () => {
+    expect(filePathToSegments("(marketing)/(landing)/about.md")).toEqual([
+      "marketing",
+      "landing",
+      "about",
+    ]);
+  });
+
+  it("does not treat a route-group-shaped filename as a group", () => {
+    expect(filePathToSegments("guides/(configuration).md")).toEqual(["guides", "(configuration)"]);
+  });
+
+  it("leaves route groups wrapped when routeGroups is disabled", () => {
+    expect(filePathToSegments("(marketing)/about.md", { routeGroups: false })).toEqual([
+      "(marketing)",
+      "about",
+    ]);
+  });
+
+  it("combines an ordering prefix and route group on the same segment", () => {
+    expect(filePathToSegments("01-(marketing)/about.md")).toEqual(["marketing", "about"]);
+  });
+
+  it('omits a route group entirely under routeGroups: "flatten" (ROUTE-GROUPS §9)', () => {
+    expect(filePathToSegments("(marketing)/about.md", { routeGroups: "flatten" })).toEqual([
+      "about",
+    ]);
+  });
+
+  it('promotes a group\'s children up to the grandparent under "flatten"', () => {
+    expect(
+      filePathToSegments("guides/(internal)/setup.md", { routeGroups: "flatten" }),
+    ).toEqual(["guides", "setup"]);
+  });
+
+  it('resolves a "flatten"-mode group\'s own index page to its parent', () => {
+    expect(filePathToSegments("(marketing)/index.md", { routeGroups: "flatten" })).toEqual([]);
+  });
+});
+
+describe("filePathToRouteSegments", () => {
+  it("matches filePathToSegments when there are no route groups", () => {
+    expect(filePathToRouteSegments("guides/configuration.md")).toEqual([
+      "guides",
+      "configuration",
+    ]);
+  });
+
+  it("omits a route group entirely from the URL (ROUTE-GROUPS §4)", () => {
+    expect(filePathToRouteSegments("(marketing)/about.md")).toEqual(["about"]);
+  });
+
+  it("omits multiple nested route groups", () => {
+    expect(filePathToRouteSegments("(marketing)/(landing)/about.md")).toEqual(["about"]);
+  });
+
+  it("resolves to the root when a group's index page has no other segments", () => {
+    expect(filePathToRouteSegments("(marketing)/index.md")).toEqual([]);
+  });
+
+  it("does not omit a route-group-shaped filename", () => {
+    expect(filePathToRouteSegments("guides/(configuration).md")).toEqual([
+      "guides",
+      "(configuration)",
+    ]);
+  });
+
+  it("keeps route groups as literal segments when routeGroups is disabled", () => {
+    expect(filePathToRouteSegments("(marketing)/about.md", { routeGroups: false })).toEqual([
+      "(marketing)",
+      "about",
+    ]);
+  });
+
+  it('omits the group from the URL the same way under "flatten" mode', () => {
+    expect(filePathToRouteSegments("(marketing)/about.md", { routeGroups: "flatten" })).toEqual([
+      "about",
+    ]);
   });
 });
 
