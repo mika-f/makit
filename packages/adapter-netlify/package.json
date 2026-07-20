@@ -1,6 +1,6 @@
 {
   "name": "@natsuneko-laboratory/makit-adapter-netlify",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "repository": "https://github.com/mika-f/makit.git",
   "publishConfig": {
     "access": "public"
