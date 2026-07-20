@@ -106,6 +106,7 @@ export async function processMarkdown(
     collectionSegments: context.collectionSegments,
     trailingSlash: config.build.trailingSlash,
     numericPrefixes: config.navigation.auto.numericPrefixes,
+    routeGroups: config.navigation.auto.routeGroups,
   } satisfies LinkRewriteContext;
 
   const result = await processor.process(file);

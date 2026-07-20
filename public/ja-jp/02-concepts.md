@@ -104,3 +104,15 @@ docs/02-guides/01-installation.md
 ```
 
 順番を変えても URL やページ ID が変わらないので、サイトを整理しやすくなります。
+
+`(marketing)` のように括弧で囲んだディレクトリは、さらに踏み込んで URL からまるごと除外されます。既定では、サイドバー上には独立したセクションとして残ります。
+
+```text
+docs/(marketing)/about.md
+```
+
+```text
+/about/
+```
+
+サイドバー上のグループ化も外したい場合は、[コンテンツの整理](./03-guides/content-structure.md)を参照してください。

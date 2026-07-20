@@ -145,6 +145,7 @@ export interface ResolvedNavigationConfig {
   };
   auto: {
     numericPrefixes: boolean;
+    routeGroups: "url" | "flatten" | false;
     unorderedPosition: UnorderedPosition;
   };
 }

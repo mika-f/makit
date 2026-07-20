@@ -167,6 +167,7 @@ const paginationConfigSchema = z.strictObject({
 
 const autoNavigationConfigSchema = z.strictObject({
   numericPrefixes: z.boolean().optional(),
+  routeGroups: z.union([z.boolean(), z.enum(["url", "flatten"])]).optional(),
   unorderedPosition: z.enum(["first", "last"]).optional(),
 });
 
@@ -354,6 +355,7 @@ const warningCodeSchema = z.enum([
   "out-of-project-import",
   "slow-metadata-eval",
   "duplicate-navigation-order",
+  "route-group-category-ignored",
 ]);
 
 const failOnCodeSchema = z.union([

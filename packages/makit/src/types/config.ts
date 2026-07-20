@@ -234,6 +234,21 @@ export interface AutoNavigationConfig {
    */
   numericPrefixes?: boolean;
   /**
+   * How a `(group)`-wrapped directory is handled (ROUTE-GROUPS §2, §9):
+   * - `"url"` (default, same as `true`): never contributes a segment to
+   *   the URL, but still forms a navigation tree node under its unwrapped
+   *   name.
+   * - `"flatten"`: also omitted from the navigation tree — its children
+   *   are promoted directly into its parent's level. A `category.makit.ts`
+   *   inside such a directory has no node to attach to and is ignored
+   *   with a `route-group-category-ignored` warning.
+   * - `false`: route-group syntax is disabled; `(group)` is a literal
+   *   directory name.
+   *
+   * @default "url"
+   */
+  routeGroups?: boolean | "url" | "flatten";
+  /**
    * Where items without a numeric prefix are placed relative to prefixed
    * siblings (ORDER-PREFIX §9).
    *
@@ -443,7 +458,8 @@ export type MakitWarningCode =
   | "slow-metadata-eval"
   | "front-matter-too-deep"
   | "front-matter-invalid-value"
-  | "duplicate-navigation-order";
+  | "duplicate-navigation-order"
+  | "route-group-category-ignored";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,

@@ -148,7 +148,7 @@ export default defineConfig({
   home: { layout: "portal", featuredCollections: ["api"] },
   navigation: {
     pagination: { enabled: true, crossSection: false },
-    auto: { numericPrefixes: true, unorderedPosition: "last" },
+    auto: { numericPrefixes: true, routeGroups: "url", unorderedPosition: "last" },
     global: [{ items: [{ title: "API", collection: "api" }] }],
   },
 });
@@ -163,6 +163,7 @@ export default defineConfig({
 | `navigation.global`                 | サイト共通リンク。項目は `href` または `collection` のどちらか一方を持てます。                                                                                     |
 | `navigation.pagination`             | 前後ページリンク。`enabled` と、セクションをまたぐ `crossSection` は既定で `true`。                                                                                |
 | `navigation.auto.numericPrefixes`   | `01-` のような接頭辞で自動順序を制御するか。既定 `true`。                                                                                                          |
+| `navigation.auto.routeGroups`       | `(marketing)` のような括弧付きディレクトリを URL から除外するか。既定 `"url"` はサイドバー上のセクションとして残し、`"flatten"` はそのセクションも外して子ページを親の階層へ繰り上げ、`false` は Route Group 自体を無効化します。詳細は[コンテンツの整理](../03-guides/content-structure.md)を参照してください。 |
 | `navigation.auto.unorderedPosition` | 接頭辞なしを `first` / `last`（既定）に置きます。                                                                                                                  |
 
 ページ、カテゴリ、Collection、手動ナビゲーションの詳細は[メタデータ API](./metadata.md)を参照してください。

@@ -69,6 +69,17 @@ describe("synthesizeCollectionTopPages (spec §34)", () => {
     expect(synthesizeCollectionTopPages(pages, config, collections)).toEqual([]);
   });
 
+  it("does nothing when the real index.md sits inside a route group (ROUTE-GROUPS §4)", async () => {
+    await write("docs/makit/(marketing)/index.md", "# Makit\n");
+    const config = makeConfig({
+      title: "Docs",
+      collections: [{ id: "makit", title: "Makit", path: "/makit" }],
+    });
+    const { pages, collections } = await buildPagesForTest(config);
+
+    expect(synthesizeCollectionTopPages(pages, config, collections)).toEqual([]);
+  });
+
   it("does nothing for the implicit default collection", async () => {
     await write("docs/guides/configuration.md", "# Configuration");
     const config = makeConfig({ title: "Docs" });

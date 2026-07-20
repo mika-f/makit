@@ -60,6 +60,18 @@ describe("resolveHome — default (no explicit layout, spec §33)", () => {
     expect(home).toEqual({ kind: "page", collectionId: "makit", pageId: "index" });
   });
 
+  it("aliases the root to a single collection's top page even when it sits inside a route group (ROUTE-GROUPS §4)", async () => {
+    await write("docs/makit/(marketing)/index.md", "# Getting Started");
+    const config = makeConfig({
+      title: "Docs",
+      collections: [{ id: "makit", title: "Makit", path: "/makit" }],
+    });
+    const { pages, collections } = await buildWithTops(config);
+
+    const home = resolveHome(config.i18n.locales[0]!, pages, config, collections);
+    expect(home).toEqual({ kind: "page", collectionId: "makit", pageId: "marketing" });
+  });
+
   it("synthesizes a portal listing every visible collection when there are several", async () => {
     await write("docs/makit/index.md", "# Makit\n");
     await write("docs/enduroq/index.md", "# Enduroq\n");

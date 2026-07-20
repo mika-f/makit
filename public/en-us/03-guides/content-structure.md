@@ -19,6 +19,22 @@ docs/
 
 Numeric prefixes only determine sidebar order and are removed from URLs. Files without a prefix are placed last within the same directory by default.
 
+## Route groups
+
+Wrap a directory name in parentheses — `(name)` — to organize files without adding a URL segment, similar to route groups in Next.js.
+
+```text
+docs/
+├── index.md
+├── (marketing)/
+│   ├── about.md
+│   └── pricing.md
+└── (product)/
+    └── overview.md
+```
+
+`docs/(marketing)/about.md` becomes `/about/`, not `/marketing/about/`. By default (`navigation.auto.routeGroups: "url"`), `(marketing)` and `(product)` still each form their own section in the sidebar. Set `routeGroups: "flatten"` to also drop that grouping and promote their pages straight into the parent level, or `false` to disable route groups entirely and treat `(name)` as a literal directory name.
+
 ## Control page titles
 
 The first Markdown heading becomes the page title. Add metadata to use a different title for search results or navigation.

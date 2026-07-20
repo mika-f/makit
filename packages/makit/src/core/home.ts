@@ -154,8 +154,12 @@ export function resolveHome(
   );
   if (visible.length === 1) {
     const only = visible[0]!;
+    // Compares against the URL, not `pathSegments` (which keeps route-group
+    // directories) — a page nested inside a route group can still resolve
+    // to the collection root (ROUTE-GROUPS §4).
     const topPage = localePages.find(
-      (page) => page.collectionId === only.id && page.pathSegments.length === 0,
+      (page) =>
+        page.collectionId === only.id && page.segments.length === only.pathSegments.length,
     );
     if (topPage) return { kind: "page", collectionId: only.id, pageId: topPage.pageId };
     return { kind: "existing" };

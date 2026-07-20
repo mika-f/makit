@@ -210,22 +210,45 @@ describe("resolveConfig defaults", () => {
     expect(resolved.seo.titleTemplate).toBe("%s :: Docs");
   });
 
-  it("defaults navigation.auto to numericPrefixes enabled and unorderedPosition last (ORDER-PREFIX §18)", () => {
+  it("defaults navigation.auto to numericPrefixes enabled, routeGroups \"url\", and unorderedPosition last (ORDER-PREFIX §18, ROUTE-GROUPS §9, §18)", () => {
     const resolved = resolveConfig({ title: "My Docs" }, ctx);
-    expect(resolved.navigation.auto).toEqual({ numericPrefixes: true, unorderedPosition: "last" });
+    expect(resolved.navigation.auto).toEqual({
+      numericPrefixes: true,
+      routeGroups: "url",
+      unorderedPosition: "last",
+    });
   });
 
   it("honors navigation.auto overrides", () => {
     const resolved = resolveConfig(
       {
         title: "My Docs",
-        navigation: { auto: { numericPrefixes: false, unorderedPosition: "first" } },
+        navigation: {
+          auto: { numericPrefixes: false, routeGroups: false, unorderedPosition: "first" },
+        },
       },
       ctx,
     );
     expect(resolved.navigation.auto).toEqual({
       numericPrefixes: false,
+      routeGroups: false,
       unorderedPosition: "first",
     });
+  });
+
+  it("normalizes navigation.auto.routeGroups: true to \"url\"", () => {
+    const resolved = resolveConfig(
+      { title: "My Docs", navigation: { auto: { routeGroups: true } } },
+      ctx,
+    );
+    expect(resolved.navigation.auto.routeGroups).toBe("url");
+  });
+
+  it("keeps navigation.auto.routeGroups: \"flatten\" as-is", () => {
+    const resolved = resolveConfig(
+      { title: "My Docs", navigation: { auto: { routeGroups: "flatten" } } },
+      ctx,
+    );
+    expect(resolved.navigation.auto.routeGroups).toBe("flatten");
   });
 });
