@@ -1,10 +1,11 @@
 import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import type { ResolvedConfig } from "../../types/resolved-config.js";
 import { atomicWriteFile } from "../atomic-write.js";
 import { commonAncestorDir } from "../common-ancestor.js";
 import {
+  ALIASED_RUNTIME_PACKAGES,
   RUNTIME_PACKAGES,
   linkRuntimeDependencies,
   resolvePackageRoot,
@@ -18,6 +19,7 @@ import {
   rootLayoutTemplate,
   rootPageTemplate,
   slugPageTemplate,
+  themeModuleTemplate,
 } from "./templates.js";
 
 const writeText = atomicWriteFile;
@@ -27,9 +29,40 @@ function customStyleImportPath(
   stylesDir: string,
   styleEntry: string,
 ): string {
-  const absolute = join(config.root, styleEntry);
+  return styleImportPath(stylesDir, join(config.root, styleEntry));
+}
+
+/** `@import` specifier for an absolute CSS path, relative to `.makit/styles`. */
+function styleImportPath(stylesDir: string, absolute: string): string {
   const rel = relative(stylesDir, absolute).split(sep).join("/");
   return rel.startsWith(".") ? rel : `./${rel}`;
+}
+
+/**
+ * Turbopack alias targets for the packages a theme component may import
+ * (THEME §11). Paths are relative to `.makit/`, which is the Turbopack
+ * project directory an alias target is resolved against.
+ */
+function runtimeResolveAlias(makitDir: string): Record<string, string> {
+  const toTarget = (absolute: string): string => relative(makitDir, absolute).split(sep).join("/");
+
+  const alias: Record<string, string> = {};
+  for (const pkgName of ALIASED_RUNTIME_PACKAGES) {
+    const root = toTarget(resolvePackageRoot(pkgName));
+    alias[pkgName] = root;
+    // Subpath imports (`next/link`, `react/jsx-runtime`, ...) mirror the
+    // package's own layout, so one wildcard covers all of them.
+    alias[`${pkgName}/*`] = `${root}/*`;
+  }
+
+  // makit-runtime's subpaths do not mirror its layout (`./slot-names` lives at
+  // `dist/theme/slot-names.mjs`), so its one subpath is aliased explicitly
+  // instead of through a wildcard.
+  const runtimeRoot = toTarget(resolvePackageRoot("@natsuneko-laboratory/makit-runtime"));
+  alias["@natsuneko-laboratory/makit-runtime"] = runtimeRoot;
+  alias["@natsuneko-laboratory/makit-runtime/slot-names"] =
+    `${runtimeRoot}/dist/theme/slot-names.mjs`;
+  return alias;
 }
 
 /**
@@ -59,11 +92,24 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
   });
 
   const runtimePackageRoots = RUNTIME_PACKAGES.map((pkgName) => resolvePackageRoot(pkgName));
-  const turbopackRoot = commonAncestorDir([config.root, ...runtimePackageRoots]);
+  // Theme packages (and any slot file living outside the project) have to be
+  // inside the Turbopack root too, or Turbopack misdetects the workspace root
+  // (THEME §17).
+  const themeRoots = [
+    ...config.theme.packageRoots,
+    ...Object.values(config.theme.slots)
+      .filter((slot) => slot && slot.filePath)
+      .map((slot) => dirname((slot as { filePath: string }).filePath)),
+  ];
+  const turbopackRoot = commonAncestorDir([config.root, ...runtimePackageRoots, ...themeRoots]);
 
-  await writeText(join(makitDir, "next.config.mjs"), nextConfigTemplate(config, turbopackRoot));
+  await writeText(
+    join(makitDir, "next.config.mjs"),
+    nextConfigTemplate(config, turbopackRoot, runtimeResolveAlias(makitDir)),
+  );
   await writeText(join(makitDir, "postcss.config.mjs"), postcssConfigTemplate());
 
+  await writeText(join(appDir, "theme.js"), themeModuleTemplate(config.theme, appDir));
   await writeText(join(appDir, "layout.js"), rootLayoutTemplate(config));
   await writeText(join(appDir, "not-found.js"), notFoundTemplate());
   // Only seeded when absent: in dev this file carries a per-regeneration
@@ -78,13 +124,13 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
     await writeText(join(appDir, "page.js"), rootPageTemplate());
     await writeText(
       join(appDir, "[locale]", "[[...slug]]", "page.js"),
-      slugPageTemplate("params.locale"),
+      slugPageTemplate("params.locale", "../../theme.js"),
     );
   } else {
     const singleLocale = config.i18n.locales[0]?.urlLocale ?? "en";
     await writeText(
       join(appDir, "[[...slug]]", "page.js"),
-      slugPageTemplate(JSON.stringify(singleLocale)),
+      slugPageTemplate(JSON.stringify(singleLocale), "../theme.js"),
     );
   }
 
@@ -94,9 +140,17 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
   const customStyleImports = config.styles.map((entry) =>
     customStyleImportPath(config, stylesDir, entry),
   );
+  const themeStyleImports = config.theme.styles.map((absolute) =>
+    styleImportPath(stylesDir, absolute),
+  );
   await writeText(
     join(stylesDir, "globals.css"),
-    globalsCssTemplate({ makitRuntimeDistPath, customStyleImports }),
+    globalsCssTemplate({
+      makitRuntimeDistPath,
+      customStyleImports,
+      themeSources: config.theme.tailwindSources,
+      themeStyleImports,
+    }),
   );
 
   const publicSrcDir = join(config.root, config.publicDir);

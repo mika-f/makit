@@ -70,20 +70,16 @@ function GlobalNav({ groups }: { groups: readonly GlobalNavigationGroup[] }) {
   );
 }
 
-export function Header({
-  header,
-  siteTitle,
-  homeHref,
-  actions,
-  globalNavigation,
-}: {
+export interface HeaderProps {
   header: HeaderData;
   siteTitle: string;
   homeHref: string;
   actions?: ReactNode;
   /** Takes over from `header.links` when provided and non-empty (spec §26). */
   globalNavigation?: readonly GlobalNavigationGroup[];
-}) {
+}
+
+export function Header({ header, siteTitle, homeHref, actions, globalNavigation }: HeaderProps) {
   const hasGlobalNav = (globalNavigation?.flatMap((group) => group.items).length ?? 0) > 0;
 
   return (

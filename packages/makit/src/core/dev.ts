@@ -132,6 +132,7 @@ export async function startDevServer(
   let sourceWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let metadataWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let publicWatcher: ReturnType<typeof chokidar.watch> | undefined;
+  let themeWatcher: ReturnType<typeof chokidar.watch> | undefined;
 
   // A single mutex around every regeneration path (content-only and
   // config-triggered): `generateApp` and `writeGeneratedData` both write
@@ -207,6 +208,26 @@ export async function startDevServer(
     });
   }
 
+  // Slot discovery happens during config resolution (THEME §14), so adding,
+  // removing, or renaming a file in the convention directory has to go
+  // through a full config reload to be picked up. Plain *edits* need nothing
+  // — the file is in Turbopack's module graph and HMR already handles it.
+  function watchThemeDir(): void {
+    themeWatcher?.close();
+    const themeDir = config.theme.dir;
+    if (themeDir === false) {
+      themeWatcher = undefined;
+      return;
+    }
+    const themeDirAbsolute = join(config.root, themeDir);
+    themeWatcher = chokidar.watch(themeDirAbsolute, { ignoreInitial: true });
+    themeWatcher.on("all", (event, path) => {
+      if (event === "change") return;
+      logger.debug(`${event}: ${relative(config.root, path)}`);
+      reloadConfig();
+    });
+  }
+
   function watchPublicDir(): void {
     publicWatcher?.close();
     const publicSrcDir = join(config.root, config.publicDir);
@@ -228,6 +249,7 @@ export async function startDevServer(
   watchSources();
   watchMetadataDependencies();
   watchPublicDir();
+  watchThemeDir();
 
   // `makit.config.ts` itself (spec §43): most fields (title, theme, navigation,
   // collections, home, i18n messages, ...) only affect `.makit/generated/*`
@@ -248,6 +270,7 @@ export async function startDevServer(
         await generateApp(config);
         watchSources();
         watchPublicDir();
+        watchThemeDir();
         const paths = await regenerateContent(config, logger);
         metadataWatchPaths = paths;
         watchMetadataDependencies();
@@ -280,6 +303,7 @@ export async function startDevServer(
           sourceWatcher?.close(),
           metadataWatcher?.close(),
           publicWatcher?.close(),
+          themeWatcher?.close(),
           configWatcher.close(),
         ]).finally(() => {
           child.once("exit", () => resolvePromise());

@@ -43,16 +43,14 @@ function scoreEntry(entry: SearchEntry, query: string): number {
   return 0;
 }
 
-export function SearchDialog({
-  entries,
-  pagefindEnabled,
-  pagefindBundlePath,
-}: {
+export interface SearchDialogProps {
   entries: readonly SearchEntry[];
   /** Pagefind is generated only by the production static build. */
   pagefindEnabled: boolean;
   pagefindBundlePath: string;
-}) {
+}
+
+export function SearchDialog({ entries, pagefindEnabled, pagefindBundlePath }: SearchDialogProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [pagefindResults, setPagefindResults] = useState<SearchResult[] | null>(null);

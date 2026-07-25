@@ -34,7 +34,7 @@ export default defineConfig({
 - `publicDir`: directory for static assets such as images and favicons
 - `outDir`: output directory for the generated site
 - `siteUrl`: site URL for canonical links and sitemaps
-- `theme`: color-scheme and accent-color settings
+- `theme`: color-scheme and accent-color settings, and component overrides (see [Theming](./theming.md))
 
 ## Markdown output for LLMs
 

@@ -77,6 +77,9 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
   }
 
   const diagnostics = [
+    // `loadConfig` already threw on any hard theme error (THEME §15.3); what
+    // is left here are its warnings.
+    ...config.theme.diagnostics,
     ...collectionDiagnostics,
     ...pageDiagnostics,
     ...navigationMetadataDiagnostics,

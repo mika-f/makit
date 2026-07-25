@@ -1,5 +1,6 @@
 import type { CollectionMetadata, LocalizedValue, NavigationNode } from "../metadata/types.js";
 import type { DeploymentConfig, GeneratedHeaderRule, GeneratedRedirect } from "./adapter.js";
+import type { ThemeComponentsConfig } from "./theme.js";
 
 export interface MakitConfig {
   title: string;
@@ -323,6 +324,25 @@ export interface ThemeConfig {
         light: string;
         dark: string;
       };
+  /**
+   * Base theme to build on (THEME §7.1): a theme package's name, or a path
+   * relative to the project root. Slots it does not implement fall back to
+   * the standard theme. Omit to use the standard theme alone.
+   */
+  extends?: string;
+  /**
+   * Per-slot component overrides (THEME §7.2). Takes priority over both
+   * `dir` and `extends`.
+   */
+  components?: ThemeComponentsConfig;
+  /**
+   * Directory scanned for slot files named after the slot in kebab-case —
+   * `theme/header.tsx` becomes the `Header` slot (THEME §8). Relative to the
+   * project root. `false` disables the scan.
+   *
+   * @default "theme"
+   */
+  dir?: string | false;
 }
 
 // #endregion
@@ -459,7 +479,9 @@ export type MakitWarningCode =
   | "front-matter-too-deep"
   | "front-matter-invalid-value"
   | "duplicate-navigation-order"
-  | "route-group-category-ignored";
+  | "route-group-category-ignored"
+  | "theme-slot-file-ignored"
+  | "theme-outside-project";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,

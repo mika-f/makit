@@ -5,6 +5,14 @@ import { fileURLToPath } from "node:url";
 import { MakitError } from "./errors.js";
 
 /**
+ * Packages a theme component in the user's own project may import, aliased
+ * into `.makit/next.config.mjs` so they resolve from outside `.makit/`
+ * (THEME §11). `tailwindcss` and its plugins are left out: they are consumed
+ * by PostCSS running inside `.makit/`, never imported from user code.
+ */
+export const ALIASED_RUNTIME_PACKAGES = ["react", "react-dom", "next", "lucide-react"] as const;
+
+/**
  * Packages `.makit/app` needs at build/dev time. All are declared as regular
  * dependencies of the `makit` package itself, so they're guaranteed
  * resolvable from here regardless of which package manager (npm/pnpm/yarn/

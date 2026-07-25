@@ -1,4 +1,65 @@
-import type { ResolvedConfig } from "../../types/resolved-config.js";
+import { isAbsolute, relative, sep } from "node:path";
+import { THEME_SLOT_NAMES } from "@natsuneko-laboratory/makit-runtime/slot-names";
+import type { ResolvedConfig, ResolvedThemeConfig } from "../../types/resolved-config.js";
+
+/** Import specifier for a slot bound to a project-local file, relative to `.makit/app`. */
+function slotRequest(appDir: string, filePath: string): string {
+  const rel = relative(appDir, filePath).split(sep).join("/");
+  return rel.startsWith(".") ? rel : `./${rel}`;
+}
+
+/**
+ * Generates `.makit/app/theme.js` (THEME §10.1): the single place where slot
+ * overrides turn into static imports the Next.js build can see.
+ *
+ * A base theme is brought in as a namespace import and filtered through
+ * `pickThemeSlots` rather than as named imports, because a theme is not
+ * required to implement every slot and the CLI cannot introspect a package's
+ * exports without loading React (THEME §9.5).
+ */
+export function themeModuleTemplate(theme: ResolvedThemeConfig, appDir: string): string {
+  const imports = [
+    `import { pickThemeSlots, resolveThemeComponents } from "@natsuneko-laboratory/makit-runtime";`,
+  ];
+  const entries: string[] = [];
+
+  if (theme.extends) {
+    // A local theme resolves to an absolute entry-file path; a package stays
+    // a bare specifier (which also contains "/", so test for absoluteness).
+    const request = isAbsolute(theme.extends.request)
+      ? slotRequest(appDir, theme.extends.request)
+      : theme.extends.request;
+    imports.push(`import * as baseTheme from ${JSON.stringify(request)};`);
+    entries.push("...pickThemeSlots(baseTheme)");
+  }
+
+  let index = 0;
+  for (const slot of THEME_SLOT_NAMES) {
+    const binding = theme.slots[slot];
+    if (binding === undefined) continue;
+    if (binding === false) {
+      entries.push(`${slot}: false`);
+      continue;
+    }
+    const local = `Slot${index++}_${slot}`;
+    const request = binding.filePath
+      ? slotRequest(appDir, binding.filePath)
+      : binding.packageSpecifier!;
+    imports.push(
+      binding.exportName
+        ? `import { ${binding.exportName} as ${local} } from ${JSON.stringify(request)};`
+        : `import ${local} from ${JSON.stringify(request)};`,
+    );
+    entries.push(`${slot}: ${local}`);
+  }
+
+  const overrides = entries.length === 0 ? "{}" : `{\n  ${entries.join(",\n  ")},\n}`;
+
+  return `${imports.join("\n")}
+
+export const themeComponents = resolveThemeComponents(${overrides});
+`;
+}
 
 export function rootLayoutTemplate(config: ResolvedConfig): string {
   // The dev-refresh token must be *rendered*, not just imported for side
@@ -6,29 +67,44 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
   // marker compile to the same empty module and no HMR update ever reaches
   // the browser. Gating on NODE_ENV lets production builds drop the
   // reference (and the attribute) entirely.
+  // `<html>`/`<body>` themselves belong to the RootLayout slot (THEME §10.3);
+  // what stays here is everything the rest of the pipeline depends on —
+  // the attributes it must carry and the nodes it must render first.
   return `import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
-import { AnalyticsScripts, ThemeScript, ThemeVariables, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { themeComponents } from "./theme.js";
 
 const analytics = ${JSON.stringify(config.analytics)};
 
 export default async function RootLayout({ children }) {
   const site = await getSiteData();
   const colorScheme = site.theme.colorScheme;
+  const { RootLayout: Layout, ThemeVariables, ThemeScript } = themeComponents;
 
   return (
-    <html lang={site.lang} data-theme={colorScheme !== "system" ? colorScheme : undefined} suppressHydrationWarning>
-      <body
-        data-makit-dev-refresh={
-          process.env.NODE_ENV === "development" ? devRefreshToken : undefined
-        }
-      >
-        <ThemeVariables theme={site.theme} />
-        {colorScheme === "system" && <ThemeScript />}
-        {process.env.NODE_ENV === "production" && <AnalyticsScripts config={analytics} />}
-        {children}
-      </body>
-    </html>
+    <Layout
+      site={site}
+      components={themeComponents}
+      htmlProps={{
+        lang: site.lang,
+        "data-theme": colorScheme !== "system" ? colorScheme : undefined,
+        suppressHydrationWarning: true,
+      }}
+      bodyProps={{
+        "data-makit-dev-refresh":
+          process.env.NODE_ENV === "development" ? devRefreshToken : undefined,
+      }}
+      bodyStart={
+        <>
+          <ThemeVariables theme={site.theme} />
+          {colorScheme === "system" && <ThemeScript />}
+          {process.env.NODE_ENV === "production" && <AnalyticsScripts config={analytics} />}
+        </>
+      }
+    >
+      {children}
+    </Layout>
   );
 }
 `;
@@ -49,16 +125,18 @@ export function devRefreshTemplate(token: string): string {
 }
 
 export function notFoundTemplate(): string {
-  return `import { NotFoundPage } from "@natsuneko-laboratory/makit-runtime";
+  return `import { themeComponents } from "./theme.js";
 
 export default function NotFound() {
-  return <NotFoundPage />;
+  const { NotFoundPage } = themeComponents;
+  return <NotFoundPage components={themeComponents} />;
 }
 `;
 }
 
 export function rootPageTemplate(): string {
-  return `import { getHomeRoute, getLocalesData, getSiteData, RootPage } from "@natsuneko-laboratory/makit-runtime";
+  return `import { getHomeRoute, getLocalesData, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { themeComponents } from "./theme.js";
 
 export default async function Page() {
   const [i18n, site] = await Promise.all([getLocalesData(), getSiteData()]);
@@ -76,19 +154,24 @@ export default async function Page() {
     })),
   );
 
+  const { RootPage } = themeComponents;
+
   return (
-    <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} defaultLocale={i18n.defaultLocale} siteTitle={site.title} />
+    <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} defaultLocale={i18n.defaultLocale} siteTitle={site.title} components={themeComponents} />
   );
 }
 `;
 }
 
-/** The `[[...slug]]` page, shared by both the i18n-enabled `[locale]/[[...slug]]` route and the single-locale root `[[...slug]]` route. */
-export function slugPageTemplate(localeExpression: string): string {
+/**
+ * The `[[...slug]]` page, shared by both the i18n-enabled
+ * `[locale]/[[...slug]]` route and the single-locale root `[[...slug]]` route.
+ * `themeModulePath` differs between the two because they sit at different
+ * depths below `.makit/app`.
+ */
+export function slugPageTemplate(localeExpression: string, themeModulePath: string): string {
   return `import { notFound } from "next/navigation";
 import {
-  DocsPage,
-  PortalHomePage,
   buildPageMetadata,
   buildSiteMetadata,
   getAllStaticParams,
@@ -99,6 +182,7 @@ import {
   getRouteEntry,
   getSiteData,
 } from "@natsuneko-laboratory/makit-runtime";
+import { themeComponents } from ${JSON.stringify(themeModulePath)};
 
 export async function generateStaticParams() {
   ${localeExpression === "params.locale" ? "return getAllStaticParams();" : "const params = await getAllStaticParams();\n  return params.map((param) => ({ slug: param.slug }));"}
@@ -126,19 +210,29 @@ export default async function Page({ params }) {
 
   if (entry.kind === "portal") {
     const home = await getHomeData(locale);
-    return <PortalHomePage home={home} site={site} i18n={i18n} locale={locale} />;
+    const { PortalHomePage } = themeComponents;
+    return <PortalHomePage home={home} site={site} i18n={i18n} locale={locale} components={themeComponents} />;
   }
 
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) notFound();
   const navigation = await getCollectionNavigation(locale, page.collectionId);
+  const { DocsPage } = themeComponents;
 
-  return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} />;
+  return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} components={themeComponents} />;
 }
 `;
 }
 
-export function nextConfigTemplate(config: ResolvedConfig, turbopackRoot: string): string {
+export function nextConfigTemplate(
+  config: ResolvedConfig,
+  turbopackRoot: string,
+  resolveAlias: Record<string, string>,
+): string {
+  const aliasEntries = Object.entries(resolveAlias)
+    .map(([request, target]) => `      ${JSON.stringify(request)}: ${JSON.stringify(target)},`)
+    .join("\n");
+
   return `/** @type {import('next').NextConfig} */
 const nextConfig = {
   output: "export",
@@ -146,6 +240,17 @@ const nextConfig = {
   basePath: ${JSON.stringify(config.basePath)},
   images: { unoptimized: true },
   turbopack: {
+    // Theme components live in the user's project (THEME §7.4), so their
+    // imports resolve from *there* — and a Makit project has no reason to
+    // depend on react/next itself (spec §5.3), nor can pnpm's strict layout
+    // hoist makit's own copies into reach. These aliases point every shared
+    // package at the copy \`.makit/\` already uses, which also guarantees a
+    // single React instance across the app and any theme package.
+    // Targets are relative to this config's directory: Turbopack resolves an
+    // absolute alias target against the project dir, not the filesystem root.
+    resolveAlias: {
+${aliasEntries}
+    },
     // .makit/'s runtime deps are symlinked in from makit's own dependency
     // tree (spec §40.5) rather than living directly under .makit/node_modules
     // as real files. Their symlink targets can land outside the project root
@@ -172,6 +277,14 @@ export function postcssConfigTemplate(): string {
 export interface GlobalsCssOptions {
   makitRuntimeDistPath: string;
   customStyleImports: string[];
+  /**
+   * Absolute globs for theme code Tailwind must scan (THEME §13.1). Required
+   * because `source(none)` below turns off automatic detection, so a class
+   * used only by a replaced component would otherwise never be compiled.
+   */
+  themeSources: string[];
+  /** CSS the base theme ships, imported ahead of the user's own (THEME §13.2). */
+  themeStyleImports: string[];
 }
 
 export function globalsCssTemplate(options: GlobalsCssOptions): string {
@@ -197,6 +310,8 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     '@source "../generated/**/*.json";',
     // The generated app shell itself (layout.js, page.js, ...).
     '@source "../app/**/*.js";',
+    // Theme packages and per-slot overrides (THEME §13.1).
+    ...options.themeSources.map((source) => `@source "${source}";`),
     "",
     "html {",
     "  scroll-behavior: smooth;",
@@ -434,7 +549,9 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     "",
   ];
 
-  for (const importPath of options.customStyleImports) {
+  // Theme CSS first, then the user's own, so a project can always override
+  // its theme from `config.styles` (THEME §13.2).
+  for (const importPath of [...options.themeStyleImports, ...options.customStyleImports]) {
     lines.push(`@import "${importPath}";`);
   }
 

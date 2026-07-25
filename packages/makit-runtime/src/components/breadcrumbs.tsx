@@ -2,7 +2,11 @@ import Link from "next/link";
 import type { GeneratedBreadcrumb } from "../data/types.js";
 
 /** Site > Collection > Section > Group > Page (spec §31). The last item is never a link. */
-export function Breadcrumbs({ items }: { items: readonly GeneratedBreadcrumb[] }) {
+export interface BreadcrumbsProps {
+  items: readonly GeneratedBreadcrumb[];
+}
+
+export function Breadcrumbs({ items }: BreadcrumbsProps) {
   if (items.length === 0) return null;
 
   return (
@@ -14,9 +18,16 @@ export function Breadcrumbs({ items }: { items: readonly GeneratedBreadcrumb[] }
         const isLast = index === items.length - 1;
         return (
           <span key={`${item.title}-${index}`} className="flex items-center gap-1">
-            {index > 0 && <span className="text-[var(--makit-color-border-strong)]" aria-hidden="true">/</span>}
+            {index > 0 && (
+              <span className="text-[var(--makit-color-border-strong)]" aria-hidden="true">
+                /
+              </span>
+            )}
             {item.href && !isLast ? (
-              <Link href={item.href} className="transition hover:text-[var(--makit-color-foreground)]">
+              <Link
+                href={item.href}
+                className="transition hover:text-[var(--makit-color-foreground)]"
+              >
                 {item.title}
               </Link>
             ) : (

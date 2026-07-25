@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { RootBehavior, RootLocaleOption } from "../data/types.js";
+import type { ThemeComponents } from "../theme/components.js";
 import { RootDetect } from "./root-detect.js";
 
 export interface RootPageProps {
@@ -9,6 +10,8 @@ export interface RootPageProps {
   /** BCP-47 tag of the site's default locale (`i18n.defaultLocale`). */
   defaultLocale: string;
   siteTitle: string;
+  /** The resolved slot map (THEME §6). Unused by the standard implementation. */
+  components: ThemeComponents;
 }
 
 /** The `/` route's behavior when i18n is enabled (spec §16.10). */

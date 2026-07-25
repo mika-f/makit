@@ -2,7 +2,11 @@ import type { ThemeData } from "../data/types.js";
 import { resolveAccentColor, resolveRadius } from "./accent-palette.js";
 
 /** Renders the CSS Variables the standard theme reads (spec §21.4). */
-export function ThemeVariables({ theme }: { theme: ThemeData }) {
+export interface ThemeVariablesProps {
+  theme: ThemeData;
+}
+
+export function ThemeVariables({ theme }: ThemeVariablesProps) {
   const accent = resolveAccentColor(theme.accentColor);
   const radius = resolveRadius(theme.radius);
 

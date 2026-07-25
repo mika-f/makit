@@ -163,6 +163,8 @@ theme: { components: { Header: "./theme/header.tsx" } }
 
 `PageHeader` は本仕様で新設する Slot であり、既定テーマが `DocsPage` 内へ直接記述している `<h1>` とページ説明文を切り出したものとする。
 
+`PageActions` は `TableOfContents` の内側に描画されるが、`TableOfContents` は Client Component であるため、コンポーネント参照として渡すことはできない（§11.4）。`DocsPage` が `PageActions` を要素として構築し、`TableOfContents` の `actions` prop（`ReactNode`）へ渡す。これにより、`PageActions` を Server Component へ差し替えた場合も動作する。
+
 ### 5.3 Slot ではないもの
 
 以下は既定テーマの内部実装であり、差し替え対象としない。
@@ -184,11 +186,12 @@ Slot Props は `@natsuneko-laboratory/makit-runtime` から export する。以�
 export interface RootLayoutProps {
   site: SiteData;
   /** `<html>` へ展開する属性（`lang`、`data-theme`、`suppressHydrationWarning`）。 */
-  htmlProps: Record<string, unknown>;
+  htmlProps: ComponentProps<"html">;
   /** `<body>` へ展開する属性（dev サーバーの再読込マーカーを含む）。 */
-  bodyProps: Record<string, unknown>;
+  bodyProps: ComponentProps<"body">;
   /** `<body>` 先頭へ描画する Makit 提供ノード（CSS 変数、テーマ判定スクリプト、解析タグ）。 */
   bodyStart: ReactNode;
+  components: ThemeComponents;
   children: ReactNode;
 }
 
@@ -216,17 +219,26 @@ export interface HeaderProps {
 export interface SidebarProps {
   navigation: readonly ResolvedNavNode[];
   currentRoute: string;
-  components: ThemeComponents;
+  components?: ThemeComponents;
+}
+
+export interface TableOfContentsProps {
+  headings: readonly GeneratedHeading[];
+  minDepth: number;
+  maxDepth: number;
+  /** 見出し一覧の下へ描画するページ操作。要素として渡す（§5.2、§11.4）。 */
+  actions?: ReactNode;
 }
 ```
 
-既存コンポーネントの props は原則としてそのまま Slot Props とする。本仕様で追加するのは次の 3 点のみとする。
+既存コンポーネントの props は原則としてそのまま Slot Props とする。本仕様で追加するのは次の 4 点のみとする。
 
-1. Page Slot と、子 Slot を描画する Part Slot（`Sidebar`）への `components` の追加。
-2. `RootLayout` の新設に伴う `RootLayoutProps`。
-3. `PageHeader` の新設に伴う `PageHeaderProps`。
+1. すべての Page Slot への `components` の追加（必須）。既定実装が使わない Slot（`RootLayout`、`RootPage`、`NotFoundPage`）にも渡す。差し替え実装が Part Slot を再利用できるようにするためである（例: 独自 404 ページで `Header` を使う）。
+2. 子 Slot を描画する Part Slot（`Sidebar`）への `components` の追加（省略可）。
+3. `RootLayout` の新設に伴う `RootLayoutProps`、`PageHeader` の新設に伴う `PageHeaderProps`。
+4. `TableOfContents` の `actions`（`ReactNode`）。既定実装が内部で `PageActions` を直接描画していたものを、外から渡す形に変える（§5.2）。
 
-現状 props を持たない Slot（`NotFoundPage`、`ThemeToggle`、`ThemeScript`）も、将来の拡張に備えて空の props 型を定義する。
+props を持たない Slot（`ThemeToggle`、`ThemeScript`）も、将来の拡張に備えて空の props 型を定義する。
 
 ---
 
@@ -427,6 +439,13 @@ Theme Package は 2 つのエントリーポイントを持つ。
 
 `"."` は React Server Component / Client Component を含むため、Makit CLI からは読み込まない。逆に Manifest は React に依存してはならない。
 
+ローカルディレクトリをテーマとして指定した場合（`theme.extends: "./my-theme"`）は、`package.json` の `exports` ではなくファイル名で解決する。
+
+* エントリー: `index.tsx` / `index.jsx` / `index.ts` / `index.js` / `index.mjs`（この順で最初に見つかったもの）
+* Manifest: `makit-theme.ts` / `makit-theme.mts` / `makit-theme.js` / `makit-theme.mjs`（任意）
+
+エントリーが存在しないディレクトリは `theme-module-not-found` エラーとする。
+
 コンポーネントをバンドルする場合、`"use client"` ディレクティブがモジュール単位で保持されるビルド設定を用いる（`makit-runtime` は `tsdown` の `unbundle: true` を使用している）。
 
 ### 9.3 Manifest
@@ -496,23 +515,18 @@ Slot の解決結果を、静的 import の集合として 1 つのモジュー�
 
 ```js
 // .makit/app/theme.js（生成物・編集不可）
-import {
-  DocsPage as DefaultDocsPage,
-  Footer as DefaultFooter,
-  Header as DefaultHeader,
-  // ...
-  resolveThemeComponents,
-} from "@natsuneko-laboratory/makit-runtime";
-import { Header as ThemeHeader, Sidebar as ThemeSidebar } from "@acme/makit-theme-corporate";
-import UserFooter from "../../theme/footer.tsx";
+import { pickThemeSlots, resolveThemeComponents } from "@natsuneko-laboratory/makit-runtime";
+import * as baseTheme from "@acme/makit-theme-corporate";
+import Slot0_Footer from "../../theme/footer.tsx";
 
 export const themeComponents = resolveThemeComponents({
-  Header: ThemeHeader,
-  Sidebar: ThemeSidebar,
-  Footer: UserFooter,
+  ...pickThemeSlots(baseTheme),
+  Footer: Slot0_Footer,
   PrevNextLinks: false,
 });
 ```
+
+`theme.extends` は名前付き import ではなく名前空間 import として取り込み、`pickThemeSlots` で Slot 名に一致する export だけを抽出する。テーマはすべての Slot を実装する義務を負わないが（§9.5）、CLI は React を読み込まずにパッケージの export を静的に列挙できないため、判定を生成コード側へ委ねる。
 
 `resolveThemeComponents` は既定実装で欠落 Slot を補完し、`false` を「何も描画しないコンポーネント」へ変換して、完全な `ThemeComponents` を返す。
 
@@ -569,6 +583,8 @@ const { DocsPage, PortalHomePage } = themeComponents;
 return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} components={themeComponents} />;
 ```
 
+`theme.js` の import 先は route の深さに応じて変わる（`app/[locale]/[[...slug]]/page.js` からは `../../theme.js`、単一ロケール構成の `app/[[...slug]]/page.js` からは `../theme.js`）。
+
 `generateStaticParams` および `generateMetadata` はテーマの差し替え対象としない。ルーティングとメタデータは Makit Core の責務とする。
 
 ### 10.3 `RootLayout` の契約
@@ -611,6 +627,32 @@ Next.js App Router の制約から、以下を規則とする。
 Slot が Server / Client のどちらであるかは、差し替え実装のファイル先頭に `"use client"` があるかで決まる。Makit は Slot に `"use client"` を強制しない。
 
 差し替えコンポーネントは、生成データのローダー（`getCollections`、`getSearchIndex` など、spec §40）を `@natsuneko-laboratory/makit-runtime` から import して利用できる。ローダーはファイルシステムを読むため、Server Component からのみ呼び出せる。
+
+### モジュール解決
+
+差し替えコンポーネントは利用者のプロジェクト内に置かれるため、その import は `.makit/` ではなくプロジェクト側から解決される。一方 Makit のプロジェクトは Next.js を隠蔽する方針であり（spec §5.3）、`react` や `next` を自身の依存関係に持たない。pnpm の厳格な `node_modules` 構成では makit 自身の依存もプロジェクト直下へ現れない。
+
+このため、生成する `.makit/next.config.mjs` の `turbopack.resolveAlias` に、共有パッケージのエイリアスを書き出す。
+
+```js
+resolveAlias: {
+  "react": "../node_modules/.../react",
+  "react/*": "../node_modules/.../react/*",
+  "react-dom": "...",
+  "next": "...",
+  "lucide-react": "...",
+  "@natsuneko-laboratory/makit-runtime": "../node_modules/@natsuneko-laboratory/makit-runtime",
+  "@natsuneko-laboratory/makit-runtime/slot-names": ".../dist/theme/slot-names.mjs",
+}
+```
+
+* 対象は `react`、`react-dom`、`next`、`lucide-react`、`@natsuneko-laboratory/makit-runtime` とする。Tailwind CSS 関連は `.makit/` 内の PostCSS が読み込むものであり、利用者コードからは import されないため対象外とする。
+* サブパス（`next/link`、`react/jsx-runtime` など）はワイルドカードで一括して解決する。`@natsuneko-laboratory/makit-runtime` はサブパスがパッケージ内のファイル配置と一致しないため、`slot-names` のみ明示的に指定する。
+* エイリアスの解決先は `.makit/`（Turbopack のプロジェクトディレクトリ）からの相対パスで書き出す。Turbopack は絶対パスをプロジェクトディレクトリ基準として解釈するため、絶対パスは使えない。
+
+この結果、利用者は差し替えコンポーネントを書くために `react` や `next` をインストールする必要がない。また、テーマパッケージと生成アプリが常に同一の React インスタンスを共有する。
+
+型定義のみが必要な場合（`import type { HeaderProps } from "@natsuneko-laboratory/makit-runtime"`）は、プロジェクトの `tsconfig.json` から解決できる必要がある。`@natsuneko-laboratory/makit` に依存していれば、その依存として解決できる。
 
 ---
 
@@ -784,7 +826,11 @@ theme/
 | `ResolvedThemeConfig` | 解決済みの Slot 情報（モジュール指定子と export 名の組）を保持する |
 | `MakitErrorCode` | §15.1 のコードを追加する |
 | `MakitWarningCode` | §15.2 のコードを追加する |
-| `RUNTIME_PACKAGES` / Turbopack root | Theme Package のパッケージルートを、シンボリックリンク対象および Turbopack root の算出対象へ含める |
+| Turbopack root | Theme Package のパッケージルート、および差し替えファイルの所在ディレクトリを Turbopack root の算出対象へ含める |
+| `turbopack.resolveAlias` | 共有パッケージのエイリアスを生成する（§11 モジュール解決） |
+| `makit-runtime` の `package.json` | `"sideEffects": false` を宣言する。これがないと、Client Component の差し替えが `@natsuneko-laboratory/makit-runtime` から既定実装を import した時点で、バレル経由で `node:fs` に依存するローダーまで Client バンドルへ引きずり込まれ、ビルドが失敗する |
+| `makit-runtime` の `exports` | `./slot-names` を追加する。CLI が React を読み込まずに Slot 名の一覧を参照するため |
+| `makit` の `exports` | `./theme` を追加する（`defineTheme`） |
 
 Theme Package は利用者の依存関係であり、Makit 自身の依存ではない。`.makit/node_modules` へのリンクは不要で、`.makit/app` からの通常のモジュール解決（利用者のプロジェクトの `node_modules`）で解決する。ただし Turbopack root の算出には、そのパッケージルートを含める必要がある。
 
@@ -857,3 +903,6 @@ Theme Package は利用者の依存関係であり、Makit 自身の依存では
 20. `makit dev` で規約ディレクトリへ Slot ファイルを追加すると、再起動なしで反映される
 21. `makit build` の出力が、テーマ差し替え後も Node.js ランタイムを必要としない静的ファイルである
 22. `makit check` がテーマ設定の解決可能性を検査する
+23. 差し替えコンポーネントが `react`（hooks）、`next/link`、`lucide-react`、および同一ディレクトリのヘルパーモジュールを、プロジェクトへ追加インストールせずに import できる
+24. ヘルパーモジュール側で使った Tailwind クラスもコンパイル済み CSS に含まれる
+25. 規約ディレクトリのファイル追加・削除を `makit dev` が検知して `.makit/app/theme.js` を再生成する

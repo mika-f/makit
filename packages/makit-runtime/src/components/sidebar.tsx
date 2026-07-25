@@ -1,14 +1,22 @@
 import type { ResolvedNavNode } from "../data/types.js";
-import { NavigationItems } from "./navigation-items.js";
+import type { ThemeComponents } from "../theme/components.js";
+import { NavigationItems as DefaultNavigationItems } from "./navigation-items.js";
 
-export function Sidebar({
-  navigation,
-  currentRoute,
-}: {
+export interface SidebarProps {
   navigation: readonly ResolvedNavNode[];
   currentRoute: string;
-}) {
+  /**
+   * The resolved slot map, so that a `NavigationItems` override also applies
+   * inside the standard sidebar (THEME §12). Callers that do not customize
+   * slots may omit it.
+   */
+  components?: ThemeComponents;
+}
+
+export function Sidebar({ navigation, currentRoute, components }: SidebarProps) {
   if (navigation.length === 0) return null;
+
+  const NavigationItems = components?.NavigationItems ?? DefaultNavigationItems;
 
   return (
     <>
@@ -22,7 +30,9 @@ export function Sidebar({
       {/* Mobile nav: a zero-JS <details> disclosure */}
       <details className="border-b border-[var(--makit-color-border)] px-5 py-3 md:hidden">
         <summary className="cursor-pointer list-none text-sm font-medium text-[var(--makit-color-foreground)]">
-          <span className="flex items-center justify-between">Navigation <span aria-hidden="true">⌄</span></span>
+          <span className="flex items-center justify-between">
+            Navigation <span aria-hidden="true">⌄</span>
+          </span>
         </summary>
         <nav className="mt-3 space-y-4" aria-label="Documentation navigation">
           <NavigationItems items={navigation} currentRoute={currentRoute} />

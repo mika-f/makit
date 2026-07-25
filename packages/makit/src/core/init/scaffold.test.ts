@@ -115,3 +115,30 @@ describe("scaffoldProject — collections flavor (spec §12)", () => {
     expect(collectionSource).toContain(`path: "/${id}"`);
   });
 });
+
+describe("scaffoldProject --theme", () => {
+  it("does not create a theme directory by default", async () => {
+    const result = await scaffoldProject({ targetDir: dir, makitVersion: "0.1.0" });
+    expect(existsSync(join(dir, "theme"))).toBe(false);
+    expect(result.created).not.toContain("theme/header.tsx");
+  });
+
+  it("scaffolds a Header slot override that wraps the standard one", async () => {
+    const result = await scaffoldProject({ targetDir: dir, theme: true, makitVersion: "0.1.0" });
+    expect(result.created).toContain("theme/header.tsx");
+
+    const source = await readFile(join(dir, "theme", "header.tsx"), "utf-8");
+    expect(source).toContain(
+      'import type { HeaderProps } from "@natsuneko-laboratory/makit-runtime";',
+    );
+    expect(source).toContain("export default function Header(props: HeaderProps)");
+    expect(source).toContain("<DefaultHeader {...props} />");
+  });
+
+  it("refuses to overwrite an existing slot file without force", async () => {
+    await scaffoldProject({ targetDir: dir, theme: true, makitVersion: "0.1.0" });
+    await expect(
+      scaffoldProject({ targetDir: dir, theme: true, makitVersion: "0.1.0" }),
+    ).rejects.toThrow(/--force/);
+  });
+});

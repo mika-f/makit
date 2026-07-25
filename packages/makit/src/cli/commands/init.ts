@@ -31,6 +31,10 @@ export const initCommand = defineCommand({
       type: "boolean",
       description: "Scaffold a collection.makit.ts-based starter instead of a collection-less one",
     },
+    theme: {
+      type: "boolean",
+      description: "Scaffold a theme/ directory with a starter component override",
+    },
   },
   async run({ args }) {
     const ctx = createCliContext(args);
@@ -43,6 +47,7 @@ export const initCommand = defineCommand({
         locale: args.locale,
         force: args.force,
         collections: args.collections,
+        theme: args.theme,
         makitVersion: getPackageVersion(),
       });
 

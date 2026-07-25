@@ -44,6 +44,11 @@ export type MakitErrorCode =
   | "adapter-file-conflict"
   | "adapter-not-configured"
   | "adapter-files-outdated"
+  | "theme-module-not-found"
+  | "theme-unknown-slot"
+  | "theme-slot-not-optional"
+  | "theme-ambiguous-slot-file"
+  | "theme-manifest-invalid"
   | "output-write-failed"
   | "project-exists"
   | "not-implemented";

@@ -3,15 +3,13 @@ import { getHomeRoute, getPageMap } from "../data/loaders.js";
 import type { GeneratedPage, LocaleData, MissingPageBehavior } from "../data/types.js";
 
 /** Switches between translations of the *same* page (spec §16.11, §17). */
-export async function LocaleSwitcher({
-  page,
-  locales,
-  missingPageBehavior,
-}: {
+export interface LocaleSwitcherProps {
   page: GeneratedPage;
   locales: readonly LocaleData[];
   missingPageBehavior: MissingPageBehavior;
-}) {
+}
+
+export async function LocaleSwitcher({ page, locales, missingPageBehavior }: LocaleSwitcherProps) {
   if (locales.length < 2) return null;
 
   const pageMap = await getPageMap();
