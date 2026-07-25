@@ -34,7 +34,7 @@ export default defineConfig({
 - `publicDir`: directory for static assets such as images and favicons
 - `outDir`: output directory for the generated site
 - `siteUrl`: site URL for canonical links and sitemaps
-- `theme`: color-scheme and accent-color settings, and component overrides (see [Theming](./theming.md))
+- `theme`: color-scheme and accent-color settings, and component overrides (see [Theming](./06-theming.md))
 
 ## Markdown output for LLMs
 
@@ -70,4 +70,4 @@ export default defineConfig({
 
 `makit dev` detects configuration-file changes during development. Before publishing, run `makit check` followed by `makit build`.
 
-For every option, default, and focused example, see the [configuration reference](../04-reference/configuration.md). See [Markdown syntax](./markdown-syntax.md) for source and rendering examples.
+For every option, default, and focused example, see the [configuration reference](../04-reference/02-configuration.md). See [Markdown syntax](./01-markdown-syntax.md) for source and rendering examples.

@@ -28,11 +28,11 @@ Edit the generated `docs/index.md` to update the page in the development server.
 
 1. [Getting started](./01-getting-started.md) — install Makit and build your first site
 2. [Core concepts](./02-concepts.md) — understand the file layout and model
-3. [Configuration](./03-guides/configuration.md) — configure `makit.config.ts`
-4. [Content structure](./03-guides/content-structure.md) — organize a growing site
-5. [Theming](./03-guides/theming.md) — replace components with your own
-6. [Deployment](./03-guides/deployment.md) — publish a static site
-7. [CLI reference](./04-reference/cli.md) — see all available commands
+3. [Configuration](./03-guides/03-configuration.md) — configure `makit.config.ts`
+4. [Content structure](./03-guides/02-content-structure.md) — organize a growing site
+5. [Theming](./03-guides/06-theming.md) — replace components with your own
+6. [Deployment](./03-guides/04-deployment.md) — publish a static site
+7. [CLI reference](./04-reference/01-cli.md) — see all available commands
 
 ## Learn more about the design
 

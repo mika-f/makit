@@ -11,7 +11,7 @@ export default defineConfig({
 });
 ```
 
-For overriding a component or two, see the [theming guide](../03-guides/theming.md) — you do not need a package for that.
+For overriding a component or two, see the [theming guide](../03-guides/06-theming.md) — you do not need a package for that.
 
 ## Package layout
 
@@ -67,7 +67,7 @@ export function Footer({ footer }: FooterProps) {
 }
 ```
 
-The component names, their props types, and the server/client rules are the same as for per-component overrides; the [theming guide](../03-guides/theming.md) lists all of them. Props types are public API and follow semantic versioning.
+The component names, their props types, and the server/client rules are the same as for per-component overrides; the [theming guide](../03-guides/06-theming.md) lists all of them. Props types are public API and follow semantic versioning.
 
 `@natsuneko-laboratory/makit-runtime` belongs in `peerDependencies` alongside `react` and `next`, the way the built-in theme declares them.
 

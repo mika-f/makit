@@ -200,16 +200,16 @@ theme: {
 },
 ```
 
-A theme does not have to implement every component; anything it leaves out falls back to the built-in one. See the [theme package reference](../04-reference/theme-packages.md) to build one.
+A theme does not have to implement every component; anything it leaves out falls back to the built-in one. See the [theme package reference](../04-reference/05-theme-packages.md) to build one.
 
 ### Official themes
 
 Two themes are published alongside Makit:
 
-| Package                                      | Looks like                                                                              |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `@natsuneko-laboratory/makit-theme-terminal` | Monospace and square-cornered, with a phosphor accent — for CLI and infrastructure docs |
-| `@natsuneko-laboratory/makit-theme-product`  | Soft cards, pill navigation, and a gradient home — for product docs                     |
+| Package                                      | Looks like                                                                              | Preview site                          |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------- |
+| `@natsuneko-laboratory/makit-theme-terminal` | Monospace and square-cornered, with a phosphor accent — for CLI and infrastructure docs | https://terminal.makit.natsuneko.com/ |
+| `@natsuneko-laboratory/makit-theme-product`  | Soft cards, pill navigation, and a gradient home — for product docs                     | https://product.makit.natsuneko.com/  |
 
 ```bash
 pnpm add @natsuneko-laboratory/makit-theme-terminal

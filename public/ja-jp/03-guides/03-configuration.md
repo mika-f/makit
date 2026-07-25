@@ -19,14 +19,14 @@ export default defineConfig({
 
 設定は一度にすべて書く必要はありません。必要になった機能のブロックだけを追加します。
 
-- 表示とテーマ: `header`、`footer`、`theme`、`styles`（コンポーネントの差し替えは[テーマのカスタマイズ](./theming.md)）
+- 表示とテーマ: `header`、`footer`、`theme`、`styles`（コンポーネントの差し替えは[テーマのカスタマイズ](./06-theming.md)）
 - Markdown の表示: `markdown`
 - 多言語: `i18n`
 - ナビゲーションと複数製品: `navigation`、`collections`、`home`
 - 検索・公開: `seo`、`sitemap`、`llms`、`github`、`deployment`
 - 開発と品質確認: `build`、`dev`、`preview`、`validation`
 
-各項目の型、既定値、実例は[設定リファレンス](../04-reference/configuration.md)を参照してください。Markdown の記法と見え方は[Markdown 構文](./markdown-syntax.md)にまとめています。
+各項目の型、既定値、実例は[設定リファレンス](../04-reference/02-configuration.md)を参照してください。Markdown の記法と見え方は[Markdown 構文](./01-markdown-syntax.md)にまとめています。
 
 ## LLM 向けの Markdown 出力
 

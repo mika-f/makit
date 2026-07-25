@@ -68,7 +68,7 @@ export default defineCategory({
 
 `type` defaults to `section`; `order` controls position; `hidden` hides the subtree; `collapsible` and `collapsed` control folding. Set `index` to make the category clickable.
 
-A `category.makit.ts` inside a [route group](../03-guides/content-structure.md#route-groups) directory still applies under the default `navigation.auto.routeGroups: "url"`. Under `"flatten"`, the group has no section of its own to attach to, so the file is ignored with a `route-group-category-ignored` warning.
+A `category.makit.ts` inside a [route group](../03-guides/02-content-structure.md#route-groups) directory still applies under the default `navigation.auto.routeGroups: "url"`. Under `"flatten"`, the group has no section of its own to attach to, so the file is ignored with a `route-group-category-ignored` warning.
 
 ## Manual navigation
 

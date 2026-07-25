@@ -131,4 +131,4 @@ Rendered result:
 | :--- | :----: | ----: |
 | a    | b      | c     |
 
-Raw HTML is disabled by default. Configure HTML, Shiki, external links, plugins, and the table-of-contents range in the [configuration reference](../04-reference/configuration.md#markdown).
+Raw HTML is disabled by default. Configure HTML, Shiki, external links, plugins, and the table-of-contents range in the [configuration reference](../04-reference/02-configuration.md#markdown).

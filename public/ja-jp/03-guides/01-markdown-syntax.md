@@ -138,4 +138,4 @@ const removed = false; // [!code --]
 
 ## HTML とプラグイン
 
-生の HTML は安全のため既定で無効です。信頼できるコンテンツだけを扱う場合は `markdown.allowDangerousHtml` を有効にできます。Remark / Rehype プラグイン、外部リンクの属性、Shiki テーマ、目次の範囲は[設定リファレンス](../04-reference/configuration.md#markdown)で設定します。
+生の HTML は安全のため既定で無効です。信頼できるコンテンツだけを扱う場合は `markdown.allowDangerousHtml` を有効にできます。Remark / Rehype プラグイン、外部リンクの属性、Shiki テーマ、目次の範囲は[設定リファレンス](../04-reference/02-configuration.md#markdown)で設定します。

@@ -30,11 +30,11 @@ pnpm exec makit dev
 
 1. [はじめに](./01-getting-started.md) — インストールから最初のビルドまで
 2. [基本 concepts](./02-concepts.md) — Makit のファイル構成と考え方
-3. [設定ガイド](./03-guides/configuration.md) — `makit.config.ts` を使いこなす
-4. [コンテンツの整理](./03-guides/content-structure.md) — ページを増やすときの設計
-5. [テーマのカスタマイズ](./03-guides/theming.md) — コンポーネントを差し替える
-6. [デプロイ](./03-guides/deployment.md) — 静的サイトを公開する
-7. [CLI リファレンス](./04-reference/cli.md) — コマンド一覧
+3. [設定ガイド](./03-guides/03-configuration.md) — `makit.config.ts` を使いこなす
+4. [コンテンツの整理](./03-guides/02-content-structure.md) — ページを増やすときの設計
+5. [テーマのカスタマイズ](./03-guides/06-theming.md) — コンポーネントを差し替える
+6. [デプロイ](./03-guides/04-deployment.md) — 静的サイトを公開する
+7. [CLI リファレンス](./04-reference/01-cli.md) — コマンド一覧
 
 ## Makit の設計を詳しく知る
 

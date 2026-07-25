@@ -56,7 +56,7 @@ styles: ["styles/custom.css"],
 | `theme.components` | `{}`      | Per-component overrides, keyed by component name. Each value is a module path (default export), `{ from, export }`, or `false` to render nothing. Takes priority over `dir` and `extends`. |
 | `theme.dir`        | `"theme"` | Directory scanned for files named after a component in kebab-case, such as `theme/header.tsx`. `false` disables the scan.                                                                  |
 
-See the [theming guide](../03-guides/theming.md) for the component list and the [theme package reference](./theme-packages.md) for building a theme.
+See the [theming guide](../03-guides/06-theming.md) for the component list and the [theme package reference](./05-theme-packages.md) for building a theme.
 
 ## Markdown
 
@@ -82,7 +82,7 @@ markdown: {
 | `tableOfContents`                     | H2–H3                           | Heading range; depths are 1–6.                                                                                                                         |
 | `remarkPlugins`, `rehypePlugins`      | `[]`                            | Unified plugins or `[plugin, options]` entries.                                                                                                        |
 
-See [Markdown syntax](../03-guides/markdown-syntax.md) for source and rendering examples.
+See [Markdown syntax](../03-guides/01-markdown-syntax.md) for source and rendering examples.
 
 ## Localization and navigation
 
@@ -104,13 +104,13 @@ Fallback behavior is `render`, `redirect`, or `not-found`; a missing collection 
 
 `root.behavior` also governs paths that carry no locale at all. A link to `/getting-started` on a site whose pages live at `/en-us/getting-started` and `/ja-jp/getting-started` is answered with the same language gateway `/` uses: `detect` sends the visitor to the locale they last read in, or to the closest match for their browser languages; `default` goes to `root.locale` (or `defaultLocale`); `select` offers the choice. Locales that do not have the page are left out, a path already starting with a locale prefix is still a 404, and the gateway pages themselves are excluded from the sitemap and site search.
 
-`collections` accepts explicit collection metadata or `{ mode: "discover" }`. `home` chooses a `page` or `portal` layout. `navigation` controls automatic/manual navigation, global links, fallback pages, pagination, numeric filename prefixes, and route groups. `navigation.auto.numericPrefixes` defaults to `true`, and unprefixed items default to `last`. A directory wrapped in parentheses, such as `(marketing)`, is never included in the URL; `navigation.auto.routeGroups` controls how it affects the sidebar — `"url"` (default) keeps it as its own section, `"flatten"` removes that section and promotes its pages into the parent level, and `false` disables route groups entirely. See [Content structure](../03-guides/content-structure.md#route-groups) for an example.
+`collections` accepts explicit collection metadata or `{ mode: "discover" }`. `home` chooses a `page` or `portal` layout. `navigation` controls automatic/manual navigation, global links, fallback pages, pagination, numeric filename prefixes, and route groups. `navigation.auto.numericPrefixes` defaults to `true`, and unprefixed items default to `last`. A directory wrapped in parentheses, such as `(marketing)`, is never included in the URL; `navigation.auto.routeGroups` controls how it affects the sidebar — `"url"` (default) keeps it as its own section, `"flatten"` removes that section and promotes its pages into the parent level, and `false` disables route groups entirely. See [Content structure](../03-guides/02-content-structure.md#route-groups) for an example.
 
 ## SEO, build, and validation
 
 ## Production analytics
 
-See [Production analytics](../03-guides/analytics.md) for all `analytics` options and provider-specific setup.
+See [Production analytics](../03-guides/05-analytics.md) for all `analytics` options and provider-specific setup.
 
 | Option                               | Default                                      | Description                                                                                                               |
 | ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -122,8 +122,8 @@ See [Production analytics](../03-guides/analytics.md) for all `analytics` option
 | `dev` / `preview`                    | port `3000`, host `localhost`, `open: false` | Local server options; `dev.silentNext` suppresses internal output.                                                        |
 | `validation.strict`                  | `false`                                      | Promote warnings to errors. `disallowFrontMatter` forbids YAML front matter; `failOn` promotes selected diagnostic codes. |
 
-By default, lightweight YAML front matter may replace `.meta.ts` for flat page values such as `title`, `description`, or `order`. It does not support nested values or arrays of objects, and it cannot be combined with non-empty front matter and a `.meta.ts` file for the same page. See [Content structure](../03-guides/content-structure.md#use-lightweight-front-matter) for an example and selection guidance.
+By default, lightweight YAML front matter may replace `.meta.ts` for flat page values such as `title`, `description`, or `order`. It does not support nested values or arrays of objects, and it cannot be combined with non-empty front matter and a `.meta.ts` file for the same page. See [Content structure](../03-guides/02-content-structure.md#use-lightweight-front-matter) for an example and selection guidance.
 
 ## Deployment
 
-`deployment` configures an Adapter, config-file ownership (`generated`, `merge`, or `manual`), redirects, headers, clean URLs, custom domains, generated CI, and adapter previews. Site-level `redirects` entries use `{ from, to, status }` with 301, 302, 307, or 308; `headers` entries use `{ path, headers }`. See the [Adapter reference](./adapters.md) for provider-specific options.
+`deployment` configures an Adapter, config-file ownership (`generated`, `merge`, or `manual`), redirects, headers, clean URLs, custom domains, generated CI, and adapter previews. Site-level `redirects` entries use `{ from, to, status }` with 301, 302, 307, or 308; `headers` entries use `{ path, headers }`. See the [Adapter reference](./04-adapters.md) for provider-specific options.

@@ -11,7 +11,7 @@ export default defineConfig({
 });
 ```
 
-コンポーネントを 1、2 個差し替えたいだけの場合はパッケージは不要です。[テーマのカスタマイズ](../03-guides/theming.md)を参照してください。
+コンポーネントを 1、2 個差し替えたいだけの場合はパッケージは不要です。[テーマのカスタマイズ](../03-guides/06-theming.md)を参照してください。
 
 ## パッケージ構成
 
@@ -67,7 +67,7 @@ export function Footer({ footer }: FooterProps) {
 }
 ```
 
-コンポーネント名、props 型、Server / Client の制約は、コンポーネント単位の差し替えと同じです。一覧は[テーマのカスタマイズ](../03-guides/theming.md)にあります。props 型は公開 API であり、セマンティックバージョニングの対象です。
+コンポーネント名、props 型、Server / Client の制約は、コンポーネント単位の差し替えと同じです。一覧は[テーマのカスタマイズ](../03-guides/06-theming.md)にあります。props 型は公開 API であり、セマンティックバージョニングの対象です。
 
 `@natsuneko-laboratory/makit-runtime` は、`react` や `next` と同様に `peerDependencies` へ宣言してください。組み込みテーマ自身も同じ形で宣言しています。
 

@@ -96,7 +96,7 @@ docs/(marketing)/about.md
 /about/
 ```
 
-See [Content structure](./03-guides/content-structure.md#route-groups) for how to also drop the sidebar grouping.
+See [Content structure](./03-guides/02-content-structure.md#route-groups) for how to also drop the sidebar grouping.
 
 ## The theme renders, Makit resolves
 
@@ -109,4 +109,4 @@ theme/header.tsx     → replaces the Header component
 theme/docs-page.tsx  → replaces the whole page shell
 ```
 
-Resolving content and rendering it stay separate: routing, navigation, and validation behave the same no matter which components draw the page, and the output stays fully static. See [Theming](./03-guides/theming.md).
+Resolving content and rendering it stay separate: routing, navigation, and validation behave the same no matter which components draw the page, and the output stays fully static. See [Theming](./03-guides/06-theming.md).

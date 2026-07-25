@@ -68,7 +68,7 @@ export default defineCategory({
 
 `type` は既定で `section`、`order` は並び順、`hidden` はサブツリーの非表示、`collapsible` と `collapsed` は折りたたみ動作を制御します。`index` を指定すると、そのカテゴリをクリック可能にできます。
 
-[仮想グループ（Route Group）](../03-guides/content-structure.md)ディレクトリに置いた `category.makit.ts` は、既定の `navigation.auto.routeGroups: "url"` では引き続き適用されます。`"flatten"` の場合は、そのグループ自体がナビゲーション上のセクションを持たないため無視され、`route-group-category-ignored` 警告が出ます。
+[仮想グループ（Route Group）](../03-guides/02-content-structure.md)ディレクトリに置いた `category.makit.ts` は、既定の `navigation.auto.routeGroups: "url"` では引き続き適用されます。`"flatten"` の場合は、そのグループ自体がナビゲーション上のセクションを持たないため無視され、`route-group-category-ignored` 警告が出ます。
 
 ## 手動ナビゲーション
 

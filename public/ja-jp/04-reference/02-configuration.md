@@ -76,7 +76,7 @@ export default defineConfig({
 | `theme.dir`                | `string` または `false`、`"theme"`                     | `theme/header.tsx` のように、コンポーネント名のケバブケースのファイルを探索するディレクトリ。`false` で無効化。                                           |
 | `styles`                   | `string[]`                                             | プロジェクト内から読み込む追加 CSS。                                                                                                                      |
 
-コンポーネント名の一覧は[テーマのカスタマイズ](../03-guides/theming.md)、テーマの作り方は[テーマパッケージリファレンス](./theme-packages.md)を参照してください。
+コンポーネント名の一覧は[テーマのカスタマイズ](../03-guides/06-theming.md)、テーマの作り方は[テーマパッケージリファレンス](./05-theme-packages.md)を参照してください。
 
 ## Markdown
 
@@ -113,7 +113,7 @@ export default defineConfig({
 | `tableOfContents`                 | object                                              | `minDepth`（既定 2）から `maxDepth`（既定 3）までを目次に含めます。                                     |
 | `remarkPlugins` / `rehypePlugins` | plugin 配列                                         | Markdown 処理の前後に Unified プラグインを追加します。プラグインまたは `[plugin, options]` を渡します。 |
 
-構文と表示の対応は[Markdown 構文](../03-guides/markdown-syntax.md)を参照してください。
+構文と表示の対応は[Markdown 構文](../03-guides/01-markdown-syntax.md)を参照してください。
 
 ## 多言語
 
@@ -173,16 +173,16 @@ export default defineConfig({
 | `navigation.global`                 | サイト共通リンク。項目は `href` または `collection` のどちらか一方を持てます。                                                                                                                                                                                                                                   |
 | `navigation.pagination`             | 前後ページリンク。`enabled` と、セクションをまたぐ `crossSection` は既定で `true`。                                                                                                                                                                                                                              |
 | `navigation.auto.numericPrefixes`   | `01-` のような接頭辞で自動順序を制御するか。既定 `true`。                                                                                                                                                                                                                                                        |
-| `navigation.auto.routeGroups`       | `(marketing)` のような括弧付きディレクトリを URL から除外するか。既定 `"url"` はサイドバー上のセクションとして残し、`"flatten"` はそのセクションも外して子ページを親の階層へ繰り上げ、`false` は Route Group 自体を無効化します。詳細は[コンテンツの整理](../03-guides/content-structure.md)を参照してください。 |
+| `navigation.auto.routeGroups`       | `(marketing)` のような括弧付きディレクトリを URL から除外するか。既定 `"url"` はサイドバー上のセクションとして残し、`"flatten"` はそのセクションも外して子ページを親の階層へ繰り上げ、`false` は Route Group 自体を無効化します。詳細は[コンテンツの整理](../03-guides/02-content-structure.md)を参照してください。 |
 | `navigation.auto.unorderedPosition` | 接頭辞なしを `first` / `last`（既定）に置きます。                                                                                                                                                                                                                                                                |
 
-ページ、カテゴリ、Collection、手動ナビゲーションの詳細は[メタデータ API](./metadata.md)を参照してください。
+ページ、カテゴリ、Collection、手動ナビゲーションの詳細は[メタデータ API](./03-metadata.md)を参照してください。
 
 ## SEO と生成物
 
 ## 本番限定の分析ツール
 
-[本番限定の分析ツール](../03-guides/analytics.md)に、すべての `analytics` 設定とプロバイダーごとの導入方法をまとめています。
+[本番限定の分析ツール](../03-guides/05-analytics.md)に、すべての `analytics` 設定とプロバイダーごとの導入方法をまとめています。
 
 | 項目                           | 型・既定値                  | 説明                                                              |
 | ------------------------------ | --------------------------- | ----------------------------------------------------------------- |
@@ -208,7 +208,7 @@ export default defineConfig({
 | `validation.disallowFrontMatter` | boolean、`false`      | YAML front matter を禁止し、`.meta.ts` に統一します。既定では簡易 front matter を使えます。 |
 | `validation.failOn`              | diagnostic code 配列  | 指定した警告だけをエラーへ昇格します。例: `["broken-link", "missing-anchor"]`。             |
 
-Markdown の先頭に置く front matter は、`title`、`description`、`order` のようなページ単位のフラットな値を `.meta.ts` の代わりに指定できます。ネストした値やオブジェクトの配列は対象外で、同じページの `.meta.ts` と non-empty の front matter は併用できません。例と使い分けは[コンテンツの整理](../03-guides/content-structure.md)を参照してください。
+Markdown の先頭に置く front matter は、`title`、`description`、`order` のようなページ単位のフラットな値を `.meta.ts` の代わりに指定できます。ネストした値やオブジェクトの配列は対象外で、同じページの `.meta.ts` と non-empty の front matter は併用できません。例と使い分けは[コンテンツの整理](../03-guides/02-content-structure.md)を参照してください。
 
 ## デプロイ、リダイレクト、ヘッダー
 
@@ -231,7 +231,7 @@ export default defineConfig({
 
 | 項目                               | 説明                                                                                                                                  |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `deployment.adapter`               | ホスティング固有の Adapter。設定例と各オプションは[Adapter リファレンス](./adapters.md)を参照してください。                           |
+| `deployment.adapter`               | ホスティング固有の Adapter。設定例と各オプションは[Adapter リファレンス](./04-adapters.md)を参照してください。                           |
 | `deployment.configFile.mode`       | `generated`（既定・上書き）、`merge`（既存設定と統合）、`manual`（生成しない）。Adapter によって対応範囲が異なります。                |
 | `deployment.redirects` / `headers` | リダイレクトの生成は既定で有効、カスタムヘッダーは既定で無効です。                                                                    |
 | `deployment.cleanUrls`             | 拡張子なし URL のホスト側設定を要求します。                                                                                           |
