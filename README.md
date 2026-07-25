@@ -107,6 +107,35 @@ Official adapters:
 - `@natsuneko-laboratory/makit-adapter-netlify`
 - `@natsuneko-laboratory/makit-adapter-vercel`
 
+## Themes
+
+The built-in theme needs no configuration. To replace the whole page shell,
+install a theme package and point `theme.extends` at it:
+
+```bash
+pnpm add @natsuneko-laboratory/makit-theme-terminal
+```
+
+```ts
+export default defineConfig({
+  theme: {
+    extends: "@natsuneko-laboratory/makit-theme-terminal",
+    // Individual components can still be replaced on top of the theme.
+    components: {
+      Footer: "./theme/footer.tsx",
+    },
+  },
+});
+```
+
+Official themes:
+
+- `@natsuneko-laboratory/makit-theme-terminal` — monospace and square-cornered, for CLI and infrastructure documentation
+- `@natsuneko-laboratory/makit-theme-product` — soft cards and pill navigation, for product documentation
+
+See the [theme specification](docs/05-THEME.md) for the full slot list and the
+rules for writing a theme.
+
 ## Documentation
 
 The documentation site is available in [English](public/en-us/index.md) and [Japanese](public/ja-jp/index.md). See also the [specification](docs/01-SPECIFICATION.md) for the full design and API details.

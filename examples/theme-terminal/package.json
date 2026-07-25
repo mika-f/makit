@@ -1,0 +1,15 @@
+{
+  "name": "makit-example-theme-terminal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "makit dev",
+    "build": "makit build",
+    "preview": "makit preview"
+  },
+  "dependencies": {
+    "@natsuneko-laboratory/makit": "workspace:*",
+    "@natsuneko-laboratory/makit-theme-terminal": "workspace:*"
+  }
+}

@@ -202,6 +202,27 @@ theme: {
 
 テーマはすべてのコンポーネントを実装する必要はなく、提供していないものは組み込みの実装が使われます。作り方は[テーマパッケージリファレンス](../04-reference/theme-packages.md)を参照してください。
 
+### 公式テーマ
+
+Makit と同時に 2 つのテーマを公開しています。
+
+| パッケージ                                   | 見た目                                                                         |
+| -------------------------------------------- | ------------------------------------------------------------------------------ |
+| `@natsuneko-laboratory/makit-theme-terminal` | 等幅・角丸なし・蛍光色のアクセント。CLI やインフラのドキュメント向け           |
+| `@natsuneko-laboratory/makit-theme-product`  | 柔らかいカードとピル型ナビ、グラデーションのトップページ。製品ドキュメント向け |
+
+```bash
+pnpm add @natsuneko-laboratory/makit-theme-terminal
+```
+
+```ts
+theme: {
+  extends: "@natsuneko-laboratory/makit-theme-terminal",
+},
+```
+
+どちらも manifest を持つため、アクセントカラーや角丸は設定に書き直さなくても適用されます。`makit.config.ts` で指定した値は常にそちらが優先されます。動くサイトは [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal) と [`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product) にあります。
+
 ## 開発中の挙動
 
 `makit dev` では、差し替えコンポーネントの編集は他のソースと同じように即座に反映されます。`theme/` へのファイル追加、削除、リネームは設定の再読み込みとして扱われ、再起動は不要です。

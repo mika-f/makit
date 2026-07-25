@@ -49,6 +49,24 @@ importers:
         specifier: ^19.2.17
         version: 19.2.17
 
+  examples/theme-product:
+    dependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../../packages/makit
+      '@natsuneko-laboratory/makit-theme-product':
+        specifier: workspace:*
+        version: link:../../packages/makit-theme-product
+
+  examples/theme-terminal:
+    dependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../../packages/makit
+      '@natsuneko-laboratory/makit-theme-terminal':
+        specifier: workspace:*
+        version: link:../../packages/makit-theme-terminal
+
   packages/adapter-cloudflare-pages:
     devDependencies:
       '@natsuneko-laboratory/makit':
@@ -259,6 +277,78 @@ importers:
       typescript:
         specifier: ^7.0.2
         version: 7.0.2
+
+  packages/makit-theme-product:
+    devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
+      '@natsuneko-laboratory/makit-runtime':
+        specifier: workspace:*
+        version: link:../makit-runtime
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      next:
+        specifier: ^16.2.10
+        version: 16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.7
+        version: 19.2.7(react@19.2.7)
+      tsdown:
+        specifier: ^0.22.8
+        version: 0.22.8(typescript@7.0.2)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))
+
+  packages/makit-theme-terminal:
+    devDependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../makit
+      '@natsuneko-laboratory/makit-runtime':
+        specifier: workspace:*
+        version: link:../makit-runtime
+      '@types/node':
+        specifier: ^26.1.1
+        version: 26.1.1
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      next:
+        specifier: ^16.2.10
+        version: 16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      react:
+        specifier: ^19.2.7
+        version: 19.2.7
+      react-dom:
+        specifier: ^19.2.7
+        version: 19.2.7(react@19.2.7)
+      tsdown:
+        specifier: ^0.22.8
+        version: 0.22.8(typescript@7.0.2)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.10
+        version: 4.1.10(@types/node@26.1.1)(vite@8.1.5(@types/node@26.1.1)(jiti@2.7.0))
 
 packages:
 

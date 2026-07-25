@@ -1,0 +1,93 @@
+/*
+ * Product theme (THEME §13.2). Imported after Makit's base stylesheet and
+ * before the project's own `styles`, so a project can still override anything
+ * here from `config.styles`.
+ */
+
+.makit-product {
+  font-family:
+    Inter,
+    "Inter Variable",
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Hiragino Sans",
+    "Noto Sans JP",
+    sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* Cards and popovers sit on the surface color, which is lifted off the page. */
+.makit-product .makit-product-card {
+  box-shadow: var(--makit-product-shadow);
+}
+
+/* The nav chevron points down when the section is open (no JS involved). */
+.makit-product details[open] > summary .makit-product-marker {
+  transform: rotate(180deg);
+}
+
+/*
+ * The reading column is generous rather than dense — this theme is aimed at
+ * marketing-adjacent product docs, not API reference.
+ */
+.makit-product .makit-prose {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+}
+
+.makit-product .makit-prose :where(h2) {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--makit-color-border);
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+.makit-product .makit-prose :where(h2:first-child) {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.makit-product .makit-prose :where(h3) {
+  margin-top: 2.25rem;
+  font-size: 1.175rem;
+  letter-spacing: -0.015em;
+}
+
+.makit-product .makit-prose :where(a) {
+  color: var(--makit-color-accent);
+  font-weight: 500;
+  text-decoration-color: color-mix(in srgb, var(--makit-color-accent) 35%, transparent);
+}
+
+.makit-product .makit-prose :where(blockquote) {
+  border-left-width: 3px;
+  border-radius: 0 var(--makit-radius) var(--makit-radius) 0;
+  background: var(--makit-color-muted);
+  padding: 0.25rem 1.25rem;
+  font-style: normal;
+}
+
+.makit-product .makit-prose .makit-alert {
+  border-left-width: 3px;
+  border-radius: var(--makit-radius);
+}
+
+.makit-product .makit-prose :where(table) {
+  font-size: 0.9375rem;
+}
+
+.makit-product pre.shiki {
+  border-radius: var(--makit-radius);
+  box-shadow: var(--makit-product-shadow);
+}
+
+/* Anchor targets clear the taller header. Must sit on the scrolling element
+   (`<html>`), not on the body class. */
+:root[data-makit-theme="product"] {
+  scroll-padding-top: 7rem;
+}
