@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "makit dev",
-    "build": "makit build",
+    "build": "node ../../packages/makit/dist/cli/index.mjs build --clean",
     "preview": "makit preview"
   },
   "dependencies": {
