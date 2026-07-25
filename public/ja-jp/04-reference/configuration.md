@@ -147,6 +147,8 @@ export default defineConfig({
 | `localeSwitcher.missingPage`       | 翻訳がないページで、フォールバックを開く `fallback`、locale のトップを開く `locale-root`、選択肢を出さない `disabled`。                         |
 | `messages`                         | locale ごとの `home` と `fallbackNotice` を上書きします。                                                                                       |
 
+`root.behavior` は、locale を含まない URL にも適用されます。ページが `/en-us/getting-started` と `/ja-jp/getting-started` にある場合、`/getting-started` は `/` と同じ振り分けページになります。`detect` は最後に閲覧した locale、次いでブラウザ言語で判定し、`default` は `root.locale`（省略時は `defaultLocale`）へ、`select` は選択画面を表示します。そのページを持たない locale は候補から外れ、先頭が locale 接頭辞の URL は従来どおり 404 です。振り分けページ自体はサイトマップと検索インデックスに含まれません。
+
 ## コンテンツとナビゲーション
 
 ```ts

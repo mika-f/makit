@@ -132,7 +132,7 @@ theme: { components: { Header: "./theme/header.tsx" } }
 | `RootLayout` | `RootLayoutProps` | 不可 | `<html>` と `<body>` を含むドキュメントシェル |
 | `DocsPage` | `DocsPageProps` | 不可 | 通常ページのシェル（Header / Sidebar / 本文 / ToC / Footer） |
 | `PortalHomePage` | `PortalHomePageProps` | 不可 | Portal レイアウトのサイトトップ（spec §33.2） |
-| `RootPage` | `RootPageProps` | 不可 | i18n ルート（`/`）のロケール判定・選択ページ（spec §35.1） |
+| `RootPage` | `RootPageProps` | 不可 | ロケール判定・選択ページ。i18n ルート（`/`、spec §35.1）とロケールなし URL（spec §35.7）の双方で使う |
 | `NotFoundPage` | `NotFoundPageProps` | 不可 | 404 ページ |
 
 ### 5.2 Part Slot
@@ -171,6 +171,7 @@ theme: { components: { Header: "./theme/header.tsx" } }
 
 * `CodeCopyEnhancer`（`PageContent` 内部のコピーボタン付与）
 * `RootDetect`（`RootPage` 内部のロケール判定）
+* `LocaleMemory`（閲覧中ロケールの保存。`bodyStart` として渡るため、`RootLayout` を差し替えても動作する）
 * `AnalyticsScripts`（解析タグ注入。テーマの責務ではない）
 * Markdown 本文の HTML 要素（`h2`、`table`、`pre` など）
 
@@ -189,7 +190,7 @@ export interface RootLayoutProps {
   htmlProps: ComponentProps<"html">;
   /** `<body>` へ展開する属性（dev サーバーの再読込マーカーを含む）。 */
   bodyProps: ComponentProps<"body">;
-  /** `<body>` 先頭へ描画する Makit 提供ノード（CSS 変数、テーマ判定スクリプト、解析タグ）。 */
+  /** `<body>` 先頭へ描画する Makit 提供ノード（CSS 変数、テーマ判定スクリプト、解析タグ、ロケール記憶）。 */
   bodyStart: ReactNode;
   components: ThemeComponents;
   children: ReactNode;
@@ -201,6 +202,18 @@ export interface DocsPageProps {
   i18n: I18nData;
   navigation: ResolvedNavNode[];
   /** 解決済みの Part Slot 集合（§12）。 */
+  components: ThemeComponents;
+}
+
+export interface RootPageProps {
+  behavior: RootBehavior;
+  /** 遷移先。`/` では各ロケールのトップ、ロケールなし URL では各ロケールの当該ページ（spec §35.7）。 */
+  locales: RootLocaleOption[];
+  defaultHref: string;
+  defaultLocale: string;
+  siteTitle: string;
+  /** ロケールなし URL のときの要求パス（`/getting-started` → `["getting-started"]`）。`/` では未設定。 */
+  segments?: readonly string[];
   components: ThemeComponents;
 }
 

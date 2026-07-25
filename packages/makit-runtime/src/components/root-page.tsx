@@ -10,11 +10,23 @@ export interface RootPageProps {
   /** BCP-47 tag of the site's default locale (`i18n.defaultLocale`). */
   defaultLocale: string;
   siteTitle: string;
+  /**
+   * The requested path's segments when this gateway stands in for a
+   * locale-less deep link — `/getting-started` -> `["getting-started"]`
+   * (spec §35.7). Absent at `/`. The standard implementation ignores it; a
+   * theme can use it to word the page differently for a deep link.
+   */
+  segments?: readonly string[];
   /** The resolved slot map (THEME §6). Unused by the standard implementation. */
   components: ThemeComponents;
 }
 
-/** The `/` route's behavior when i18n is enabled (spec §16.10). */
+/**
+ * The locale gateway: the `/` route's behavior when i18n is enabled (spec
+ * §16.10), reused for locale-less deep links (spec §35.7). `locales` carries
+ * whichever page each locale should receive — the locale's home at `/`, the
+ * requested page for a deep link.
+ */
 export function RootPage({
   behavior,
   locales,

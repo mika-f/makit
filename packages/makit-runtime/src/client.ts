@@ -7,3 +7,4 @@
  * is re-exported here from a React-free module instead.
  */
 export { THEME_STORAGE_KEY } from "./theme/storage-key.js";
+export { LOCALE_STORAGE_KEY } from "./i18n/locale-storage.js";

@@ -125,13 +125,21 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
     await writeText(join(appDir, "page.js"), rootPageTemplate());
     await writeText(
       join(appDir, "[locale]", "[[...slug]]", "page.js"),
-      slugPageTemplate("params.locale", "../../theme.js"),
+      slugPageTemplate({
+        localeExpression: "params.locale",
+        themeModulePath: "../../theme.js",
+        i18nEnabled: true,
+      }),
     );
   } else {
     const singleLocale = config.i18n.locales[0]?.urlLocale ?? "en";
     await writeText(
       join(appDir, "[[...slug]]", "page.js"),
-      slugPageTemplate(JSON.stringify(singleLocale), "../theme.js"),
+      slugPageTemplate({
+        localeExpression: JSON.stringify(singleLocale),
+        themeModulePath: "../theme.js",
+        i18nEnabled: false,
+      }),
     );
   }
 

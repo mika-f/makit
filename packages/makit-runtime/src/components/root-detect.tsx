@@ -3,9 +3,8 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import type { RootLocaleOption } from "../data/types.js";
+import { LOCALE_STORAGE_KEY } from "../i18n/locale-storage.js";
 import { negotiateLocale } from "../i18n/negotiate-locale.js";
-
-const LOCALE_STORAGE_KEY = "makit-locale";
 
 /** Client-side language detection for `i18n.root.behavior: "detect"` (spec §16.10). */
 export function RootDetect({
