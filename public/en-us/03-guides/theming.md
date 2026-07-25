@@ -202,6 +202,27 @@ theme: {
 
 A theme does not have to implement every component; anything it leaves out falls back to the built-in one. See the [theme package reference](../04-reference/theme-packages.md) to build one.
 
+### Official themes
+
+Two themes are published alongside Makit:
+
+| Package                                      | Looks like                                                                              |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `@natsuneko-laboratory/makit-theme-terminal` | Monospace and square-cornered, with a phosphor accent — for CLI and infrastructure docs |
+| `@natsuneko-laboratory/makit-theme-product`  | Soft cards, pill navigation, and a gradient home — for product docs                     |
+
+```bash
+pnpm add @natsuneko-laboratory/makit-theme-terminal
+```
+
+```ts
+theme: {
+  extends: "@natsuneko-laboratory/makit-theme-terminal",
+},
+```
+
+Each ships a manifest, so its accent color and radius apply without being restated — and anything you set in `makit.config.ts` still wins. Working sites for both are in [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal) and [`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product).
+
 ## Developing
 
 `makit dev` hot-reloads edits to your components like any other source file. Adding, removing, or renaming a file in `theme/` reloads the configuration automatically — no restart needed.

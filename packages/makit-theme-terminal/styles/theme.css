@@ -1,0 +1,93 @@
+/*
+ * Terminal theme (THEME §13.2). Imported after Makit's base stylesheet and
+ * before the project's own `styles`, so a project can still override anything
+ * here from `config.styles`.
+ */
+
+:root {
+  --makit-terminal-font:
+    ui-monospace, SFMono-Regular, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono",
+    "Noto Sans Mono CJK JP", monospace;
+}
+
+.makit-terminal {
+  font-family: var(--makit-terminal-font);
+  font-variant-ligatures: none;
+}
+
+/*
+ * Square corners are the theme's defining trait, and the standard components
+ * this theme still uses (search dialog, switchers, code blocks) hard-code
+ * Tailwind's `rounded-*` classes. Rendered Markdown is left alone so authored
+ * content keeps whatever shape it asked for.
+ */
+:root[data-makit-theme="terminal"] body :not(.makit-prose, .makit-prose *) {
+  border-radius: 0 !important;
+}
+
+:root[data-makit-theme="terminal"] pre.shiki,
+:root[data-makit-theme="terminal"] .makit-copy-button,
+:root[data-makit-theme="terminal"] .makit-prose :where(:not(pre) > code) {
+  border-radius: 0 !important;
+}
+
+/* The nav disclosure marker, flipped by `<details open>` (no JS involved). */
+.makit-terminal .makit-nav-marker::before {
+  content: "\25B8"; /* ▸ */
+}
+
+.makit-terminal details[open] > summary .makit-nav-marker::before {
+  content: "\25BE"; /* ▾ */
+}
+
+/*
+ * Monospace runs wide and dense, so the reading column needs more air than
+ * the standard theme's proportional text.
+ */
+.makit-terminal .makit-prose {
+  font-size: 0.9375rem;
+  line-height: 1.85;
+}
+
+.makit-terminal .makit-prose :where(h1, h2, h3, h4) {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* `##`-style heading markers, matching the page title's own prefix. */
+.makit-terminal .makit-prose :where(h2, h3)::before {
+  color: var(--makit-color-accent);
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.makit-terminal .makit-prose :where(h2)::before {
+  content: "## ";
+}
+
+.makit-terminal .makit-prose :where(h3)::before {
+  content: "### ";
+}
+
+.makit-terminal .makit-prose :where(a) {
+  text-decoration-style: dashed;
+}
+
+.makit-terminal .makit-prose :where(blockquote) {
+  border-left-style: dashed;
+  font-style: normal;
+}
+
+.makit-terminal .makit-prose .makit-alert {
+  border-left-width: 2px;
+}
+
+.makit-terminal pre.shiki {
+  border-color: var(--makit-color-border);
+  box-shadow: none;
+}
+
+.makit-terminal ::selection {
+  background: var(--makit-color-accent);
+  color: var(--makit-color-background);
+}
