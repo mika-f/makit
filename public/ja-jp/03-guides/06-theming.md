@@ -204,12 +204,14 @@ theme: {
 
 ### 公式テーマ
 
-Makit と同時に 2 つのテーマを公開しています。
+Makit と同時に 4 つのテーマを公開しています。
 
-| パッケージ                                   | 見た目                                                                         | プレビューサイト                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
-| `@natsuneko-laboratory/makit-theme-terminal` | 等幅・角丸なし・蛍光色のアクセント。CLI やインフラのドキュメント向け           | https://terminal.makit.natsuneko.com/ |
-| `@natsuneko-laboratory/makit-theme-product`  | 柔らかいカードとピル型ナビ、グラデーションのトップページ。製品ドキュメント向け | https://product.makit.natsuneko.com/  |
+| パッケージ                                    | 見た目                                                                         | プレビューサイト                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------- |
+| `@natsuneko-laboratory/makit-theme-terminal`  | 等幅・角丸なし・蛍光色のアクセント。CLI やインフラのドキュメント向け           | https://terminal.makit.natsuneko.com/  |
+| `@natsuneko-laboratory/makit-theme-product`   | 柔らかいカードとピル型ナビ、グラデーションのトップページ。製品ドキュメント向け | https://product.makit.natsuneko.com/   |
+| `@natsuneko-laboratory/makit-theme-editorial` | セリフ体と温かみのある紙色、細い罫線。ハンドブックや長文ガイド向け             | https://editorial.makit.natsuneko.com/ |
+| `@natsuneko-laboratory/makit-theme-brutalist` | 太い罫線とオフセットシャドウ、シグナルカラー。OSS や制作ツールの文書向け       | https://brutalist.makit.natsuneko.com/ |
 
 ```bash
 pnpm add @natsuneko-laboratory/makit-theme-terminal
@@ -221,7 +223,7 @@ theme: {
 },
 ```
 
-どちらも manifest を持つため、アクセントカラーや角丸は設定に書き直さなくても適用されます。`makit.config.ts` で指定した値は常にそちらが優先されます。動くサイトは [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal) と [`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product) にあります。
+いずれも manifest を持つため、アクセントカラーや角丸は設定に書き直さなくても適用されます。`makit.config.ts` で指定した値は常にそちらが優先されます。動くサイトは [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal)、[`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product)、[`examples/theme-editorial`](https://github.com/mika-f/makit/tree/main/examples/theme-editorial)、[`examples/theme-brutalist`](https://github.com/mika-f/makit/tree/main/examples/theme-brutalist) にあります。
 
 ## 開発中の挙動
 

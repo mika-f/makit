@@ -132,6 +132,8 @@ Official themes:
 
 - `@natsuneko-laboratory/makit-theme-terminal` — monospace and square-cornered, for CLI and infrastructure documentation
 - `@natsuneko-laboratory/makit-theme-product` — soft cards and pill navigation, for product documentation
+- `@natsuneko-laboratory/makit-theme-editorial` — serif typography and warm paper tones, for handbooks and long-form guides
+- `@natsuneko-laboratory/makit-theme-brutalist` — heavy rules and high-contrast signal color, for bold OSS and creative-tool documentation
 
 See the [theme specification](docs/05-THEME.md) for the full slot list and the
 rules for writing a theme.

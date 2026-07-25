@@ -1,0 +1,92 @@
+import {
+  getCollections,
+  getGlobalNavigation,
+  getHomeRoute,
+  getSearchIndex,
+} from "@natsuneko-laboratory/makit-runtime";
+import type { DocsPageProps } from "@natsuneko-laboratory/makit-runtime";
+
+export async function DocsPage({ page, site, i18n, navigation, components: C }: DocsPageProps) {
+  const [homeHref, collections, globalNavigation, searchEntries] = await Promise.all([
+    getHomeRoute(page.locale).then((href) => href ?? `${site.basePath}/`),
+    getCollections(),
+    getGlobalNavigation(page.locale),
+    getSearchIndex(page.locale),
+  ]);
+  const columns = page.sidebar
+    ? page.tableOfContents
+      ? "md:grid-cols-[17rem_minmax(0,1fr)] xl:grid-cols-[17rem_minmax(0,1fr)_17rem]"
+      : "md:grid-cols-[17rem_minmax(0,1fr)]"
+    : page.tableOfContents
+      ? "xl:grid-cols-[minmax(0,1fr)_17rem]"
+      : "grid-cols-1";
+  const headerActions = (
+    <>
+      <C.SearchDialog
+        entries={searchEntries}
+        pagefindEnabled={process.env.NODE_ENV === "production"}
+        pagefindBundlePath={`${site.basePath}/pagefind/`}
+      />
+      <C.CollectionSwitcher
+        collections={collections}
+        currentCollectionId={page.collectionId}
+        locale={page.locale}
+      />
+      {i18n.enabled && (
+        <C.LocaleSwitcher
+          page={page}
+          locales={i18n.locales}
+          missingPageBehavior={i18n.localeSwitcher.missingPage}
+        />
+      )}
+      {site.theme.colorScheme === "system" && <C.ThemeToggle />}
+    </>
+  );
+  return (
+    <div className="makit-brutalist-grid flex min-h-screen flex-col bg-[var(--makit-color-background)] text-[var(--makit-color-foreground)]">
+      <C.Header
+        header={site.header}
+        siteTitle={site.title}
+        homeHref={homeHref}
+        actions={headerActions}
+        globalNavigation={globalNavigation}
+      />
+      <div className={`mx-auto grid w-full max-w-[94rem] flex-1 grid-cols-1 ${columns}`}>
+        {page.sidebar && (
+          <C.Sidebar navigation={navigation} currentRoute={page.route} components={C} />
+        )}
+        <main
+          data-pagefind-body
+          className="min-w-0 bg-[var(--makit-color-background)] px-5 py-12 sm:px-8 md:px-10 md:py-16"
+        >
+          <article className="mx-auto max-w-3xl">
+            <C.FallbackNotice page={page} i18n={i18n} />
+            <C.Breadcrumbs items={page.breadcrumbs} />
+            <C.PageHeader page={page} />
+            <C.PageContent html={page.html} copyButton={site.markdown.code.copyButton} />
+            <C.PrevNextLinks
+              prev={page.navigationPosition?.prev}
+              next={page.navigationPosition?.next}
+            />
+          </article>
+        </main>
+        {page.tableOfContents && (
+          <C.TableOfContents
+            headings={page.headings}
+            minDepth={site.markdown.tableOfContents.minDepth}
+            maxDepth={site.markdown.tableOfContents.maxDepth}
+            actions={
+              <C.PageActions
+                route={page.route}
+                editUrl={page.isFallback ? undefined : page.editUrl}
+                markdownEnabled={site.llms.enabled && !page.isFallback && !page.draft}
+                placement="table-of-contents"
+              />
+            }
+          />
+        )}
+      </div>
+      <C.Footer footer={site.footer} />
+    </div>
+  );
+}
