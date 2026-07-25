@@ -206,12 +206,12 @@ theme: {
 
 Makit と同時に 4 つのテーマを公開しています。
 
-| パッケージ                                    | 見た目                                                                         | プレビューサイト                      |
-| --------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------- |
-| `@natsuneko-laboratory/makit-theme-terminal`  | 等幅・角丸なし・蛍光色のアクセント。CLI やインフラのドキュメント向け           | https://terminal.makit.natsuneko.com/ |
-| `@natsuneko-laboratory/makit-theme-product`   | 柔らかいカードとピル型ナビ、グラデーションのトップページ。製品ドキュメント向け | https://product.makit.natsuneko.com/  |
-| `@natsuneko-laboratory/makit-theme-editorial` | セリフ体と温かみのある紙色、細い罫線。ハンドブックや長文ガイド向け             | `examples/theme-editorial`            |
-| `@natsuneko-laboratory/makit-theme-brutalist` | 太い罫線とオフセットシャドウ、シグナルカラー。OSS や制作ツールの文書向け       | `examples/theme-brutalist`            |
+| パッケージ                                    | 見た目                                                                         | プレビューサイト                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------- |
+| `@natsuneko-laboratory/makit-theme-terminal`  | 等幅・角丸なし・蛍光色のアクセント。CLI やインフラのドキュメント向け           | https://terminal.makit.natsuneko.com/  |
+| `@natsuneko-laboratory/makit-theme-product`   | 柔らかいカードとピル型ナビ、グラデーションのトップページ。製品ドキュメント向け | https://product.makit.natsuneko.com/   |
+| `@natsuneko-laboratory/makit-theme-editorial` | セリフ体と温かみのある紙色、細い罫線。ハンドブックや長文ガイド向け             | https://editorial.makit.natsuneko.com/ |
+| `@natsuneko-laboratory/makit-theme-brutalist` | 太い罫線とオフセットシャドウ、シグナルカラー。OSS や制作ツールの文書向け       | https://brutalist.makit.natsuneko.com/ |
 
 ```bash
 pnpm add @natsuneko-laboratory/makit-theme-terminal
