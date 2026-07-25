@@ -6,6 +6,7 @@ export {
   getGlobalNavigation,
   getHomeData,
   getHomeRoute,
+  getLocaleAliasTargets,
   getLocalesData,
   getPageById,
   getPageForRoute,
@@ -57,6 +58,7 @@ export type {
   ThemeData,
 } from "./data/types.js";
 export { buildPageMetadata, buildSiteMetadata } from "./metadata/build-metadata.js";
+export { localeAliasFallback } from "./i18n/locale-alias.js";
 
 // Every theme slot's default implementation (THEME §5). A theme may import
 // these to wrap or recompose the standard theme.
@@ -84,8 +86,12 @@ export { ThemeScript } from "./theme/theme-script.js";
 // Also re-exported from `./client`, which is where a Client Component should
 // import it from (THEME §11).
 export { THEME_STORAGE_KEY } from "./theme/storage-key.js";
+export { LOCALE_STORAGE_KEY } from "./i18n/locale-storage.js";
 export { AnalyticsScripts } from "./analytics/analytics-scripts.js";
 export type { AnalyticsScriptsConfig } from "./analytics/analytics-scripts.js";
+// Rendered by the generated root layout, not a slot: it records the locale of
+// whatever page is being viewed for the locale gateway (spec §35.7).
+export { LocaleMemory } from "./components/locale-memory.js";
 export { ThemeVariables } from "./theme/theme-variables.js";
 
 // Slot Props are public API (THEME §3.3).

@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { collectLocaleAliasRoutes, resolveLocaleAliasTargets } from "../i18n/locale-alias.js";
 import {
   collectionMapPath,
   collectionNavigationPath,
@@ -22,6 +23,7 @@ import type {
   LocaleRouteMap,
   PortalHomeData,
   ResolvedNavNode,
+  RootLocaleOption,
   RouteMapEntry,
   SearchEntry,
   SiteData,
@@ -139,6 +141,23 @@ export async function getHomeRoute(locale: string): Promise<string | undefined> 
   return (await getPageById(locale, entry.collectionId, entry.pageId)).route;
 }
 
+/**
+ * The per-locale versions of a locale-less path (spec §35.7) — what
+ * `/getting-started` offers when the real pages live at
+ * `/en-us/getting-started` and `/ja-jp/getting-started`. Empty when the path
+ * belongs to no locale, i.e. it is a genuine 404.
+ */
+export async function getLocaleAliasTargets(
+  segments: readonly string[],
+): Promise<RootLocaleOption[]> {
+  const [i18n, routeMap, pageMap] = await Promise.all([
+    getLocalesData(),
+    getRouteMap(),
+    getPageMap(),
+  ]);
+  return resolveLocaleAliasTargets(i18n, { routeMap, pageMap }, segments);
+}
+
 export interface StaticParam {
   locale: string;
   slug: string[];
@@ -148,10 +167,16 @@ export interface StaticParam {
  * Params for every non-draft page, for `generateStaticParams` (spec §41).
  * Combines the page map (every real/fallback/synthesized page, honoring
  * `draft`) with any route-map-only entries — currently just the portal
- * home, which has no backing `GeneratedPage`.
+ * home, which has no backing `GeneratedPage` — and, when i18n is enabled, one
+ * locale gateway per locale-less path (spec §35.7). Real routes are collected
+ * first, so a gateway never shadows a page that genuinely lives at that URL.
  */
 export async function getAllStaticParams(): Promise<StaticParam[]> {
-  const [pageMap, routeMap] = await Promise.all([getPageMap(), getRouteMap()]);
+  const [pageMap, routeMap, i18n] = await Promise.all([
+    getPageMap(),
+    getRouteMap(),
+    getLocalesData(),
+  ]);
   const params: StaticParam[] = [];
   const seen = new Set<string>();
 
@@ -174,6 +199,16 @@ export async function getAllStaticParams(): Promise<StaticParam[]> {
       seen.add(key);
       params.push({ locale, slug: joinedSegments === "" ? [] : joinedSegments.split("/") });
     }
+  }
+
+  // A locale-less path occupies the `[locale]` slot with its own first
+  // segment: `/getting-started` is `{ locale: "getting-started", slug: [] }`.
+  for (const segments of collectLocaleAliasRoutes(i18n, { routeMap, pageMap })) {
+    const [first, ...rest] = segments;
+    const key = `${first}:${rest.join("/")}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    params.push({ locale: first!, slug: rest });
   }
 
   return params;

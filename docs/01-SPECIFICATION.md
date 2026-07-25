@@ -1548,6 +1548,31 @@ Collection 全体が対象ロケールにない場合:
 
 の順で解決する。
 
+## 35.7 ロケールなし URL
+
+i18n 有効時、すべてのページはロケール接頭辞の下に存在するため、`/getting-started` のようなロケールを含まない URL は本来どのページにも一致しない。
+
+これらの URL には、`/` と同じロケール振り分けページ（Locale Gateway）を静的に生成する。
+
+```text
+/getting-started   → /en-us/getting-started
+                     /ja-jp/getting-started
+```
+
+振り分け方式は `i18n.root.behavior` に従う。
+
+* `default` — `i18n.root.locale`（省略時は `defaultLocale`）へ遷移する
+* `detect` — 保存されたロケール、次いでブラウザ言語（§35.3）で判定する
+* `select` — 遷移先を選択させる
+
+対象は、いずれかのロケールが持つ全ルートの和集合とする。ロケールがそのページを持たない場合、そのロケールは候補から除外する。draft ページは候補にならない。
+
+先頭セグメントがロケール接頭辞である URL は対象外とし、通常どおり 404 とする。
+
+Locale Gateway は正規ページの複製であるため、`noindex, nofollow` を付与し、サイトマップと検索インデックスには含めない。
+
+最後に閲覧したロケールは `localStorage` の `makit-locale` に保存し、`detect` の判定で最優先とする。ロケール接頭辞を持つページの表示時にのみ更新するため、Locale Gateway 自体は保存内容を書き換えない。
+
 ---
 
 # 36. Markdown 処理
@@ -1797,6 +1822,10 @@ export function generateStaticParams() {
   }));
 }
 ```
+
+`[locale]` はロケール接頭辞を持たない URL も捕捉する。route map に一致しない場合は、ロケールなし URL（§35.7）として解決し、いずれのロケールにも存在しなければ 404 とする。
+
+静的出力のため、Locale Gateway も `generateStaticParams` に含める。実在するルートを先に列挙し、同じ params を持つ Gateway は生成しない。
 
 ---
 

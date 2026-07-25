@@ -159,12 +159,71 @@ describe("generated entries", () => {
   });
 
   it("passes the slot map to the page slots", () => {
-    const template = slugPageTemplate("params.locale", "../../theme.js");
+    const template = slugPageTemplate({
+      localeExpression: "params.locale",
+      themeModulePath: "../../theme.js",
+      i18nEnabled: true,
+    });
 
     expect(template).toContain('import { themeComponents } from "../../theme.js";');
     expect(template).toContain("const { DocsPage } = themeComponents;");
     expect(template).toContain("components={themeComponents}");
     expect(notFoundTemplate()).toContain("<NotFoundPage components={themeComponents} />");
+  });
+
+  it("serves an unmatched path as a locale gateway when i18n is enabled", () => {
+    const template = slugPageTemplate({
+      localeExpression: "params.locale",
+      themeModulePath: "../../theme.js",
+      i18nEnabled: true,
+    });
+
+    expect(template).toContain("getLocaleAliasTargets");
+    expect(template).toContain("const segments = [locale, ...(params.slug ?? [])];");
+    expect(template).toContain("if (targets.length === 0) notFound();");
+    expect(template).toContain("<RootPage behavior={i18n.root.behavior}");
+    // The gateway duplicates localized pages, so it must stay out of search
+    // engines (spec §35.7).
+    expect(template).toContain("{ robots: { index: false, follow: false } }");
+  });
+
+  it("404s an unmatched path on a single-locale site", () => {
+    const template = slugPageTemplate({
+      localeExpression: '"en"',
+      themeModulePath: "../theme.js",
+      i18nEnabled: false,
+    });
+
+    expect(template).not.toContain("getLocaleAliasTargets");
+    expect(template).not.toContain("RootPage");
+    expect(template).toContain("if (!entry) {\n    notFound();\n  }");
+    expect(template).toContain("return params.map((param) => ({ slug: param.slug }));");
+  });
+
+  it("records the visitor's locale from the layout only when i18n is enabled", () => {
+    const single = rootLayoutTemplate(
+      resolveConfig({ title: "Test" }, { root: "/project", configPath: "/project/makit.config.ts" }),
+    );
+    const localized = rootLayoutTemplate(
+      resolveConfig(
+        {
+          title: "Test",
+          i18n: {
+            defaultLocale: "en-US",
+            locales: [
+              { locale: "en-US", label: "English" },
+              { locale: "ja-JP", label: "日本語" },
+            ],
+          },
+        },
+        { root: "/project", configPath: "/project/makit.config.ts" },
+      ),
+    );
+
+    expect(single).not.toContain("LocaleMemory");
+    expect(localized).toContain(
+      '<LocaleMemory urlLocales={["en-us","ja-jp"]} basePath={site.basePath} />',
+    );
   });
 });
 

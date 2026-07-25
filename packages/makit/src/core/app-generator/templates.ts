@@ -70,9 +70,18 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
   // `<html>`/`<body>` themselves belong to the RootLayout slot (THEME §10.3);
   // what stays here is everything the rest of the pipeline depends on —
   // the attributes it must carry and the nodes it must render first.
+  // `LocaleMemory` renders here rather than inside a page slot so that every
+  // localized route records the visitor's locale for the gateway (spec §35.7),
+  // even when a theme replaces DocsPage/PortalHomePage wholesale.
+  const localeMemory = config.i18n.enabled
+    ? `\n          <LocaleMemory urlLocales={${JSON.stringify(
+        config.i18n.locales.map((locale) => locale.urlLocale),
+      )}} basePath={site.basePath} />`
+    : "";
+
   return `import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
-import { AnalyticsScripts, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, ${config.i18n.enabled ? "LocaleMemory, " : ""}getSiteData } from "@natsuneko-laboratory/makit-runtime";
 import { themeComponents } from "./theme.js";
 
 const analytics = ${JSON.stringify(config.analytics)};
@@ -99,7 +108,7 @@ export default async function RootLayout({ children }) {
         <>
           <ThemeVariables theme={site.theme} />
           {colorScheme === "system" && <ThemeScript />}
-          {process.env.NODE_ENV === "production" && <AnalyticsScripts config={analytics} />}
+          {process.env.NODE_ENV === "production" && <AnalyticsScripts config={analytics} />}${localeMemory}
         </>
       }
     >
@@ -141,7 +150,10 @@ import { themeComponents } from "./theme.js";
 export default async function Page() {
   const [i18n, site] = await Promise.all([getLocalesData(), getSiteData()]);
 
-  const defaultLocaleConfig = i18n.locales.find((locale) => locale.locale === i18n.defaultLocale);
+  // \`root.locale\` overrides which locale a visitor lands on without a better
+  // signal — same choice the adapter's \`/\` redirect makes (spec §35.7).
+  const rootLocale = i18n.root.locale ?? i18n.defaultLocale;
+  const defaultLocaleConfig = i18n.locales.find((locale) => locale.locale === rootLocale);
   const defaultHref =
     (defaultLocaleConfig && (await getHomeRoute(defaultLocaleConfig.urlLocale))) ?? \`\${site.basePath}/\`;
 
@@ -163,36 +175,76 @@ export default async function Page() {
 `;
 }
 
+export interface SlugPageTemplateOptions {
+  /** JS expression yielding the locale: the `[locale]` param, or a literal for a single-locale site. */
+  localeExpression: string;
+  /** Import specifier for the generated theme module, relative to the page file. */
+  themeModulePath: string;
+  /** Whether i18n is enabled — only then can a path be locale-less (spec §35.7). */
+  i18nEnabled: boolean;
+}
+
 /**
  * The `[[...slug]]` page, shared by both the i18n-enabled
  * `[locale]/[[...slug]]` route and the single-locale root `[[...slug]]` route.
  * `themeModulePath` differs between the two because they sit at different
  * depths below `.makit/app`.
  */
-export function slugPageTemplate(localeExpression: string, themeModulePath: string): string {
+export function slugPageTemplate({
+  localeExpression,
+  themeModulePath,
+  i18nEnabled,
+}: SlugPageTemplateOptions): string {
+  // With i18n on, `[locale]` also catches paths whose first segment is not a
+  // locale at all (`/getting-started`). Those are served as a locale gateway
+  // rather than a 404 when some locale does have the page (spec §35.7); the
+  // gateway itself is never indexed, since the localized pages are canonical.
+  const aliasMetadata = i18nEnabled
+    ? `
+    const targets = await getLocaleAliasTargets([locale, ...(params.slug ?? [])]);
+    return targets.length > 0 ? { robots: { index: false, follow: false } } : {};`
+    : `
+    return {};`;
+  const aliasPage = i18nEnabled
+    ? `
+    const segments = [locale, ...(params.slug ?? [])];
+    const targets = await getLocaleAliasTargets(segments);
+    if (targets.length === 0) notFound();
+
+    const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
+    const fallback = localeAliasFallback(i18n, targets);
+    const { RootPage } = themeComponents;
+
+    return (
+      <RootPage behavior={i18n.root.behavior} locales={targets} defaultHref={fallback.href} defaultLocale={i18n.defaultLocale} siteTitle={site.title} segments={segments} components={themeComponents} />
+    );`
+    : `
+    notFound();`;
+
   return `import { notFound } from "next/navigation";
 import {
   buildPageMetadata,
   buildSiteMetadata,
   getAllStaticParams,
   getCollectionNavigation,
-  getHomeData,
+  getHomeData,${i18nEnabled ? "\n  getLocaleAliasTargets," : ""}
   getLocalesData,
   getPageForRoute,
   getRouteEntry,
-  getSiteData,
+  getSiteData,${i18nEnabled ? "\n  localeAliasFallback," : ""}
 } from "@natsuneko-laboratory/makit-runtime";
 import { themeComponents } from ${JSON.stringify(themeModulePath)};
 
 export async function generateStaticParams() {
-  ${localeExpression === "params.locale" ? "return getAllStaticParams();" : "const params = await getAllStaticParams();\n  return params.map((param) => ({ slug: param.slug }));"}
+  ${i18nEnabled ? "return getAllStaticParams();" : "const params = await getAllStaticParams();\n  return params.map((param) => ({ slug: param.slug }));"}
 }
 
 export async function generateMetadata({ params }) {
   params = await params;
   const locale = ${localeExpression};
   const entry = await getRouteEntry(locale, params.slug ?? []);
-  if (!entry) return {};
+  if (!entry) {${aliasMetadata}
+  }
   const site = await getSiteData();
   if (entry.kind === "portal") return buildSiteMetadata(site);
   const page = await getPageForRoute(locale, params.slug ?? []);
@@ -204,7 +256,8 @@ export default async function Page({ params }) {
   params = await params;
   const locale = ${localeExpression};
   const entry = await getRouteEntry(locale, params.slug ?? []);
-  if (!entry) notFound();
+  if (!entry) {${aliasPage}
+  }
 
   const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
 
