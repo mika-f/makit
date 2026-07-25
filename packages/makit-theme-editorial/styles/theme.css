@@ -1,0 +1,70 @@
+/*
+ * Editorial theme. Warm neutral colors and typographic hierarchy evoke a
+ * reference book without sacrificing the navigation density of documentation.
+ */
+.makit-editorial {
+  font-family: "Avenir Next", Avenir, "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--makit-color-background);
+}
+
+.makit-editorial .makit-editorial-display,
+.makit-editorial .makit-prose :where(h1, h2, h3, h4) {
+  font-family:
+    Iowan Old Style,
+    Baskerville,
+    "Times New Roman",
+    "Yu Mincho",
+    "Hiragino Mincho ProN",
+    serif;
+}
+
+.makit-editorial details[open] > summary .makit-editorial-marker {
+  transform: rotate(45deg);
+}
+
+.makit-editorial .makit-prose {
+  font-family: Charter, "Bitstream Charter", "Noto Serif JP", Georgia, serif;
+  font-size: 1.0625rem;
+  line-height: 1.9;
+}
+
+.makit-editorial .makit-prose :where(h2) {
+  margin-top: 3.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--makit-color-border-strong);
+  font-size: 1.75rem;
+  letter-spacing: -0.015em;
+}
+
+.makit-editorial .makit-prose :where(h3) {
+  margin-top: 2.5rem;
+  font-size: 1.35rem;
+}
+
+.makit-editorial .makit-prose :where(a) {
+  color: var(--makit-color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.makit-editorial .makit-prose :where(blockquote) {
+  border-left: 1px solid var(--makit-color-border-strong);
+  background: transparent;
+  padding-left: 1.5rem;
+  color: var(--makit-color-subtle);
+  font-style: italic;
+}
+
+.makit-editorial .makit-prose :where(table) {
+  font-family: "Avenir Next", Avenir, "Noto Sans JP", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+}
+
+.makit-editorial .makit-prose .makit-alert,
+.makit-editorial pre.shiki {
+  border-radius: var(--makit-radius);
+}
+
+:root[data-makit-theme="editorial"] {
+  scroll-padding-top: 7rem;
+}

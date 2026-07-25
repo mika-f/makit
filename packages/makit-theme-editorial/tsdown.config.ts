@@ -1,0 +1,15 @@
+import { defineConfig } from "tsdown";
+
+export default defineConfig({
+  entry: {
+    index: "./src/index.ts",
+    manifest: "./src/manifest.ts",
+  },
+  format: ["esm"],
+  platform: "node",
+  target: "node20",
+  dts: true,
+  clean: true,
+  shims: false,
+  unbundle: true,
+});

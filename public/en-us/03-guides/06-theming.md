@@ -204,12 +204,14 @@ A theme does not have to implement every component; anything it leaves out falls
 
 ### Official themes
 
-Two themes are published alongside Makit:
+Four themes are published alongside Makit:
 
-| Package                                      | Looks like                                                                              | Preview site                          |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------- |
-| `@natsuneko-laboratory/makit-theme-terminal` | Monospace and square-cornered, with a phosphor accent — for CLI and infrastructure docs | https://terminal.makit.natsuneko.com/ |
-| `@natsuneko-laboratory/makit-theme-product`  | Soft cards, pill navigation, and a gradient home — for product docs                     | https://product.makit.natsuneko.com/  |
+| Package                                       | Looks like                                                                              | Preview site                          |
+| --------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------- |
+| `@natsuneko-laboratory/makit-theme-terminal`  | Monospace and square-cornered, with a phosphor accent — for CLI and infrastructure docs | https://terminal.makit.natsuneko.com/ |
+| `@natsuneko-laboratory/makit-theme-product`   | Soft cards, pill navigation, and a gradient home — for product docs                     | https://product.makit.natsuneko.com/  |
+| `@natsuneko-laboratory/makit-theme-editorial` | Serif typography, warm paper tones, and fine rules — for handbooks and long-form guides | `examples/theme-editorial`            |
+| `@natsuneko-laboratory/makit-theme-brutalist` | Heavy rules, offset shadows, and signal color — for bold OSS and creative-tool docs     | `examples/theme-brutalist`            |
 
 ```bash
 pnpm add @natsuneko-laboratory/makit-theme-terminal
@@ -221,7 +223,7 @@ theme: {
 },
 ```
 
-Each ships a manifest, so its accent color and radius apply without being restated — and anything you set in `makit.config.ts` still wins. Working sites for both are in [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal) and [`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product).
+Each ships a manifest, so its accent color and radius apply without being restated — and anything you set in `makit.config.ts` still wins. Working sites are in [`examples/theme-terminal`](https://github.com/mika-f/makit/tree/main/examples/theme-terminal), [`examples/theme-product`](https://github.com/mika-f/makit/tree/main/examples/theme-product), [`examples/theme-editorial`](https://github.com/mika-f/makit/tree/main/examples/theme-editorial), and [`examples/theme-brutalist`](https://github.com/mika-f/makit/tree/main/examples/theme-brutalist).
 
 ## Developing
 
