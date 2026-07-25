@@ -128,3 +128,7 @@ Resolution order for each component is: `theme.components`, then the `theme/` di
 | `theme-outside-project`     | A component reference resolves outside the project root (warning)       |
 
 A missing named export is reported by the site build rather than by `makit check`.
+
+## Example
+
+[`examples/theme`](https://github.com/mika-f/makit/tree/main/examples/theme) in the repository replaces several components and shows, in its README, how to move the same code into a `theme.extends` theme.

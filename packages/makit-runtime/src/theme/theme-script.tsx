@@ -1,4 +1,4 @@
-const THEME_STORAGE_KEY = "makit-theme";
+import { THEME_STORAGE_KEY } from "./storage-key.js";
 
 // Runs before hydration (in <head>, spec §21.3 `colorScheme: "system"`) so the
 // correct theme is applied before first paint — avoids a light/dark flash.
@@ -10,5 +10,3 @@ export type ThemeScriptProps = Record<string, never>;
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: SCRIPT }} />;
 }
-
-export { THEME_STORAGE_KEY };

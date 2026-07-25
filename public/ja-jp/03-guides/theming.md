@@ -144,6 +144,25 @@ React Server Components の仕組みから、次の 2 つの制約がありま�
 - ページ単位の 5 つ（`RootLayout`、`DocsPage`、`PortalHomePage`、`RootPage`、`NotFoundPage`）は Server Component でなければなりません。`components` をコンポーネント参照として受け取るためです。
 - Client Component は `async` にできません。生成データを読む必要があるものは Server Component として実装します。
 
+### Client Component の中での import
+
+`@natsuneko-laboratory/makit-runtime` は、ファイルシステムを読む生成データのローダーも export しています。`"use client"` のモジュールでは次のように使い分けます。
+
+- 型だけの import は常に安全です。コンパイル時に消えます。
+- 既定コンポーネントをラップするための import は動作します。
+- 定数などの値は `@natsuneko-laboratory/makit-runtime/client` から import します。このエントリーポイントは React に依存しないため、サーバー専用のコードが Client バンドルへ入り込みません。
+
+```tsx
+"use client";
+
+// 組み込みのハイドレーション前スクリプトが読むキー。独自のトグルでも
+// リロード後の状態を一致させられます。
+import { THEME_STORAGE_KEY } from "@natsuneko-laboratory/makit-runtime/client";
+import type { ThemeToggleProps } from "@natsuneko-laboratory/makit-runtime";
+```
+
+`the chunking context does not support external modules (request: node:fs/promises)` が出た場合は、Client Component がメインエントリーから値を import しています。その import を `/client` へ移してください。
+
 ## コンポーネントから使える import
 
 差し替えコンポーネントはプロジェクト内に置きますが、生成されるサイトの一部としてビルドされます。次のパッケージは、Makit が使っているものと同じ実体へ解決されます。
@@ -151,9 +170,11 @@ React Server Components の仕組みから、次の 2 つの制約がありま�
 - `react`、`react-dom`（`react/jsx-runtime` などのサブパスを含む）
 - `next`（`next/link`、`next/navigation`、`next/image`、`next/script` など）
 - `lucide-react`
-- `@natsuneko-laboratory/makit-runtime`
+- `@natsuneko-laboratory/makit-runtime` とその `/client` エントリーポイント
 
 そのため、プロジェクトが Next.js に依存していなくても `import Link from "next/link"` と書けます。自分のモジュールへの相対 import も通常どおり使えます。
+
+型は別の話です。エディタで `HeaderProps` などを解決させるには、`@natsuneko-laboratory/makit-runtime` と `@types/react` を `devDependencies` へ追加してください。どちらもビルドには不要です。
 
 Server Component からは、ランタイムが export しているローダー（`getCollections`、`getGlobalNavigation`、`getSearchIndex` など）で生成データを読めます。
 
@@ -186,3 +207,17 @@ theme: {
 `makit dev` では、差し替えコンポーネントの編集は他のソースと同じように即座に反映されます。`theme/` へのファイル追加、削除、リネームは設定の再読み込みとして扱われ、再起動は不要です。
 
 `makit check` は、すべてのコンポーネント指定が解決できるかを検査します。React コンポーネントとして正しいかどうかは、プロジェクトの `tsc` とビルドが報告します。
+
+よくあるエラー:
+
+| コード                      | 対処                                                                                                                          |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `theme-module-not-found`    | `theme.components` / `theme.extends` のパスまたはパッケージが存在しません。パスはプロジェクトルート基準で、拡張子が必要です。 |
+| `theme-unknown-slot`        | `theme.components` のキーがコンポーネント名ではありません。メッセージが最も近い名前を提示します。                             |
+| `theme-slot-not-optional`   | 構造上必要なコンポーネントに `false` を指定しています。                                                                       |
+| `theme-ambiguous-slot-file` | `theme/` 内で同じコンポーネントに 2 つのファイル（`header.tsx` と `header.ts` など）が対応しています。                        |
+| `theme-slot-file-ignored`   | `theme/` 内のファイル名がコンポーネント名の綴り誤りに見えるため無視されています（警告）。                                     |
+
+## 動く例
+
+リポジトリの [`examples/theme`](https://github.com/mika-f/makit/tree/main/examples/theme) は、`Header`、`PageHeader`、`ThemeToggle`（Client Component）、`Footer` を差し替え、`PrevNextLinks` を無効化し、それ以外は組み込みのまま使うサイトです。

@@ -3,6 +3,7 @@ import { resolveConfig } from "../../config/normalize.js";
 import type { ResolvedThemeConfig } from "../../types/resolved-config.js";
 import {
   globalsCssTemplate,
+  nextConfigTemplate,
   notFoundTemplate,
   rootLayoutTemplate,
   slugPageTemplate,
@@ -180,5 +181,28 @@ describe("globalsCssTemplate", () => {
     expect(css.indexOf('@import "../../my-theme/theme.css";')).toBeLessThan(
       css.indexOf('@import "../../styles/custom.css";'),
     );
+  });
+});
+
+describe("nextConfigTemplate", () => {
+  it("writes the runtime resolve aliases theme components need", () => {
+    const config = resolveConfig(
+      { title: "Test" },
+      { root: "/project", configPath: "/project/makit.config.ts" },
+    );
+
+    const template = nextConfigTemplate(config, "/project", {
+      react: "../node_modules/react",
+      "react/*": "../node_modules/react/*",
+      "@natsuneko-laboratory/makit-runtime/client": "../node_modules/x/dist/client.mjs",
+    });
+
+    expect(template).toContain("resolveAlias: {");
+    expect(template).toContain('"react": "../node_modules/react",');
+    expect(template).toContain('"react/*": "../node_modules/react/*",');
+    expect(template).toContain(
+      '"@natsuneko-laboratory/makit-runtime/client": "../node_modules/x/dist/client.mjs",',
+    );
+    expect(template).toContain('root: "/project"');
   });
 });

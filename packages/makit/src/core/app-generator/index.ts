@@ -56,10 +56,11 @@ function runtimeResolveAlias(makitDir: string): Record<string, string> {
   }
 
   // makit-runtime's subpaths do not mirror its layout (`./slot-names` lives at
-  // `dist/theme/slot-names.mjs`), so its one subpath is aliased explicitly
-  // instead of through a wildcard.
+  // `dist/theme/slot-names.mjs`), so each one is aliased explicitly instead of
+  // through a wildcard.
   const runtimeRoot = toTarget(resolvePackageRoot("@natsuneko-laboratory/makit-runtime"));
   alias["@natsuneko-laboratory/makit-runtime"] = runtimeRoot;
+  alias["@natsuneko-laboratory/makit-runtime/client"] = `${runtimeRoot}/dist/client.mjs`;
   alias["@natsuneko-laboratory/makit-runtime/slot-names"] =
     `${runtimeRoot}/dist/theme/slot-names.mjs`;
   return alias;

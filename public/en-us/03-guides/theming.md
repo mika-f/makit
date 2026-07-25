@@ -144,6 +144,25 @@ Two rules follow from how React Server Components work:
 - The five page-level components (`RootLayout`, `DocsPage`, `PortalHomePage`, `RootPage`, `NotFoundPage`) must stay server components, because they receive the `components` set as a prop.
 - A client component cannot be `async`. Anything that needs to read generated data has to be a server component.
 
+### Imports inside a client component
+
+`@natsuneko-laboratory/makit-runtime` also exports the data loaders, which read the filesystem. In a `"use client"` module:
+
+- Type-only imports are always fine — they disappear at compile time.
+- Importing a default component to wrap it works.
+- Import plain values from `@natsuneko-laboratory/makit-runtime/client` instead. That entry point is React-free, so nothing server-only can follow it into the client bundle.
+
+```tsx
+"use client";
+
+// The key the built-in pre-hydration script reads, so a custom toggle stays
+// consistent with it across reloads.
+import { THEME_STORAGE_KEY } from "@natsuneko-laboratory/makit-runtime/client";
+import type { ThemeToggleProps } from "@natsuneko-laboratory/makit-runtime";
+```
+
+If you get `the chunking context does not support external modules (request: node:fs/promises)`, a client component is importing a value from the main entry point; move that import to `/client`.
+
 ## Imports available to a component
 
 Your components live in your project, but they are compiled as part of the generated site, and Makit points these imports at the copies it already uses:
@@ -151,9 +170,11 @@ Your components live in your project, but they are compiled as part of the gener
 - `react`, `react-dom` (including subpaths such as `react/jsx-runtime`)
 - `next` (`next/link`, `next/navigation`, `next/image`, `next/script`, …)
 - `lucide-react`
-- `@natsuneko-laboratory/makit-runtime`
+- `@natsuneko-laboratory/makit-runtime`, plus its `/client` entry point
 
 So a component can `import Link from "next/link"` without your project depending on Next.js. Relative imports of your own modules work as usual.
+
+Types are a separate matter: to have your editor resolve `HeaderProps` and friends, add `@natsuneko-laboratory/makit-runtime` and `@types/react` to `devDependencies`. Neither is needed to build.
 
 Server components can also read generated site data through the loaders the runtime exports (`getCollections`, `getGlobalNavigation`, `getSearchIndex`, …).
 
@@ -186,3 +207,17 @@ A theme does not have to implement every component; anything it leaves out falls
 `makit dev` hot-reloads edits to your components like any other source file. Adding, removing, or renaming a file in `theme/` reloads the configuration automatically — no restart needed.
 
 `makit check` verifies that every component reference resolves. Whether a component is a valid React component is reported by your own `tsc` and by the build.
+
+Common errors:
+
+| Code                        | What to fix                                                                                                                                  |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `theme-module-not-found`    | The path or package in `theme.components` / `theme.extends` does not exist. Paths are relative to the project root and need their extension. |
+| `theme-unknown-slot`        | A key in `theme.components` is not a component name; the message suggests the closest one.                                                   |
+| `theme-slot-not-optional`   | `false` was used for a structural component.                                                                                                 |
+| `theme-ambiguous-slot-file` | Two files in `theme/` map to the same component, such as `header.tsx` and `header.ts`.                                                       |
+| `theme-slot-file-ignored`   | A file in `theme/` looks like a misspelled component name, so it is being ignored (warning).                                                 |
+
+## A complete example
+
+[`examples/theme`](https://github.com/mika-f/makit/tree/main/examples/theme) in the repository is a working site that replaces `Header`, `PageHeader`, `ThemeToggle` (a client component), and `Footer`, disables `PrevNextLinks`, and keeps everything else built in.

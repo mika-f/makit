@@ -1,5 +1,3 @@
-
-
 # Makit へようこそ
 
 Makit は、Markdown から静的なドキュメントサイトを作るための Node.js CLI です。
@@ -14,6 +12,7 @@ Makit は、Markdown から静的なドキュメントサイトを作るため�
 - TypeScript でページのタイトルやナビゲーションを型安全に設定する
 - Collection、Section、Group で大規模なサイトを整理する
 - 多言語ページと翻訳がない場合のフォールバックを扱う
+- 組み込みコンポーネントを、あるいはテーマ全体を独自の React コンポーネントへ差し替える
 - 静的ファイルとして GitHub Pages、Cloudflare Pages、Netlify、Vercel などへ配置する
 
 ## 最短で試す
@@ -33,8 +32,9 @@ pnpm exec makit dev
 2. [基本 concepts](./02-concepts.md) — Makit のファイル構成と考え方
 3. [設定ガイド](./03-guides/configuration.md) — `makit.config.ts` を使いこなす
 4. [コンテンツの整理](./03-guides/content-structure.md) — ページを増やすときの設計
-5. [デプロイ](./03-guides/deployment.md) — 静的サイトを公開する
-6. [CLI リファレンス](./04-reference/cli.md) — コマンド一覧
+5. [テーマのカスタマイズ](./03-guides/theming.md) — コンポーネントを差し替える
+6. [デプロイ](./03-guides/deployment.md) — 静的サイトを公開する
+7. [CLI リファレンス](./04-reference/cli.md) — コマンド一覧
 
 ## Makit の設計を詳しく知る
 

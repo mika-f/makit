@@ -81,6 +81,9 @@ export { Sidebar } from "./components/sidebar.js";
 export { TableOfContents } from "./components/table-of-contents.js";
 export { ThemeToggle } from "./components/theme-toggle.js";
 export { ThemeScript } from "./theme/theme-script.js";
+// Also re-exported from `./client`, which is where a Client Component should
+// import it from (THEME §11).
+export { THEME_STORAGE_KEY } from "./theme/storage-key.js";
 export { AnalyticsScripts } from "./analytics/analytics-scripts.js";
 export type { AnalyticsScriptsConfig } from "./analytics/analytics-scripts.js";
 export { ThemeVariables } from "./theme/theme-variables.js";

@@ -626,6 +626,25 @@ Next.js App Router の制約から、以下を規則とする。
 
 Slot が Server / Client のどちらであるかは、差し替え実装のファイル先頭に `"use client"` があるかで決まる。Makit は Slot に `"use client"` を強制しない。
 
+### Client Component からの import
+
+`@natsuneko-laboratory/makit-runtime` のメインエントリーは生成データのローダー（`node:fs` に依存）も re-export する。Client Component からこのエントリーの**値**を import すると、Tree Shaking の効き方によってはローダーごと Client バンドルへ引き込まれ、`the chunking context does not support external modules (request: node:fs/promises)` でビルドが失敗する。
+
+区分は次のとおりとする。
+
+* **型のみの import は常に安全**。`import type { HeaderProps } from "@natsuneko-laboratory/makit-runtime"` はコンパイル時に消える。
+* **既定コンポーネントの import は動作する**。関数宣言の export は Tree Shaking で分離できる。
+* **定数などの値の import には `@natsuneko-laboratory/makit-runtime/client` を使う**。Client Component が必要とする値は、React に依存しないモジュールからこのサブパスへ re-export する。
+
+```tsx
+"use client";
+
+import { THEME_STORAGE_KEY } from "@natsuneko-laboratory/makit-runtime/client";
+import type { ThemeToggleProps } from "@natsuneko-laboratory/makit-runtime";
+```
+
+あわせて、`makit-runtime` の `package.json` は `"sideEffects": false` を宣言する。これがない場合、既定コンポーネントの import すら Tree Shaking されずに失敗する。
+
 差し替えコンポーネントは、生成データのローダー（`getCollections`、`getSearchIndex` など、spec §40）を `@natsuneko-laboratory/makit-runtime` から import して利用できる。ローダーはファイルシステムを読むため、Server Component からのみ呼び出せる。
 
 ### モジュール解決
@@ -642,12 +661,13 @@ resolveAlias: {
   "next": "...",
   "lucide-react": "...",
   "@natsuneko-laboratory/makit-runtime": "../node_modules/@natsuneko-laboratory/makit-runtime",
+  "@natsuneko-laboratory/makit-runtime/client": ".../dist/client.mjs",
   "@natsuneko-laboratory/makit-runtime/slot-names": ".../dist/theme/slot-names.mjs",
 }
 ```
 
 * 対象は `react`、`react-dom`、`next`、`lucide-react`、`@natsuneko-laboratory/makit-runtime` とする。Tailwind CSS 関連は `.makit/` 内の PostCSS が読み込むものであり、利用者コードからは import されないため対象外とする。
-* サブパス（`next/link`、`react/jsx-runtime` など）はワイルドカードで一括して解決する。`@natsuneko-laboratory/makit-runtime` はサブパスがパッケージ内のファイル配置と一致しないため、`slot-names` のみ明示的に指定する。
+* サブパス（`next/link`、`react/jsx-runtime` など）はワイルドカードで一括して解決する。`@natsuneko-laboratory/makit-runtime` はサブパスがパッケージ内のファイル配置と一致しないため、`client` と `slot-names` を明示的に指定する。
 * エイリアスの解決先は `.makit/`（Turbopack のプロジェクトディレクトリ）からの相対パスで書き出す。Turbopack は絶対パスをプロジェクトディレクトリ基準として解釈するため、絶対パスは使えない。
 
 この結果、利用者は差し替えコンポーネントを書くために `react` や `next` をインストールする必要がない。また、テーマパッケージと生成アプリが常に同一の React インスタンスを共有する。
@@ -829,7 +849,7 @@ theme/
 | Turbopack root | Theme Package のパッケージルート、および差し替えファイルの所在ディレクトリを Turbopack root の算出対象へ含める |
 | `turbopack.resolveAlias` | 共有パッケージのエイリアスを生成する（§11 モジュール解決） |
 | `makit-runtime` の `package.json` | `"sideEffects": false` を宣言する。これがないと、Client Component の差し替えが `@natsuneko-laboratory/makit-runtime` から既定実装を import した時点で、バレル経由で `node:fs` に依存するローダーまで Client バンドルへ引きずり込まれ、ビルドが失敗する |
-| `makit-runtime` の `exports` | `./slot-names` を追加する。CLI が React を読み込まずに Slot 名の一覧を参照するため |
+| `makit-runtime` の `exports` | `./slot-names`（CLI が React を読み込まずに Slot 名を参照するため）と `./client`（Client Component が安全に値を import するため、§11）を追加する |
 | `makit` の `exports` | `./theme` を追加する（`defineTheme`） |
 
 Theme Package は利用者の依存関係であり、Makit 自身の依存ではない。`.makit/node_modules` へのリンクは不要で、`.makit/app` からの通常のモジュール解決（利用者のプロジェクトの `node_modules`）で解決する。ただし Turbopack root の算出には、そのパッケージルートを含める必要がある。

@@ -128,3 +128,7 @@ theme: {
 | `theme-outside-project`     | コンポーネントの指定がプロジェクトルート外を指している（警告）      |
 
 named export の欠落は `makit check` ではなくサイトのビルドが報告します。
+
+## 例
+
+リポジトリの [`examples/theme`](https://github.com/mika-f/makit/tree/main/examples/theme) は複数のコンポーネントを差し替えた例で、同じコードを `theme.extends` のテーマへ移す方法を README で説明しています。

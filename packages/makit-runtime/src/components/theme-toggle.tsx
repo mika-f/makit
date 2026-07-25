@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { THEME_STORAGE_KEY } from "../theme/theme-script.js";
+import { THEME_STORAGE_KEY } from "../theme/storage-key.js";
 
 /** `ThemeToggle` takes no props; the type exists so a replacement can annotate itself (THEME §6). */
 export type ThemeToggleProps = Record<string, never>;
