@@ -2,6 +2,7 @@ import { dirname, resolve as resolvePath } from "node:path";
 import { createJiti } from "jiti";
 import { MakitConfigError, MakitError } from "../core/errors.js";
 import { resolveDeployment } from "../core/deployment.js";
+import { resolveTheme } from "../core/theme.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { discoverConfigFile } from "./discover.js";
 import { resolveConfig } from "./normalize.js";
@@ -43,5 +44,9 @@ export async function loadConfig(options: LoadConfigOptions = {}): Promise<Resol
     root: dirname(configPath),
     configPath,
   });
-  return resolveDeployment(config);
+  // Theme resolution is async (it resolves modules and may evaluate a theme's
+  // manifest) and needs the raw theme block to distinguish user-set tokens
+  // from defaults, so it runs here rather than inside `resolveConfig`.
+  const themed = await resolveTheme(config, parseResult.data.theme);
+  return resolveDeployment(themed);
 }

@@ -101,15 +101,13 @@ function NavContainer({
   );
 }
 
-export function NavigationItems({
-  items,
-  currentRoute,
-  depth = 0,
-}: {
+export interface NavigationItemsProps {
   items: readonly ResolvedNavNode[];
   currentRoute: string;
   depth?: number;
-}) {
+}
+
+export function NavigationItems({ items, currentRoute, depth = 0 }: NavigationItemsProps) {
   return (
     <ul
       className={

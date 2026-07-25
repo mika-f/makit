@@ -1,24 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { GeneratedHeading } from "../data/types.js";
-import { PageActions } from "./page-actions.js";
 
-export function TableOfContents({
-  headings,
-  minDepth,
-  maxDepth,
-  route,
-  editUrl,
-  markdownEnabled,
-}: {
+export interface TableOfContentsProps {
   headings: readonly GeneratedHeading[];
   minDepth: number;
   maxDepth: number;
-  route: string;
-  editUrl?: string;
-  markdownEnabled: boolean;
-}) {
+  /**
+   * Page-level actions rendered below the heading list. Passed as an already
+   * built element rather than a component reference so that a Server
+   * Component `PageActions` override still works across this client boundary
+   * (THEME §11.4).
+   */
+  actions?: ReactNode;
+}
+
+export function TableOfContents({ headings, minDepth, maxDepth, actions }: TableOfContentsProps) {
   const visible = useMemo(
     () => headings.filter((h) => h.depth >= minDepth && h.depth <= maxDepth && h.id),
     [headings, minDepth, maxDepth],
@@ -85,12 +83,7 @@ export function TableOfContents({
           ))}
         </ul>
       </nav>
-      <PageActions
-        route={route}
-        editUrl={editUrl}
-        markdownEnabled={markdownEnabled}
-        placement="table-of-contents"
-      />
+      {actions}
     </aside>
   );
 }

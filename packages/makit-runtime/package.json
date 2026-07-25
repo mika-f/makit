@@ -14,8 +14,17 @@
     ".": {
       "types": "./dist/index.d.mts",
       "import": "./dist/index.mjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.mts",
+      "import": "./dist/client.mjs"
+    },
+    "./slot-names": {
+      "types": "./dist/theme/slot-names.d.mts",
+      "import": "./dist/theme/slot-names.mjs"
     }
   },
+  "sideEffects": false,
   "files": [
     "dist"
   ],

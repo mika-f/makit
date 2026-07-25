@@ -184,3 +184,41 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(true);
   });
 });
+
+describe("theme config", () => {
+  it("accepts every component reference form", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "Test",
+      theme: {
+        extends: "@acme/makit-theme-corporate",
+        dir: "src/ui",
+        components: {
+          Header: "./theme/header.tsx",
+          Footer: { from: "@acme/ui", export: "DocsFooter" },
+          PrevNextLinks: false,
+        },
+      },
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts dir: false", () => {
+    expect(makitConfigSchema.safeParse({ title: "T", theme: { dir: false } }).success).toBe(true);
+  });
+
+  it("rejects an empty component reference", () => {
+    expect(
+      makitConfigSchema.safeParse({ title: "T", theme: { components: { Header: "" } } }).success,
+    ).toBe(false);
+    expect(
+      makitConfigSchema.safeParse({ title: "T", theme: { components: { Header: true } } }).success,
+    ).toBe(false);
+  });
+
+  it("rejects an unknown theme key", () => {
+    expect(makitConfigSchema.safeParse({ title: "T", theme: { component: {} } }).success).toBe(
+      false,
+    );
+  });
+});

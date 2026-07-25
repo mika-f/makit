@@ -50,3 +50,10 @@ export type {
   ValidationConfig,
   VercelWebAnalyticsConfig,
 } from "./types/config.js";
+export type {
+  ThemeComponentRef,
+  ThemeComponentRefObject,
+  ThemeComponentsConfig,
+  ThemeManifest,
+  ThemeManifestDefaults,
+} from "./types/theme.js";

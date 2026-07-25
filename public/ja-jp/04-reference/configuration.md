@@ -51,24 +51,32 @@ export default defineConfig({
     radius: "medium",
     breadcrumbs: { enabled: true, showHome: true, showCurrentPage: true },
     codeTheme: { light: "github-light", dark: "github-dark" },
+    extends: "@acme/makit-theme-corporate",
+    components: { Header: "./theme/header.tsx", PrevNextLinks: false },
+    dir: "theme",
   },
   styles: ["styles/custom.css"],
 });
 ```
 
-| 項目                       | 型・既定値                                             | 説明                                                               |
-| -------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ |
-| `header.logo` / `logoDark` | `string`                                               | 明るい／暗いテーマ用ロゴの公開パス。                               |
-| `header.title`             | `string`                                               | ヘッダーに表示する名前。                                           |
-| `header.links`             | リンク配列                                             | `label`、`href`、必要なら `external: true` を指定します。          |
-| `footer.copyright`         | `string`                                               | フッターの著作権表記。                                             |
-| `footer.links`             | リンク配列                                             | フッターの補助リンク。                                             |
-| `theme.colorScheme`        | `"light" \| "dark" \| "system"`、`"system"`            | 初期テーマ。`system` は OS の設定に従います。                      |
-| `theme.accentColor`        | `string`                                               | アクセントカラー名または CSS カラー値。                            |
-| `theme.radius`             | `"none" \| "small" \| "medium" \| "large"`、`"medium"` | UI の角丸の大きさ。                                                |
-| `theme.breadcrumbs`        | object                                                 | `enabled`、`showHome`、`showCurrentPage` はすべて既定で `true`。   |
-| `theme.codeTheme`          | `string` または `{ light, dark }`                      | コード表示の Shiki テーマ。既定は `github-light` / `github-dark`。 |
-| `styles`                   | `string[]`                                             | プロジェクト内から読み込む追加 CSS。                               |
+| 項目                       | 型・既定値                                             | 説明                                                                                                                                                      |
+| -------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `header.logo` / `logoDark` | `string`                                               | 明るい／暗いテーマ用ロゴの公開パス。                                                                                                                      |
+| `header.title`             | `string`                                               | ヘッダーに表示する名前。                                                                                                                                  |
+| `header.links`             | リンク配列                                             | `label`、`href`、必要なら `external: true` を指定します。                                                                                                 |
+| `footer.copyright`         | `string`                                               | フッターの著作権表記。                                                                                                                                    |
+| `footer.links`             | リンク配列                                             | フッターの補助リンク。                                                                                                                                    |
+| `theme.colorScheme`        | `"light" \| "dark" \| "system"`、`"system"`            | 初期テーマ。`system` は OS の設定に従います。                                                                                                             |
+| `theme.accentColor`        | `string`                                               | アクセントカラー名または CSS カラー値。                                                                                                                   |
+| `theme.radius`             | `"none" \| "small" \| "medium" \| "large"`、`"medium"` | UI の角丸の大きさ。                                                                                                                                       |
+| `theme.breadcrumbs`        | object                                                 | `enabled`、`showHome`、`showCurrentPage` はすべて既定で `true`。                                                                                          |
+| `theme.codeTheme`          | `string` または `{ light, dark }`                      | コード表示の Shiki テーマ。既定は `github-light` / `github-dark`。                                                                                        |
+| `theme.extends`            | `string`                                               | 土台にするテーマ。パッケージ名またはプロジェクト内のディレクトリ。実装していないコンポーネントは組み込みのものが使われます。                              |
+| `theme.components`         | object、`{}`                                           | コンポーネント単位の差し替え。値はモジュールのパス（default export）、`{ from, export }`、描画しない場合は `false`。`dir` と `extends` より優先されます。 |
+| `theme.dir`                | `string` または `false`、`"theme"`                     | `theme/header.tsx` のように、コンポーネント名のケバブケースのファイルを探索するディレクトリ。`false` で無効化。                                           |
+| `styles`                   | `string[]`                                             | プロジェクト内から読み込む追加 CSS。                                                                                                                      |
+
+コンポーネント名の一覧は[テーマのカスタマイズ](../03-guides/theming.md)、テーマの作り方は[テーマパッケージリファレンス](./theme-packages.md)を参照してください。
 
 ## Markdown
 
@@ -154,17 +162,17 @@ export default defineConfig({
 });
 ```
 
-| 項目                                | 説明                                                                                                                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `collections`                       | `defineCollection` の配列、または `collection.makit.ts` を探す `{ mode: "discover" }`。省略時は単一 Collection です。                                              |
-| `home`                              | `layout: "page"` で `page` の ID をトップにするか、`"portal"` で Collection の入口を作ります。`featuredCollections` と `sections` は portal の表示順を指定します。 |
-| `navigation.mode`                   | `"auto"`（既定）または `"manual"`。手動構造は `navigation.makit.ts` または `navigation.collections` で定義します。                                                 |
-| `navigation.includeFallbackPages`   | 翻訳のフォールバックページをナビゲーションに含めるか。既定 `true`。                                                                                                |
-| `navigation.global`                 | サイト共通リンク。項目は `href` または `collection` のどちらか一方を持てます。                                                                                     |
-| `navigation.pagination`             | 前後ページリンク。`enabled` と、セクションをまたぐ `crossSection` は既定で `true`。                                                                                |
-| `navigation.auto.numericPrefixes`   | `01-` のような接頭辞で自動順序を制御するか。既定 `true`。                                                                                                          |
+| 項目                                | 説明                                                                                                                                                                                                                                                                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `collections`                       | `defineCollection` の配列、または `collection.makit.ts` を探す `{ mode: "discover" }`。省略時は単一 Collection です。                                                                                                                                                                                            |
+| `home`                              | `layout: "page"` で `page` の ID をトップにするか、`"portal"` で Collection の入口を作ります。`featuredCollections` と `sections` は portal の表示順を指定します。                                                                                                                                               |
+| `navigation.mode`                   | `"auto"`（既定）または `"manual"`。手動構造は `navigation.makit.ts` または `navigation.collections` で定義します。                                                                                                                                                                                               |
+| `navigation.includeFallbackPages`   | 翻訳のフォールバックページをナビゲーションに含めるか。既定 `true`。                                                                                                                                                                                                                                              |
+| `navigation.global`                 | サイト共通リンク。項目は `href` または `collection` のどちらか一方を持てます。                                                                                                                                                                                                                                   |
+| `navigation.pagination`             | 前後ページリンク。`enabled` と、セクションをまたぐ `crossSection` は既定で `true`。                                                                                                                                                                                                                              |
+| `navigation.auto.numericPrefixes`   | `01-` のような接頭辞で自動順序を制御するか。既定 `true`。                                                                                                                                                                                                                                                        |
 | `navigation.auto.routeGroups`       | `(marketing)` のような括弧付きディレクトリを URL から除外するか。既定 `"url"` はサイドバー上のセクションとして残し、`"flatten"` はそのセクションも外して子ページを親の階層へ繰り上げ、`false` は Route Group 自体を無効化します。詳細は[コンテンツの整理](../03-guides/content-structure.md)を参照してください。 |
-| `navigation.auto.unorderedPosition` | 接頭辞なしを `first` / `last`（既定）に置きます。                                                                                                                  |
+| `navigation.auto.unorderedPosition` | 接頭辞なしを `first` / `last`（既定）に置きます。                                                                                                                                                                                                                                                                |
 
 ページ、カテゴリ、Collection、手動ナビゲーションの詳細は[メタデータ API](./metadata.md)を参照してください。
 

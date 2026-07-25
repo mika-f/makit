@@ -37,6 +37,9 @@ theme: {
   radius: "medium",
   breadcrumbs: { enabled: true, showHome: true, showCurrentPage: true },
   codeTheme: { light: "github-light", dark: "github-dark" },
+  extends: "@acme/makit-theme-corporate",
+  components: { Header: "./theme/header.tsx", PrevNextLinks: false },
+  dir: "theme",
 },
 header: { logo: "/logo.svg", logoDark: "/logo-dark.svg", title: "My Docs", links: [] },
 footer: { copyright: "© 2026 Example", links: [] },
@@ -44,6 +47,16 @@ styles: ["styles/custom.css"],
 ```
 
 `header.links` and `footer.links` use `{ label, href, external? }`. `colorScheme` is `light`, `dark`, or `system` (default); `radius` is `none`, `small`, `medium` (default), or `large`. Breadcrumb fields default to `true`, and `codeTheme` defaults to GitHub light/dark themes.
+
+`extends`, `components`, and `dir` replace the built-in components:
+
+| Option             | Default   | Description                                                                                                                                                                                |
+| ------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `theme.extends`    | —         | Base theme: a package name, or a directory in your project. Components it does not implement fall back to the built-in ones.                                                               |
+| `theme.components` | `{}`      | Per-component overrides, keyed by component name. Each value is a module path (default export), `{ from, export }`, or `false` to render nothing. Takes priority over `dir` and `extends`. |
+| `theme.dir`        | `"theme"` | Directory scanned for files named after a component in kebab-case, such as `theme/header.tsx`. `false` disables the scan.                                                                  |
+
+See the [theming guide](../03-guides/theming.md) for the component list and the [theme package reference](./theme-packages.md) for building a theme.
 
 ## Markdown
 

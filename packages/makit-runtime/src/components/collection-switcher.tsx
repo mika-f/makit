@@ -2,15 +2,17 @@ import Link from "next/link";
 import type { CollectionData } from "../data/types.js";
 
 /** Switches between collections in the current locale (spec §38 Collection Switcher). */
+export interface CollectionSwitcherProps {
+  collections: readonly CollectionData[];
+  currentCollectionId?: string;
+  locale: string;
+}
+
 export function CollectionSwitcher({
   collections,
   currentCollectionId,
   locale,
-}: {
-  collections: readonly CollectionData[];
-  currentCollectionId?: string;
-  locale: string;
-}) {
+}: CollectionSwitcherProps) {
   const visible = collections.filter(
     (collection) => !collection.hidden && collection.locales[locale],
   );

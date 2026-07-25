@@ -5,6 +5,7 @@ export default defineConfig({
     index: "./src/index.ts",
     adapter: "./src/adapter.ts",
     metadata: "./src/metadata/index.ts",
+    theme: "./src/theme.ts",
     "cli/index": "./src/cli/index.ts",
   },
   format: ["esm"],

@@ -19,7 +19,7 @@ export default defineConfig({
 
 設定は一度にすべて書く必要はありません。必要になった機能のブロックだけを追加します。
 
-- 表示とテーマ: `header`、`footer`、`theme`、`styles`
+- 表示とテーマ: `header`、`footer`、`theme`、`styles`（コンポーネントの差し替えは[テーマのカスタマイズ](./theming.md)）
 - Markdown の表示: `markdown`
 - 多言語: `i18n`
 - ナビゲーションと複数製品: `navigation`、`collections`、`home`

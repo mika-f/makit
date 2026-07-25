@@ -11,6 +11,7 @@ Whether you are turning a small project README into a site or building a large p
 - Configure page titles and navigation with type-safe TypeScript
 - Organize large sites with collections, sections, and groups
 - Handle localized pages and fallbacks for missing translations
+- Replace any built-in component — or the whole theme — with your own React components
 - Deploy static files to GitHub Pages, Cloudflare Pages, Netlify, Vercel, and more
 
 ## Try it quickly
@@ -29,8 +30,9 @@ Edit the generated `docs/index.md` to update the page in the development server.
 2. [Core concepts](./02-concepts.md) — understand the file layout and model
 3. [Configuration](./03-guides/configuration.md) — configure `makit.config.ts`
 4. [Content structure](./03-guides/content-structure.md) — organize a growing site
-5. [Deployment](./03-guides/deployment.md) — publish a static site
-6. [CLI reference](./04-reference/cli.md) — see all available commands
+5. [Theming](./03-guides/theming.md) — replace components with your own
+6. [Deployment](./03-guides/deployment.md) — publish a static site
+7. [CLI reference](./04-reference/cli.md) — see all available commands
 
 ## Learn more about the design
 

@@ -28,6 +28,10 @@
     "./metadata": {
       "types": "./dist/metadata.d.mts",
       "import": "./dist/metadata.mjs"
+    },
+    "./theme": {
+      "types": "./dist/theme.d.mts",
+      "import": "./dist/theme.mjs"
     }
   },
   "scripts": {

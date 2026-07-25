@@ -36,6 +36,19 @@ importers:
         specifier: workspace:*
         version: link:../../packages/makit
 
+  examples/theme:
+    dependencies:
+      '@natsuneko-laboratory/makit':
+        specifier: workspace:*
+        version: link:../../packages/makit
+    devDependencies:
+      '@natsuneko-laboratory/makit-runtime':
+        specifier: workspace:*
+        version: link:../../packages/makit-runtime
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+
   packages/adapter-cloudflare-pages:
     devDependencies:
       '@natsuneko-laboratory/makit':

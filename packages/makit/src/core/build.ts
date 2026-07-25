@@ -11,6 +11,7 @@ import { MakitError } from "./errors.js";
 import { writeGeneratedData } from "./generate.js";
 import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { resolvePackageRoot } from "./link-runtime-deps.js";
+import { describeThemeSlots } from "./theme.js";
 import type { Logger } from "./logger.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
@@ -136,6 +137,7 @@ export async function build(
   }
 
   const diagnostics = [
+    ...config.theme.diagnostics,
     ...collectionDiagnostics,
     ...pageDiagnostics,
     ...navigationMetadataDiagnostics,
@@ -169,6 +171,7 @@ export async function build(
   logger.success("Wrote .makit/generated/");
 
   await generateApp(config);
+  for (const line of describeThemeSlots(config)) logger.debug(line);
   logger.success("Generated .makit/app");
 
   await runNextBuild(makitDir, options.silent ?? false);

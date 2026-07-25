@@ -12,6 +12,25 @@ Makit のコマンドは、プロジェクト直下で `pnpm exec makit <command
 | `makit clean`            | `.makit/` などの生成データを削除する   |
 | `makit adapter generate` | Adapter の生成ファイルを個別に生成する |
 
+## `makit init` のオプション
+
+```bash
+# theme/ ディレクトリと差し替えコンポーネントの雛形を作る
+pnpm exec makit init --theme
+
+# collection.makit.ts ベースの構成で始める
+pnpm exec makit init --collections
+```
+
+| オプション          | 用途                                                               |
+| ------------------- | ------------------------------------------------------------------ |
+| `--theme`           | テーマの規約ディレクトリに認識される `theme/header.tsx` を作成する |
+| `--collections`     | フラットな構成ではなく Collection ベースの構成で始める             |
+| `--locale <tag>`    | 初期ロケール（`ja-JP` など）                                       |
+| `--package-manager` | 依存関係のインストールに使う `npm` / `pnpm` / `yarn` / `bun`       |
+| `--skip-install`    | 依存関係をインストールしない                                       |
+| `--force`           | 既存ファイルを上書きする                                           |
+
 ## よく使うオプション
 
 ```bash

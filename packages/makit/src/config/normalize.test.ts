@@ -210,7 +210,7 @@ describe("resolveConfig defaults", () => {
     expect(resolved.seo.titleTemplate).toBe("%s :: Docs");
   });
 
-  it("defaults navigation.auto to numericPrefixes enabled, routeGroups \"url\", and unorderedPosition last (ORDER-PREFIX §18, ROUTE-GROUPS §9, §18)", () => {
+  it('defaults navigation.auto to numericPrefixes enabled, routeGroups "url", and unorderedPosition last (ORDER-PREFIX §18, ROUTE-GROUPS §9, §18)', () => {
     const resolved = resolveConfig({ title: "My Docs" }, ctx);
     expect(resolved.navigation.auto).toEqual({
       numericPrefixes: true,
@@ -236,7 +236,7 @@ describe("resolveConfig defaults", () => {
     });
   });
 
-  it("normalizes navigation.auto.routeGroups: true to \"url\"", () => {
+  it('normalizes navigation.auto.routeGroups: true to "url"', () => {
     const resolved = resolveConfig(
       { title: "My Docs", navigation: { auto: { routeGroups: true } } },
       ctx,
@@ -244,11 +244,33 @@ describe("resolveConfig defaults", () => {
     expect(resolved.navigation.auto.routeGroups).toBe("url");
   });
 
-  it("keeps navigation.auto.routeGroups: \"flatten\" as-is", () => {
+  it('keeps navigation.auto.routeGroups: "flatten" as-is', () => {
     const resolved = resolveConfig(
       { title: "My Docs", navigation: { auto: { routeGroups: "flatten" } } },
       ctx,
     );
     expect(resolved.navigation.auto.routeGroups).toBe("flatten");
+  });
+});
+
+describe("resolveConfig theme", () => {
+  it("defaults the convention directory to theme/", () => {
+    const config = resolveConfig({ title: "Test" }, ctx);
+    expect(config.theme.dir).toBe("theme");
+  });
+
+  it("keeps an explicit dir, including false", () => {
+    expect(resolveConfig({ title: "T", theme: { dir: "src/ui" } }, ctx).theme.dir).toBe("src/ui");
+    expect(resolveConfig({ title: "T", theme: { dir: false } }, ctx).theme.dir).toBe(false);
+  });
+
+  it("leaves module resolution to resolveTheme", () => {
+    const config = resolveConfig(
+      { title: "T", theme: { extends: "@acme/theme", components: { Header: "./h.tsx" } } },
+      ctx,
+    );
+    expect(config.theme.slots).toEqual({});
+    expect(config.theme.extends).toBeUndefined();
+    expect(config.theme.tailwindSources).toEqual([]);
   });
 });

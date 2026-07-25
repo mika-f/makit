@@ -3,6 +3,12 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
   entry: {
     index: "./src/index.ts",
+    // Client-safe primitives, kept out of the main entry so a `"use client"`
+    // module never reaches the filesystem-backed loaders through it.
+    client: "./src/client.ts",
+    // Exposed on its own so the Makit CLI can read the slot list in plain
+    // Node, without pulling React or Next.js in (THEME §7.6).
+    "theme/slot-names": "./src/theme/slot-names.ts",
   },
   format: ["esm"],
   platform: "node",

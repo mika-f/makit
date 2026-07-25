@@ -1,4 +1,10 @@
 import Link from "next/link";
+import type { ThemeComponents } from "../theme/components.js";
+
+export interface NotFoundPageProps {
+  /** The resolved slot map (THEME §6). Unused by the standard implementation. */
+  components: ThemeComponents;
+}
 
 export function NotFoundPage() {
   return (

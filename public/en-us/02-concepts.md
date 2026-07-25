@@ -97,3 +97,16 @@ docs/(marketing)/about.md
 ```
 
 See [Content structure](./03-guides/content-structure.md#route-groups) for how to also drop the sidebar grouping.
+
+## The theme renders, Makit resolves
+
+Makit turns your content into page data — titles, HTML, navigation trees, breadcrumbs — and hands it to a set of React components that render it. That set is Makit's built-in theme.
+
+Each component in it is a named slot, so a project can swap out just the header, or the whole page shell, without touching content or configuration structure:
+
+```text
+theme/header.tsx     → replaces the Header component
+theme/docs-page.tsx  → replaces the whole page shell
+```
+
+Resolving content and rendering it stay separate: routing, navigation, and validation behave the same no matter which components draw the page, and the output stays fully static. See [Theming](./03-guides/theming.md).

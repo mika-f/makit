@@ -17,6 +17,7 @@ import {
   DEFAULT_SHIKI_THEME_DARK,
   DEFAULT_SHIKI_THEME_LIGHT,
   DEFAULT_SOURCE_DIR,
+  DEFAULT_THEME_DIR,
 } from "./defaults.js";
 import type { MakitConfigParsed } from "./schema.js";
 
@@ -212,6 +213,15 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
               light: DEFAULT_SHIKI_THEME_LIGHT,
               dark: DEFAULT_SHIKI_THEME_DARK,
             }),
+      // Slot bindings, base theme, and manifest need filesystem/module
+      // resolution, so `resolveTheme` (async, called from `loadConfig`) fills
+      // these in afterwards (THEME §7.5).
+      dir: parsed.theme?.dir ?? DEFAULT_THEME_DIR,
+      slots: {},
+      styles: [],
+      tailwindSources: [],
+      packageRoots: [],
+      diagnostics: [],
     },
     markdown: {
       gfm: parsed.markdown?.gfm ?? true,

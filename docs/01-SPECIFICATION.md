@@ -1693,6 +1693,8 @@ const value = true; // [!code highlight]
 
 現在ページの祖先ノードは自動展開する。
 
+標準テーマは、差し替え可能な Slot 集合（THEME §5）の既定実装でもある。利用者は Slot 単位での部分差し替え、または Theme Package による全面差し替えができる。詳細は THEME 仕様を参照する。
+
 ---
 
 # 39. Generated Page
@@ -2058,12 +2060,13 @@ packages/
 ├── metadata/
 ├── markdown/
 ├── runtime/
-├── theme-default/
 ├── adapter-cloudflare-pages/
 ├── adapter-github-pages/
 ├── adapter-netlify/
 └── adapter-vercel/
 ```
+
+標準テーマは `runtime` が提供する（THEME §9.5）。独立した `theme-default` パッケージへの切り出しは、利用者向け API（`theme.extends` の既定値）を変えないため、必要になった時点で行える。
 
 ## `metadata`
 
@@ -2169,7 +2172,7 @@ packages/
 * YAML 構造メタデータ
 * ネストした値を含む YAML Front Matter(フラットな Front Matter は §17 の通りサポート)
 * MDX
-* ユーザー定義 React コンポーネント
+* Markdown 本文の要素単位の React コンポーネント差し替え(Slot 単位のテーマ差し替えは THEME 仕様の通りサポート)
 * Collection ごとの独立テーマ
 * Collection ごとの独立ドメイン
 * Collection ごとの独立ビルド

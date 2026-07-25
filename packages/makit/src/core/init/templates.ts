@@ -88,3 +88,28 @@ export function packageJsonTemplate(projectName: string, makitVersion: string): 
   };
   return `${JSON.stringify(pkg, null, 2)}\n`;
 }
+
+/**
+ * A starter override for the `Header` slot (THEME §16). Wraps the standard
+ * implementation rather than replacing it outright, which is both the common
+ * case and the shortest path to something that renders.
+ */
+export function themeHeaderTemplate(): string {
+  return `import { Header as DefaultHeader } from "@natsuneko-laboratory/makit-runtime";
+import type { HeaderProps } from "@natsuneko-laboratory/makit-runtime";
+
+/**
+ * The \`Header\` theme slot.
+ *
+ * This file is picked up automatically because it sits at \`theme/header.tsx\`
+ * — the convention directory of \`theme.dir\` (default \`"theme"\`). Rename or
+ * delete it and the standard header comes back. Other slots work the same way:
+ * \`theme/footer.tsx\`, \`theme/sidebar.tsx\`, \`theme/docs-page.tsx\`, ...
+ *
+ * Add \`"use client"\` at the top if you need hooks or event handlers.
+ */
+export default function Header(props: HeaderProps) {
+  return <DefaultHeader {...props} />;
+}
+`;
+}

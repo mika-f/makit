@@ -2,7 +2,11 @@ import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { FooterData } from "../data/types.js";
 
-export function Footer({ footer }: { footer: FooterData }) {
+export interface FooterProps {
+  footer: FooterData;
+}
+
+export function Footer({ footer }: FooterProps) {
   if (!footer.copyright && (!footer.links || footer.links.length === 0)) return null;
 
   return (

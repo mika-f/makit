@@ -225,12 +225,23 @@ const analyticsConfigSchema = z.strictObject({
     .array(
       z.strictObject({
         src: z.string().min(1),
-        strategy: z.enum(["afterInteractive", "beforeInteractive", "lazyOnload", "worker"]).optional(),
+        strategy: z
+          .enum(["afterInteractive", "beforeInteractive", "lazyOnload", "worker"])
+          .optional(),
         attributes: z.record(z.string(), z.string()).optional(),
       }),
     )
     .optional(),
 });
+
+const themeComponentRefSchema = z.union([
+  z.string().min(1),
+  z.strictObject({
+    from: z.string().min(1),
+    export: z.string().min(1).optional(),
+  }),
+  z.literal(false),
+]);
 
 const themeConfigSchema = z.strictObject({
   colorScheme: z.enum(["light", "dark", "system"]).optional(),
@@ -252,6 +263,11 @@ const themeConfigSchema = z.strictObject({
       }),
     ])
     .optional(),
+  extends: z.string().min(1).optional(),
+  // Slot names are validated during theme resolution rather than here, so an
+  // unknown one reports `theme-unknown-slot` with a suggestion (THEME §15.1).
+  components: z.record(z.string(), themeComponentRefSchema).optional(),
+  dir: z.union([z.string().min(1), z.literal(false)]).optional(),
 });
 
 const externalLinksConfigSchema = z.strictObject({
@@ -308,9 +324,7 @@ const llmsConfigSchema = z.strictObject({
 });
 
 const githubConfigSchema = z.strictObject({
-  repository: z
-    .string()
-    .regex(/^[^/\s]+\/[^/\s]+$/, "repository must be in owner/repository form"),
+  repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/, "repository must be in owner/repository form"),
   branch: z.string().min(1).optional(),
 });
 

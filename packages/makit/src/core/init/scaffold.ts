@@ -12,6 +12,7 @@ import {
   indexMetaTemplate,
   makitConfigTemplate,
   packageJsonTemplate,
+  themeHeaderTemplate,
 } from "./templates.js";
 
 export interface ScaffoldOptions {
@@ -21,6 +22,8 @@ export interface ScaffoldOptions {
   makitVersion: string;
   /** Scaffold a `collection.makit.ts`-based starter instead of a collection-less one (spec §12). */
   collections?: boolean;
+  /** Scaffold a `theme/` convention directory with a starter slot override (THEME §16). */
+  theme?: boolean;
 }
 
 export interface ScaffoldResult {
@@ -50,7 +53,7 @@ function toCollectionId(dirName: string): string {
  * is only created when absent (spec §9.2).
  */
 export async function scaffoldProject(options: ScaffoldOptions): Promise<ScaffoldResult> {
-  const { targetDir, force = false, makitVersion, collections = false } = options;
+  const { targetDir, force = false, makitVersion, collections = false, theme = false } = options;
   const lang = options.locale ?? "en";
   const title = toDisplayTitle(basename(targetDir));
 
@@ -63,6 +66,7 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
     ? [...docsDirSegments, "collection.makit.ts"].join("/")
     : undefined;
 
+  const themeHeaderPath = theme ? join(targetDir, "theme", "header.tsx") : undefined;
   const docsIndexPath = join(targetDir, ...docsDirSegments, "index.md");
   const docsIndexMetaPath = join(targetDir, ...docsDirSegments, "index.meta.ts");
   const collectionMakitPath = collectionId
@@ -70,9 +74,13 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
     : undefined;
 
   if (!force) {
-    const conflicts = [configPath, docsIndexPath, docsIndexMetaPath, collectionMakitPath].filter(
-      (path): path is string => path !== undefined && existsSync(path),
-    );
+    const conflicts = [
+      configPath,
+      docsIndexPath,
+      docsIndexMetaPath,
+      collectionMakitPath,
+      themeHeaderPath,
+    ].filter((path): path is string => path !== undefined && existsSync(path));
     if (conflicts.length > 0) {
       throw new MakitError(
         "project-exists",
@@ -102,6 +110,12 @@ export async function scaffoldProject(options: ScaffoldOptions): Promise<Scaffol
 
   await writeFile(docsIndexMetaPath, indexMetaTemplate(title), "utf-8");
   created.push(docsIndexMetaDisplay);
+
+  if (themeHeaderPath) {
+    await mkdir(join(targetDir, "theme"), { recursive: true });
+    await writeFile(themeHeaderPath, themeHeaderTemplate(), "utf-8");
+    created.push("theme/header.tsx");
+  }
 
   const publicGitkeepPath = join(targetDir, "public", ".gitkeep");
   if (!existsSync(publicGitkeepPath)) {

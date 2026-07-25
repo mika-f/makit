@@ -1,10 +1,7 @@
 import Link from "next/link";
 import { getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
 import type { I18nData, PortalCollectionCard, PortalHomeData, SiteData } from "../data/types.js";
-import { Footer } from "./footer.js";
-import { Header } from "./header.js";
-import { SearchDialog } from "./search-dialog.js";
-import { ThemeToggle } from "./theme-toggle.js";
+import type { ThemeComponents } from "../theme/components.js";
 
 function CollectionCard({ card }: { card: PortalCollectionCard }) {
   return (
@@ -45,10 +42,18 @@ export interface PortalHomePageProps {
   site: SiteData;
   i18n: I18nData;
   locale: string;
+  /** The resolved slot map (THEME §6). */
+  components: ThemeComponents;
 }
 
 /** The portal-layout site home (spec §33.2): a hero plus per-collection cards. */
-export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePageProps) {
+export async function PortalHomePage({
+  home,
+  site,
+  i18n,
+  locale,
+  components: C,
+}: PortalHomePageProps) {
   const homeHref = (await getHomeRoute(locale)) ?? `${site.basePath}/`;
   const [globalNavigation, searchEntries] = await Promise.all([
     getGlobalNavigation(locale),
@@ -67,7 +72,7 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
 
   const headerActions = (
     <>
-      <SearchDialog
+      <C.SearchDialog
         entries={searchEntries}
         pagefindEnabled={process.env.NODE_ENV === "production"}
         pagefindBundlePath={`${site.basePath}/pagefind/`}
@@ -90,13 +95,13 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
           ))}
         </div>
       )}
-      {site.theme.colorScheme === "system" && <ThemeToggle />}
+      {site.theme.colorScheme === "system" && <C.ThemeToggle />}
     </>
   );
 
   return (
     <div className="flex min-h-screen flex-col bg-[var(--makit-color-background)] text-[var(--makit-color-foreground)]">
-      <Header
+      <C.Header
         header={site.header}
         siteTitle={site.title}
         homeHref={homeHref}
@@ -132,7 +137,7 @@ export async function PortalHomePage({ home, site, i18n, locale }: PortalHomePag
           </section>
         ))}
       </main>
-      <Footer footer={site.footer} />
+      <C.Footer footer={site.footer} />
     </div>
   );
 }
