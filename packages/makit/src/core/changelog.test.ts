@@ -13,6 +13,7 @@ import {
   renderChangelogMarkdown,
   resolvePageChangelog,
   shiftHeadings,
+  sortReleases,
   type ChangelogRelease,
   type FetchLike,
 } from "./changelog.js";
@@ -185,6 +186,60 @@ describe("filterReleases", () => {
   });
 });
 
+describe("sortReleases", () => {
+  function order(tags: Array<[tag: string, publishedAt?: string]>): string[] {
+    const releases = tags.map(([tag, publishedAt]) => release({ tag, publishedAt }));
+    return sortReleases(releases).map((entry) => entry.tag);
+  }
+
+  it("orders by version rather than by publication date", () => {
+    expect(
+      order([
+        ["v1.9.0", "2026-05-01T00:00:00Z"],
+        ["v1.10.0", "2026-02-01T00:00:00Z"],
+        ["v2.0.0", "2026-03-01T00:00:00Z"],
+      ]),
+    ).toEqual(["v2.0.0", "v1.10.0", "v1.9.0"]);
+  });
+
+  it("places a pre-release below the release it leads to", () => {
+    expect(order([["v2.0.0-rc.1"], ["v2.0.0"], ["v2.0.0-rc.2"], ["v2.0.0-beta.1"]])).toEqual([
+      "v2.0.0",
+      "v2.0.0-rc.2",
+      "v2.0.0-rc.1",
+      "v2.0.0-beta.1",
+    ]);
+  });
+
+  it("reads versions out of prefixed and shortened tags", () => {
+    expect(order([["makit@1.2.0"], ["v1.3"], ["1.2.1"], ["@scope/pkg@1.4.0"]])).toEqual([
+      "@scope/pkg@1.4.0",
+      "v1.3",
+      "1.2.1",
+      "makit@1.2.0",
+    ]);
+  });
+
+  it("sorts tags without a readable version last, newest first", () => {
+    expect(
+      order([
+        ["nightly", "2026-01-01T00:00:00Z"],
+        ["v1.0.0", "2026-02-01T00:00:00Z"],
+        ["release-candidate", "2026-04-01T00:00:00Z"],
+      ]),
+    ).toEqual(["v1.0.0", "release-candidate", "nightly"]);
+  });
+
+  it("breaks ties on equal versions with the publication date", () => {
+    expect(
+      order([
+        ["a@1.0.0", "2026-01-01T00:00:00Z"],
+        ["b@1.0.0", "2026-03-01T00:00:00Z"],
+      ]),
+    ).toEqual(["b@1.0.0", "a@1.0.0"]);
+  });
+});
+
 describe("shiftHeadings", () => {
   it("re-levels a body so its shallowest heading sits below the release heading", () => {
     expect(shiftHeadings("# Features\n\n## Details\n", 2)).toBe("### Features\n\n#### Details\n");
@@ -295,7 +350,7 @@ describe("ChangelogFetcher", () => {
     return new ChangelogFetcher({ ...defaults(), ...overrides }, join(dir, "cache"), fetchImpl);
   }
 
-  it("drops draft releases and sorts by publication date", async () => {
+  it("drops draft releases", async () => {
     const fetchImpl = stubFetch([
       [
         rawRelease({ tag_name: "v1.0.0", published_at: "2026-01-01T00:00:00Z" }),
@@ -304,7 +359,7 @@ describe("ChangelogFetcher", () => {
       ],
     ]);
     const { releases } = await fetcherWith(fetchImpl).fetch("mika-f/makit", 30);
-    expect(releases.map((entry) => entry.tag)).toEqual(["v2.0.0", "v1.0.0"]);
+    expect(releases.map((entry) => entry.tag)).toEqual(["v1.0.0", "v2.0.0"]);
   });
 
   it("fetches a repository once per build pass", async () => {

@@ -122,21 +122,115 @@ export function resolvePageChangelog(
   };
 }
 
-/** Applies `prereleases`, `tagPattern`, `since`, then `limit` — in that order (CHANGELOG §8). */
+/**
+ * Applies `prereleases`, `tagPattern`, `since`, then `limit` — in that order
+ * (CHANGELOG §8). Sorting happens before `limit` so the page keeps the highest
+ * versions, not the ones GitHub happened to return first.
+ */
 export function filterReleases(
   releases: readonly ChangelogRelease[],
   options: ResolvedPageChangelog,
 ): ChangelogRelease[] {
-  return releases
+  const filtered = releases
     .filter((release) => options.prereleases || !release.prerelease)
     .filter((release) => !options.tagPattern || options.tagPattern.test(release.tag))
     .filter((release) => {
       if (options.since === undefined) return true;
       if (!release.publishedAt) return false;
       return Date.parse(release.publishedAt) >= options.since;
-    })
-    .slice(0, options.limit);
+    });
+
+  return sortReleases(filtered).slice(0, options.limit);
 }
+
+// #region ordering
+
+interface ParsedVersion {
+  /** Release identifiers (`major`, `minor`, `patch`, …) as read from the tag. */
+  numbers: number[];
+  /** Dot-separated pre-release identifiers, if the tag has any. */
+  prerelease?: string[];
+}
+
+/**
+ * Reads the version out of a tag name (CHANGELOG §4). Accepts the shapes tags
+ * take in practice — `1.2.3`, `v1.2.3`, `v1.2`, `@scope/pkg@1.2.3-rc.1+build`
+ * — and returns `undefined` for anything else, e.g. a date-based tag.
+ */
+const VERSION_RE = /^(?:.*?[@/-])?[vV]?(\d+(?:\.\d+)*)(?:-([0-9A-Za-z.-]+))?(?:\+[0-9A-Za-z.-]+)?$/;
+
+function parseVersion(tag: string): ParsedVersion | undefined {
+  const match = VERSION_RE.exec(tag.trim());
+  if (!match) return undefined;
+  return {
+    numbers: match[1]!.split(".").map(Number),
+    prerelease: match[2]?.split("."),
+  };
+}
+
+/** Compares pre-release identifiers per semver §11.4; a release outranks its pre-releases. */
+function comparePrerelease(left: string[] | undefined, right: string[] | undefined): number {
+  if (!left && !right) return 0;
+  // An absent pre-release means the final release, which is the greater version.
+  if (!left) return 1;
+  if (!right) return -1;
+
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const a = left[index];
+    const b = right[index];
+    // A shorter set of identifiers is the lower version (`1.0.0-rc` < `1.0.0-rc.1`).
+    if (a === undefined) return -1;
+    if (b === undefined) return 1;
+
+    const aNumeric = /^\d+$/.test(a);
+    const bNumeric = /^\d+$/.test(b);
+    if (aNumeric && bNumeric) {
+      if (Number(a) !== Number(b)) return Number(a) - Number(b);
+      continue;
+    }
+    if (aNumeric !== bNumeric) return aNumeric ? -1 : 1;
+    if (a !== b) return a < b ? -1 : 1;
+  }
+
+  return 0;
+}
+
+function compareVersions(left: ParsedVersion, right: ParsedVersion): number {
+  for (let index = 0; index < Math.max(left.numbers.length, right.numbers.length); index += 1) {
+    // A missing component counts as 0, so `v1.2` and `v1.2.0` compare equal.
+    const diff = (left.numbers[index] ?? 0) - (right.numbers[index] ?? 0);
+    if (diff !== 0) return diff;
+  }
+  return comparePrerelease(left.prerelease, right.prerelease);
+}
+
+function releaseTimestamp(release: ChangelogRelease): number {
+  if (!release.publishedAt) return 0;
+  const timestamp = Date.parse(release.publishedAt);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+/**
+ * Orders releases by version, highest first (CHANGELOG §4). Tags whose version
+ * Makit cannot read sort after the ones it can, and the publication date breaks
+ * ties — so a repository with non-version tags still reads newest-first.
+ */
+export function sortReleases(releases: readonly ChangelogRelease[]): ChangelogRelease[] {
+  return releases
+    .map((release) => ({ release, version: parseVersion(release.tag) }))
+    .sort((a, b) => {
+      if (a.version && b.version) {
+        const byVersion = compareVersions(b.version, a.version);
+        if (byVersion !== 0) return byVersion;
+      } else if (a.version || b.version) {
+        return a.version ? -1 : 1;
+      }
+      return releaseTimestamp(b.release) - releaseTimestamp(a.release);
+    })
+    .map((entry) => entry.release);
+}
+
+// #endregion
 
 // #region markdown generation
 
@@ -336,14 +430,6 @@ function normalizeRelease(raw: RawRelease): ChangelogRelease | undefined {
   };
 }
 
-function sortReleases(releases: ChangelogRelease[]): ChangelogRelease[] {
-  return [...releases].sort((a, b) => {
-    const left = a.publishedAt ? Date.parse(a.publishedAt) : 0;
-    const right = b.publishedAt ? Date.parse(b.publishedAt) : 0;
-    return right - left;
-  });
-}
-
 function describeResponse(response: Response): string {
   if (
     (response.status === 403 || response.status === 429) &&
@@ -485,8 +571,9 @@ export class ChangelogFetcher {
       if (collected.length >= want) break;
     }
 
-    const releases = sortReleases(collected);
-    return { fetchedAt: Date.now(), etag, count: releases.length, complete, releases };
+    // Stored in API order; `filterReleases` orders by version at render time,
+    // so a cache written by an earlier version still renders correctly.
+    return { fetchedAt: Date.now(), etag, count: collected.length, complete, releases: collected };
   }
 
   private cachePath(repository: string): string {
