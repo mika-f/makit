@@ -65,6 +65,8 @@ export default definePageMetadata({
 
 Draft releases are never rendered. Filters are applied in the order above, and `limit` counts what survives them.
 
+Releases are ordered by version, highest first — not by publication date. A `v` prefix and a package prefix such as `makit@` are ignored, missing components count as zero (`v1.2` equals `v1.2.0`), and a pre-release sits just below the release it leads to (`v2.0.0` > `v2.0.0-rc.2` > `v2.0.0-rc.1`). Tags with no readable version, such as `nightly`, come after the ones that have a version, newest first. Ordering happens before `limit`, so a page always keeps the highest versions.
+
 Each release becomes a heading followed by a line with the tag link and the publication date, then the release body. Headings inside the release body are shifted down so they nest under the release's own heading, which keeps the table of contents readable.
 
 ## Site-wide defaults
