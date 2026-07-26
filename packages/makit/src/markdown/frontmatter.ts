@@ -25,6 +25,9 @@ const frontMatterSchema = z.object({
   image: z.string().optional(),
   noindex: z.boolean().optional(),
   nofollow: z.boolean().optional(),
+  // Only the `owner/repository` shorthand fits front matter; the object form
+  // is nested and therefore needs `.meta.ts` (CHANGELOG §2.1).
+  changelog: z.string().optional(),
 });
 
 export interface ParsedFrontMatter {

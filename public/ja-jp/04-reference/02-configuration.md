@@ -194,6 +194,23 @@ export default defineConfig({
 | `github.repository`            | `owner/repository`          | ページの「GitHub で編集」リンクの対象リポジトリ。                 |
 | `github.branch`                | `string`、`"main"`          | ドキュメントを置くブランチ。                                      |
 
+## Changelog
+
+`changelog` は、GitHub Releases から本文を生成するページ（`changelog` を持つページ）の既定値です。取得結果は `.makit/cache/changelog/` に `cacheTtl` 秒キャッシュされ、同じリポジトリを指すページとロケールで共有されます。取得に失敗した場合はキャッシュへフォールバックし、`changelog-fetch-failed` 警告を出してビルドは継続します。すべてのオプションは [Changelog ページ](../03-guides/07-changelog.md)を参照してください。
+
+| 項目                     | 型・既定値                              | 説明                                                             |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------------------- |
+| `changelog.enabled`      | boolean、`true`                         | 機能全体の有効・無効。                                            |
+| `changelog.apiBaseUrl`   | `string`、`"https://api.github.com"`    | GitHub Enterprise Server 向けの API ルート。                      |
+| `changelog.token`        | `string`                                | 省略時は `MAKIT_GITHUB_TOKEN`、次いで `GITHUB_TOKEN` を参照します。 |
+| `changelog.cacheTtl`     | number、`3600`                          | 取得結果を再利用する秒数。`0` は毎回再検証します。                |
+| `changelog.offline`      | boolean、`false`                        | ネットワークを使わずキャッシュのみを使用します。                  |
+| `changelog.limit`        | number、`30`                            | ページあたりのリリース件数の既定値。                              |
+| `changelog.prereleases`  | boolean、`true`                         | プレリリースを含めるかどうかの既定値。                            |
+| `changelog.headingLevel` | number、`2`                             | 各リリースの見出しレベルの既定値。                                |
+| `changelog.dateStyle`    | `"full" \| "long" \| "medium" \| "short" \| "iso"`、`"medium"` | 発行日の書式。                             |
+| `changelog.labels`       | object                                  | `prerelease` と `empty` の文言。ロケール別に指定できます。         |
+
 ## ビルド、開発、検証
 
 | 項目                             | 型・既定値            | 説明                                                                                        |

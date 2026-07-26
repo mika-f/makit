@@ -30,6 +30,7 @@ Markdown と同名の `configuration.meta.ts` のようなファイルを置き�
 | `sidebar` / `tableOfContents` | そのページでサイドバー／目次を表示するか。既定はどちらも `true`。                                  |
 | `layout`                      | 利用するレイアウト名。                                                                             |
 | `canonical` / `image`         | canonical URL とページ固有の OG 画像。                                                             |
+| `changelog`                   | GitHub リポジトリのリリースからページ本文を生成します。`"owner/repository"`、または `limit`、`prereleases`、`tagPattern`、`since`、`headingLevel` を持つオブジェクト。[Changelog ページ](../03-guides/07-changelog.md)を参照してください。 |
 
 簡単な上書きには Markdown 先頭の YAML front matter も使えます。ただし、ネストした値や `.meta.ts` との併用はできません。型安全性と複雑な設定が必要な場合は `.meta.ts` を使います。
 

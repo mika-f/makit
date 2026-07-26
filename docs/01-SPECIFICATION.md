@@ -757,8 +757,16 @@ export interface PageMetadata {
   };
 
   taxonomy?: PageTaxonomy;
+
+  /**
+   * GitHub Releases から Changelog を生成する。
+   * 文字列は `{ repository }` の短縮形。
+   */
+  changelog?: string | PageChangelogConfig;
 }
 ```
+
+`changelog` を指定したページは、ビルド時に取得したリリースノートを本文へ合成する。詳細は [CHANGELOG](./06-CHANGELOG.md) を参照。
 
 ```ts
 export interface PageTaxonomy {
@@ -791,7 +799,7 @@ export function definePageMetadata(
 
 `{filename}.meta.ts` は構造化メタデータの主手段だが、`order` や `title` など数個のスカラー値だけを上書きしたい単純なページのために、Markdown 自身の Front Matter を軽量な代替手段として許容する。
 
-Front Matter で指定できるのは `PageMetadata` のうちスカラー値のフィールド(`id`, `title`, `description`, `slug`, `order`, `draft`, `hidden`, `sidebar`, `tableOfContents`, `layout`, `canonical`, `image`, `noindex`, `nofollow`)に限る。`navigation` や `taxonomy` などネストしたフィールドはビルドエラーとし、`{filename}.meta.ts` の使用を促す。
+Front Matter で指定できるのは `PageMetadata` のうちスカラー値のフィールド(`id`, `title`, `description`, `slug`, `order`, `draft`, `hidden`, `sidebar`, `tableOfContents`, `layout`, `canonical`, `image`, `noindex`, `nofollow`, `changelog`)に限る。`navigation` や `taxonomy` などネストしたフィールドはビルドエラーとし、`{filename}.meta.ts` の使用を促す。
 
 1つのページで `{filename}.meta.ts` と Front Matter を同時に定義することはできない(どちらか一方)。両方存在する場合はビルドエラーとする。
 

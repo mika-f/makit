@@ -118,9 +118,12 @@ See [Production analytics](../03-guides/05-analytics.md) for all `analytics` opt
 | `sitemap.enabled`                    | `true`                                       | Generate sitemap; fallback pages are excluded by default.                                                                 |
 | `llms.enabled`                       | `false`                                      | Generate `llms.txt`, `llms-full.txt`, and page Markdown endpoints.                                                        |
 | `github`                             | —                                            | `{ repository: "owner/repository", branch?: "main" }` for Edit-on-GitHub links.                                           |
+| `changelog`                          | see below                                    | Defaults for pages built from GitHub Releases: `enabled`, `apiBaseUrl`, `token`, `cacheTtl`, `offline`, `limit`, `prereleases`, `headingLevel`, `dateStyle`, `labels`. |
 | `build.clean`, `build.trailingSlash` | `true`, `true`                               | Clean output and choose trailing-slash URLs.                                                                              |
 | `dev` / `preview`                    | port `3000`, host `localhost`, `open: false` | Local server options; `dev.silentNext` suppresses internal output.                                                        |
 | `validation.strict`                  | `false`                                      | Promote warnings to errors. `disallowFrontMatter` forbids YAML front matter; `failOn` promotes selected diagnostic codes. |
+
+`changelog` only matters for pages that set a `changelog` of their own. Release lists are cached under `.makit/cache/changelog/` for `cacheTtl` seconds (3600 by default) and shared across pages and locales; a failed fetch falls back to that cache and reports `changelog-fetch-failed` rather than stopping the build. See [Changelog pages](../03-guides/07-changelog.md) for every option.
 
 By default, lightweight YAML front matter may replace `.meta.ts` for flat page values such as `title`, `description`, or `order`. It does not support nested values or arrays of objects, and it cannot be combined with non-empty front matter and a `.meta.ts` file for the same page. See [Content structure](../03-guides/02-content-structure.md#use-lightweight-front-matter) for an example and selection guidance.
 

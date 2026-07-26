@@ -328,6 +328,24 @@ const githubConfigSchema = z.strictObject({
   branch: z.string().min(1).optional(),
 });
 
+const changelogConfigSchema = z.strictObject({
+  enabled: z.boolean().optional(),
+  apiBaseUrl: z.string().url().optional(),
+  token: z.string().min(1).optional(),
+  cacheTtl: z.number().int().min(0).optional(),
+  offline: z.boolean().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+  prereleases: z.boolean().optional(),
+  headingLevel: z.number().int().min(1).max(5).optional(),
+  dateStyle: z.enum(["full", "long", "medium", "short", "iso"]).optional(),
+  labels: z
+    .strictObject({
+      prerelease: localizedValueSchema.optional(),
+      empty: localizedValueSchema.optional(),
+    })
+    .optional(),
+});
+
 const buildConfigSchema = z.strictObject({
   clean: z.boolean().optional(),
   trailingSlash: z.boolean().optional(),
@@ -369,6 +387,8 @@ const warningCodeSchema = z.enum([
   "out-of-project-import",
   "slow-metadata-eval",
   "duplicate-navigation-order",
+  "changelog-fetch-failed",
+  "changelog-empty",
   "route-group-category-ignored",
 ]);
 
@@ -446,6 +466,7 @@ export const makitConfigSchema = z.strictObject({
   sitemap: sitemapConfigSchema.optional(),
   llms: llmsConfigSchema.optional(),
   github: githubConfigSchema.optional(),
+  changelog: changelogConfigSchema.optional(),
   build: buildConfigSchema.optional(),
   dev: devConfigSchema.optional(),
   preview: previewConfigSchema.optional(),
