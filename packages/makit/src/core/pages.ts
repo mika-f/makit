@@ -11,9 +11,15 @@ import { parseFrontMatter } from "../markdown/frontmatter.js";
 import { createMarkdownProcessor, processMarkdown } from "../markdown/pipeline.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import {
+  DEFAULT_CHANGELOG_EMPTY_LABEL,
+  DEFAULT_CHANGELOG_PRERELEASE_LABEL,
+} from "../config/defaults.js";
 import { BuildCache, MetadataCache } from "./cache.js";
+import { ChangelogFetcher, applyChangelog } from "./changelog.js";
 import type { ResolvedCollection } from "./collections.js";
 import { MakitError } from "./errors.js";
+import { localizeValue } from "./localize.js";
 import { parseOrderedSegment } from "./order-prefix.js";
 import {
   buildRoute,
@@ -104,23 +110,49 @@ async function resolvePageMetadata(
   return { metadata, content: frontMatter.content, diagnostics, dependencies };
 }
 
+/** Shared, build-pass-scoped collaborators handed to every page build. */
+export interface BuildPageContext {
+  cache?: BuildCache;
+  jiti?: Jiti;
+  metadataCache?: MetadataCache;
+  /** Shared across pages so one repository is fetched once (CHANGELOG §11). */
+  changelogFetcher?: ChangelogFetcher;
+}
+
 /** Assembles one `GeneratedPage` from a scanned source file. */
 export async function buildPage(
   file: SourceFile,
   config: ResolvedConfig,
   processor: ReturnType<typeof createMarkdownProcessor>,
-  cache?: BuildCache,
-  jiti?: Jiti,
-  metadataCache?: MetadataCache,
+  context: BuildPageContext = {},
 ): Promise<BuildPageResult> {
+  const { cache, jiti, metadataCache } = context;
   const raw = await readFile(file.absolutePath, "utf-8");
-  const { metadata, content, diagnostics, dependencies } = await resolvePageMetadata(
-    raw,
-    file,
-    config,
-    jiti,
-    metadataCache,
-  );
+  const {
+    metadata,
+    content: body,
+    diagnostics,
+    dependencies,
+  } = await resolvePageMetadata(raw, file, config, jiti, metadataCache);
+
+  // Release notes are merged into the Markdown source before processing, so
+  // they pick up Shiki, heading IDs, the table of contents, and the search
+  // index exactly like hand-written content (CHANGELOG §1).
+  let content = body;
+  if (metadata.changelog) {
+    const fetcher = context.changelogFetcher ?? ChangelogFetcher.create(config);
+    const applied = await applyChangelog(content, metadata.changelog, config, fetcher, {
+      sourcePath: file.absolutePath,
+      locale: file.locale.locale,
+      prereleaseLabel:
+        localizeValue(config.changelog.labels.prerelease, file.locale) ??
+        DEFAULT_CHANGELOG_PRERELEASE_LABEL,
+      emptyLabel:
+        localizeValue(config.changelog.labels.empty, file.locale) ?? DEFAULT_CHANGELOG_EMPTY_LABEL,
+    });
+    content = applied.content;
+    diagnostics.push(...applied.diagnostics);
+  }
 
   const numericPrefixes = config.navigation.auto.numericPrefixes;
   const routeGroups = config.navigation.auto.routeGroups;
@@ -237,6 +269,8 @@ export interface BuildAllPagesOptions {
   cache?: boolean;
   /** Shares one metadata cache instance across an entire build pass (collections, pages, navigation). Overrides `cache`. */
   metadataCache?: MetadataCache;
+  /** Overrides the changelog fetcher, e.g. to stub GitHub in tests (CHANGELOG §11). */
+  changelogFetcher?: ChangelogFetcher;
 }
 
 /**
@@ -257,6 +291,9 @@ export async function buildAllPages(
     options.metadataCache ?? (cacheEnabled ? await MetadataCache.create(config) : undefined);
   // One jiti instance per build pass; fresh per rebuild so edits re-evaluate.
   const jiti = createMetadataJiti();
+  // One fetcher per build pass so a repository referenced by several pages
+  // (or the same page in several locales) is fetched once (CHANGELOG §11).
+  const changelogFetcher = options.changelogFetcher ?? ChangelogFetcher.create(config);
 
   const pages: GeneratedPage[] = [];
   const warnings: string[] = [];
@@ -264,7 +301,12 @@ export async function buildAllPages(
   const metadataPaths: string[] = [];
 
   for (const file of sourceFiles) {
-    const result = await buildPage(file, config, processor, cache, jiti, metadataCache);
+    const result = await buildPage(file, config, processor, {
+      cache,
+      jiti,
+      metadataCache,
+      changelogFetcher,
+    });
     pages.push(result.page);
     warnings.push(...result.warnings);
     diagnostics.push(...result.diagnostics);

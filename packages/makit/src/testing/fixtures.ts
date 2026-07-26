@@ -3,7 +3,11 @@ import { createMetadataJiti } from "../metadata/loader.js";
 import type { PageMetadata } from "../metadata/types.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { resolveCollections, type ResolvedCollection } from "../core/collections.js";
-import { buildAllPages, type BuildAllPagesResult } from "../core/pages.js";
+import {
+  buildAllPages,
+  type BuildAllPagesOptions,
+  type BuildAllPagesResult,
+} from "../core/pages.js";
 
 /**
  * Test-only helpers for writing `.meta.ts` fixtures. Fixture files live in
@@ -30,8 +34,11 @@ export interface BuildPagesForTestResult extends BuildAllPagesResult {
 }
 
 /** `resolveCollections` + `buildAllPages` in one step for pipeline tests. */
-export async function buildPagesForTest(config: ResolvedConfig): Promise<BuildPagesForTestResult> {
+export async function buildPagesForTest(
+  config: ResolvedConfig,
+  options: BuildAllPagesOptions = {},
+): Promise<BuildPagesForTestResult> {
   const collections = await testCollections(config);
-  const result = await buildAllPages(config, collections);
+  const result = await buildAllPages(config, collections, options);
   return { ...result, collections };
 }

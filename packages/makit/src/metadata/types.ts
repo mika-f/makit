@@ -197,6 +197,34 @@ export interface CategoryMetadata {
   index?: string;
 }
 
+/**
+ * Options for generating a page's body from GitHub Releases
+ * (CHANGELOG §2.2, §14.2). Every field except `repository` falls back to
+ * the site-wide `changelog` config.
+ */
+export interface PageChangelogConfig {
+  /** GitHub repository in `owner/repository` form. */
+  repository: string;
+
+  /** Maximum number of releases to render (1-500). */
+  limit?: number;
+
+  /** Include pre-releases. */
+  prereleases?: boolean;
+
+  /** Regular expression a release's tag name must match. */
+  tagPattern?: string;
+
+  /** Only releases published on or after this ISO 8601 date. */
+  since?: string;
+
+  /** Heading level of each release entry (1-5). */
+  headingLevel?: number;
+}
+
+/** A repository shorthand (`"owner/repository"`) or a full configuration. */
+export type PageChangelog = string | PageChangelogConfig;
+
 /** Classification facets for a page (spec §16.2). */
 export interface PageTaxonomy {
   topics?: string[];
@@ -275,4 +303,18 @@ export interface PageMetadata {
   };
 
   taxonomy?: PageTaxonomy;
+
+  /**
+   * Generate the page's changelog from a GitHub repository's releases
+   * (CHANGELOG §2). A string is shorthand for `{ repository }`.
+   *
+   * The rendered releases replace a `<!-- makit:changelog -->` marker in the
+   * Markdown body, or are appended to it when there is no marker.
+   *
+   * @example
+   * ```ts
+   * definePageMetadata({ changelog: "mika-f/makit" });
+   * ```
+   */
+  changelog?: PageChangelog;
 }

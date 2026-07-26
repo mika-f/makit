@@ -1,15 +1,22 @@
 import { MakitError } from "../core/errors.js";
 import type { MakitMessages } from "../types/config.js";
 import type {
+  ResolvedChangelogConfig,
   ResolvedConfig,
   ResolvedI18nConfig,
   ResolvedLocaleConfig,
 } from "../types/resolved-config.js";
 import {
   DEFAULT_BASE_PATH,
+  DEFAULT_CHANGELOG_CACHE_TTL,
+  DEFAULT_CHANGELOG_EMPTY_LABEL,
+  DEFAULT_CHANGELOG_HEADING_LEVEL,
+  DEFAULT_CHANGELOG_LIMIT,
+  DEFAULT_CHANGELOG_PRERELEASE_LABEL,
   DEFAULT_DEV_HOST,
   DEFAULT_DEV_PORT,
   DEFAULT_FALLBACK_NOTICE,
+  DEFAULT_GITHUB_API_BASE_URL,
   DEFAULT_HOME_LABEL,
   DEFAULT_LANG,
   DEFAULT_OUT_DIR,
@@ -47,6 +54,35 @@ export function normalizeRouteGroups(
 interface ResolveContext {
   root: string;
   configPath: string;
+}
+
+/** `MAKIT_OFFLINE=1`/`true` forces cache-only changelog builds (CHANGELOG §12). */
+function offlineFromEnv(): boolean {
+  const value = process.env.MAKIT_OFFLINE?.trim().toLowerCase();
+  return value === "1" || value === "true";
+}
+
+function resolveChangelog(parsed: MakitConfigParsed): ResolvedChangelogConfig {
+  const changelog = parsed.changelog;
+
+  return {
+    enabled: changelog?.enabled ?? true,
+    apiBaseUrl: (changelog?.apiBaseUrl ?? DEFAULT_GITHUB_API_BASE_URL).replace(/\/+$/, ""),
+    // A token is a credential, so the environment is a first-class source
+    // here (CHANGELOG §10) — unlike ordinary metadata (spec §21).
+    token:
+      changelog?.token ?? process.env.MAKIT_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN ?? undefined,
+    cacheTtl: changelog?.cacheTtl ?? DEFAULT_CHANGELOG_CACHE_TTL,
+    offline: changelog?.offline ?? offlineFromEnv(),
+    limit: changelog?.limit ?? DEFAULT_CHANGELOG_LIMIT,
+    prereleases: changelog?.prereleases ?? true,
+    headingLevel: changelog?.headingLevel ?? DEFAULT_CHANGELOG_HEADING_LEVEL,
+    dateStyle: changelog?.dateStyle ?? "medium",
+    labels: {
+      prerelease: changelog?.labels?.prerelease ?? DEFAULT_CHANGELOG_PRERELEASE_LABEL,
+      empty: changelog?.labels?.empty ?? DEFAULT_CHANGELOG_EMPTY_LABEL,
+    },
+  };
 }
 
 function resolveI18n(parsed: MakitConfigParsed, topLevelLang: string): ResolvedI18nConfig {
@@ -264,6 +300,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       repository: parsed.github.repository,
       branch: parsed.github.branch ?? "main",
     },
+    changelog: resolveChangelog(parsed),
     build: {
       clean: parsed.build?.clean ?? true,
       trailingSlash: parsed.build?.trailingSlash ?? true,

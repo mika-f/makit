@@ -30,6 +30,7 @@ Put this in a same-named file such as `configuration.meta.ts`. When metadata is 
 | `sidebar` / `tableOfContents` | Whether this page shows its sidebar or in-page table of contents; both default to `true`.                             |
 | `layout`                      | Layout name for the page.                                                                                             |
 | `canonical` / `image`         | Canonical URL and page-specific Open Graph image.                                                                     |
+| `changelog`                   | Fills the page from a GitHub repository's releases: `"owner/repository"`, or an object with `limit`, `prereleases`, `tagPattern`, `since`, and `headingLevel`. See [Changelog pages](../03-guides/07-changelog.md). |
 
 Lightweight YAML front matter is an alternative for flat overrides. It cannot express nested values or coexist with non-empty front matter and a `.meta.ts` file; use `.meta.ts` for complex or type-checked metadata.
 

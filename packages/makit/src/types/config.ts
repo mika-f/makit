@@ -34,6 +34,8 @@ export interface MakitConfig {
   llms?: LlmsConfig;
   /** Source repository used by the page-level "Edit on GitHub" link. */
   github?: GitHubConfig;
+  /** Site-wide defaults for pages that generate a changelog from GitHub Releases. */
+  changelog?: ChangelogConfig;
   build?: BuildConfig;
   dev?: DevConfig;
   preview?: PreviewConfig;
@@ -406,6 +408,49 @@ export interface GitHubConfig {
 
 // #endregion
 
+// #region changelog
+
+/** How a release's publication date is formatted (CHANGELOG §9). */
+export type ChangelogDateStyle = "full" | "long" | "medium" | "short" | "iso";
+
+export interface ChangelogLabelsConfig {
+  /** Marker shown on pre-release entries. @default "Pre-release" */
+  prerelease?: string | LocalizedValue<string>;
+  /** Paragraph rendered when no release matches. @default "No releases yet." */
+  empty?: string | LocalizedValue<string>;
+}
+
+/**
+ * Site-wide defaults for `changelog` pages (CHANGELOG §13). Every field a
+ * page may also set is overridden by that page's own `changelog` metadata.
+ */
+export interface ChangelogConfig {
+  /** Turn the whole feature off; `changelog` pages then render body-only. @default true */
+  enabled?: boolean;
+  /** GitHub API root, for GitHub Enterprise Server. @default "https://api.github.com" */
+  apiBaseUrl?: string;
+  /**
+   * GitHub API token. Falls back to `MAKIT_GITHUB_TOKEN`, then `GITHUB_TOKEN`
+   * (CHANGELOG §10). Prefer passing it through the environment.
+   */
+  token?: string;
+  /** Seconds a cached fetch stays fresh; `0` revalidates every build. @default 3600 */
+  cacheTtl?: number;
+  /** Never hit the network — cache only. Also enabled by `MAKIT_OFFLINE`. @default false */
+  offline?: boolean;
+  /** Maximum number of releases per page (1-500). @default 30 */
+  limit?: number;
+  /** Include pre-releases. @default true */
+  prereleases?: boolean;
+  /** Heading level of each release entry (1-5). @default 2 */
+  headingLevel?: number;
+  /** @default "medium" */
+  dateStyle?: ChangelogDateStyle;
+  labels?: ChangelogLabelsConfig;
+}
+
+// #endregion
+
 // #region seo / sitemap
 
 export interface SeoConfig {
@@ -479,6 +524,8 @@ export type MakitWarningCode =
   | "front-matter-too-deep"
   | "front-matter-invalid-value"
   | "duplicate-navigation-order"
+  | "changelog-fetch-failed"
+  | "changelog-empty"
   | "route-group-category-ignored"
   | "theme-slot-file-ignored"
   | "theme-outside-project";

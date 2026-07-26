@@ -1,6 +1,7 @@
 import type {
   BuildConfig,
   AnalyticsConfig,
+  ChangelogDateStyle,
   CollectionNavigationConfig,
   CollectionsConfig,
   ExternalLinksConfig,
@@ -29,6 +30,7 @@ import type {
   GeneratedRedirect,
   ResolvedDeploymentConfig,
 } from "./adapter.js";
+import type { LocalizedValue } from "../metadata/types.js";
 import type { ThemeManifest } from "./theme.js";
 import type { ThemeSlotName } from "@natsuneko-laboratory/makit-runtime/slot-names";
 
@@ -163,6 +165,24 @@ export interface ResolvedLlmsConfig {
 
 export interface ResolvedGitHubConfig extends Required<GitHubConfig> {}
 
+/** Site-wide changelog defaults with every option resolved (CHANGELOG §13, §14.1). */
+export interface ResolvedChangelogConfig {
+  enabled: boolean;
+  apiBaseUrl: string;
+  /** Resolved from config, then `MAKIT_GITHUB_TOKEN`, then `GITHUB_TOKEN`. */
+  token?: string;
+  cacheTtl: number;
+  offline: boolean;
+  limit: number;
+  prereleases: boolean;
+  headingLevel: number;
+  dateStyle: ChangelogDateStyle;
+  labels: {
+    prerelease: string | LocalizedValue<string>;
+    empty: string | LocalizedValue<string>;
+  };
+}
+
 export interface ResolvedBuildConfig extends Required<BuildConfig> {}
 
 export interface ResolvedDevConfig {
@@ -242,6 +262,7 @@ export interface ResolvedConfig {
   sitemap: ResolvedSitemapConfig;
   llms: ResolvedLlmsConfig;
   github?: ResolvedGitHubConfig;
+  changelog: ResolvedChangelogConfig;
   build: ResolvedBuildConfig;
   dev: ResolvedDevConfig;
   preview: ResolvedPreviewConfig;

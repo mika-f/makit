@@ -10,6 +10,7 @@ Makit is a Node.js CLI for building searchable, multilingual static documentatio
 - Organize large sites with collections, sections, and groups
 - Support localized content and fallbacks for missing translations
 - Add full-text search with Pagefind
+- Build changelog pages from a GitHub repository's releases at build time
 - Optionally generate `llms.txt`, `llms-full.txt`, and Markdown endpoints for every page
 - Use official adapters for GitHub Pages, Cloudflare Pages, Netlify, and Vercel
 
