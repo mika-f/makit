@@ -9,7 +9,8 @@ import type { DocsPageProps } from "@natsuneko-laboratory/makit-runtime";
 /**
  * The page shell. Column widths are narrower than the standard theme's:
  * monospace navigation labels are wide, so the reading column gets the slack
- * back by capping the prose instead of the grid.
+ * back by capping the prose instead of the grid. The prose is centered
+ * (`mx-auto`) within the main column, matching the other themes.
  */
 export async function DocsPage({ page, site, i18n, navigation, components: C }: DocsPageProps) {
   const [homeHref, collections, globalNavigation, searchEntries] = await Promise.all([
@@ -66,7 +67,7 @@ export async function DocsPage({ page, site, i18n, navigation, components: C }: 
           <C.Sidebar navigation={navigation} currentRoute={page.route} components={C} />
         )}
         <main data-pagefind-body className="min-w-0 px-4 py-8 sm:px-8 md:py-12">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-3xl">
             <C.FallbackNotice page={page} i18n={i18n} />
             <C.Breadcrumbs items={page.breadcrumbs} />
             <C.PageHeader page={page} />
