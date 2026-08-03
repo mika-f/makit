@@ -105,7 +105,9 @@ export default function cloudflarePages(options: CloudflarePagesOptions = {}): D
           content: `${JSON.stringify(
             {
               name: options.projectName,
-              pages_build_output_dir: context.config.outDir,
+              assets: {
+                directory: context.config.outDir,
+              },
               compatibility_date: "2026-01-01",
             },
             null,
