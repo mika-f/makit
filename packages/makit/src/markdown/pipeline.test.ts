@@ -295,6 +295,43 @@ describe("createMarkdownProcessor / processMarkdown", () => {
     );
   });
 
+  it("highlights a custom grammar registered via shiki.languages", async () => {
+    const customLang = {
+      name: "makit-custom",
+      scopeName: "source.makit-custom",
+      patterns: [{ match: "\\bHELLO\\b", name: "keyword.control.makit-custom" }],
+    };
+    const config = makeConfig({
+      title: "Test",
+      markdown: { shiki: { languages: [customLang] } },
+    });
+
+    const result = await render("```makit-custom\nHELLO world\n```\n", config);
+    expect(result.html).toContain('data-language="makit-custom"');
+    expect(result.warnings).toHaveLength(0);
+  });
+
+  it("loads a custom grammar from an async loader in shiki.languages", async () => {
+    const config = makeConfig({
+      title: "Test",
+      markdown: {
+        shiki: {
+          languages: [
+            async () => ({
+              name: "makit-async-lang",
+              scopeName: "source.makit-async-lang",
+              patterns: [],
+            }),
+          ],
+        },
+      },
+    });
+
+    const result = await render("```makit-async-lang\nhello\n```\n", config);
+    expect(result.html).toContain('data-language="makit-async-lang"');
+    expect(result.warnings).toHaveLength(0);
+  });
+
   it("strips raw HTML by default (allowDangerousHtml: false)", async () => {
     const result = await render("<div>raw</div>\n\nplain text");
     expect(result.html).not.toContain("<div>raw</div>");

@@ -185,6 +185,15 @@ describe("resolveConfig defaults", () => {
     expect(resolved.markdown.shiki.themes).toEqual({ light: "nord", dark: "nord" });
   });
 
+  it("passes shiki.languages entries through untouched", () => {
+    const customLang = { name: "my-lang", scopeName: "source.my-lang", patterns: [] };
+    const resolved = resolveConfig(
+      { title: "My Docs", markdown: { shiki: { languages: ["ts", customLang] } } },
+      ctx,
+    );
+    expect(resolved.markdown.shiki.languages).toEqual(["ts", customLang]);
+  });
+
   it("enables LLM-oriented output when configured", () => {
     const resolved = resolveConfig({ title: "My Docs", llms: { enabled: true } }, ctx);
 

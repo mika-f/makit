@@ -108,10 +108,23 @@ export default defineConfig({
 | `code.lineNumbers`                | boolean、`false`                                    | すべてのコードブロックに行番号を表示します。                                                            |
 | `shiki.theme`                     | `string`                                            | 明暗共通のテーマ。`themes` より優先されます。                                                           |
 | `shiki.themes`                    | `{ light, dark }`                                   | 明暗別テーマ。                                                                                          |
-| `shiki.languages`                 | `string[]`                                          | 追加で読み込む言語。                                                                                    |
+| `shiki.languages`                 | 配列                                                 | 追加で読み込む言語。バンドル済み言語名のほか、[独自の TextMate 文法](https://shiki.style/guide/load-lang)（グラマーオブジェクトや、それを返すローダー）も渡せます。 |
 | `shiki.unknownLanguage`           | `"error" \| "warning" \| "plain-text"`、`"warning"` | 未知のフェンス言語への対応。                                                                            |
 | `tableOfContents`                 | object                                              | `minDepth`（既定 2）から `maxDepth`（既定 3）までを目次に含めます。                                     |
 | `remarkPlugins` / `rehypePlugins` | plugin 配列                                         | Markdown 処理の前後に Unified プラグインを追加します。プラグインまたは `[plugin, options]` を渡します。 |
+
+`shiki.languages` の各要素には、バンドル済み言語名・生の文法オブジェクト・それを返すローダーのいずれかを指定できます（[Shiki の `langs` オプション](https://shiki.style/guide/load-lang)が受け付けるものすべて）。
+
+```ts
+shiki: {
+  languages: [
+    "ts",
+    async () => (await import("./my-lang.tmLanguage.json", { with: { type: "json" } })).default,
+  ],
+},
+```
+
+フェンスコードブロックでは、その文法の `name` を言語名として指定します（例: ` ```my-lang `）。
 
 構文と表示の対応は[Markdown 構文](../03-guides/01-markdown-syntax.md)を参照してください。
 

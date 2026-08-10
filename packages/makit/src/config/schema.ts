@@ -288,7 +288,11 @@ const shikiConfigSchema = z.strictObject({
       dark: z.string(),
     })
     .optional(),
-  languages: z.array(z.string()).optional(),
+  // Entries are bundled language names or Shiki `LanguageInput` values
+  // (grammar objects, or a loader returning one); Zod can't shape-check
+  // those, so this mirrors the `z.unknown()` treatment of remark/rehype
+  // plugins above.
+  languages: z.array(z.unknown()).optional(),
   unknownLanguage: z.enum(["error", "warning", "plain-text"]).optional(),
 });
 

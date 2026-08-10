@@ -1,5 +1,5 @@
 import { MakitError } from "../core/errors.js";
-import type { MakitMessages } from "../types/config.js";
+import type { MakitMessages, ShikiLanguageInput } from "../types/config.js";
 import type {
   ResolvedChangelogConfig,
   ResolvedConfig,
@@ -273,7 +273,9 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       },
       shiki: {
         themes: shikiThemes,
-        languages: parsed.markdown?.shiki?.languages,
+        // `z.unknown()` in the schema (custom grammars/loaders aren't
+        // shape-checkable), so this narrows back to the authored type.
+        languages: parsed.markdown?.shiki?.languages as ShikiLanguageInput[] | undefined,
         unknownLanguage: parsed.markdown?.shiki?.unknownLanguage ?? "warning",
       },
       tableOfContents: {

@@ -42,6 +42,7 @@ export type {
   SeoConfig,
   ShikiConfig,
   ShikiDualTheme,
+  ShikiLanguageInput,
   ShikiUnknownLanguageBehavior,
   SitemapConfig,
   TableOfContentsConfig,

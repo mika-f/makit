@@ -1,3 +1,4 @@
+import type { LanguageInput } from "shiki";
 import type { CollectionMetadata, LocalizedValue, NavigationNode } from "../metadata/types.js";
 import type { DeploymentConfig, GeneratedHeaderRule, GeneratedRedirect } from "./adapter.js";
 import type { ThemeComponentsConfig } from "./theme.js";
@@ -371,10 +372,17 @@ export interface ShikiDualTheme {
   dark: string;
 }
 
+/**
+ * A bundled Shiki language name, or a custom grammar to register: a
+ * TextMate grammar object, an array of them, or a (possibly async) loader
+ * returning one. See https://shiki.style/guide/load-lang.
+ */
+export type ShikiLanguageInput = string | LanguageInput;
+
 export interface ShikiConfig {
   theme?: string;
   themes?: ShikiDualTheme;
-  languages?: string[];
+  languages?: ShikiLanguageInput[];
   unknownLanguage?: ShikiUnknownLanguageBehavior;
 }
 
