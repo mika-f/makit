@@ -1,5 +1,5 @@
 import type { Root as HastRoot } from "hast";
-import { bundledLanguages, getSingletonHighlighter } from "shiki";
+import { bundledLanguages, getSingletonHighlighter, type Highlighter } from "shiki";
 import { MakitError } from "../core/errors.js";
 import type { ResolvedShikiConfig } from "../types/resolved-config.js";
 
@@ -10,8 +10,16 @@ export interface ShikiHighlightResult {
   warning?: string;
 }
 
-function isKnownLanguage(lang: string): boolean {
-  return lang === "text" || lang === "plaintext" || lang === "txt" || lang in bundledLanguages;
+function isKnownLanguage(lang: string, highlighter: Highlighter): boolean {
+  return (
+    lang === "text" ||
+    lang === "plaintext" ||
+    lang === "txt" ||
+    lang in bundledLanguages ||
+    // Covers custom grammars from `shiki.languages`: they're preloaded into
+    // the singleton below, so a registered custom name shows up here too.
+    highlighter.getLoadedLanguages().includes(lang)
+  );
 }
 
 /**
@@ -25,13 +33,19 @@ export async function highlightCode(
   shikiConfig: ResolvedShikiConfig,
 ): Promise<ShikiHighlightResult> {
   const { light, dark } = shikiConfig.themes;
-  const highlighter = await getSingletonHighlighter({ themes: [light, dark], langs: [] });
+  const highlighter = await getSingletonHighlighter({
+    themes: [light, dark],
+    // Custom grammars (TextMate objects, or loaders for them — see
+    // https://shiki.style/guide/load-lang) are registered up front so their
+    // names are recognized below; bundled languages still load lazily.
+    langs: shikiConfig.languages ?? [],
+  });
 
   const lang = requestedLang?.toLowerCase();
   let resolvedLang = lang ?? "text";
   let warning: string | undefined;
 
-  if (lang && !isKnownLanguage(lang)) {
+  if (lang && !isKnownLanguage(lang, highlighter)) {
     switch (shikiConfig.unknownLanguage) {
       case "error":
         throw new MakitError("markdown-processing-failed", `Unknown code language "${lang}"`);

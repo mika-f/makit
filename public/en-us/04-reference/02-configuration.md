@@ -78,9 +78,22 @@ markdown: {
 | `allowDangerousHtml`                  | `false`                         | Allow raw HTML only for trusted content.                                                                                                               |
 | `externalLinks`                       | `_blank`, `noopener noreferrer` | Target and `rel` applied to external links.                                                                                                            |
 | `code.copyButton`, `code.lineNumbers` | `true`, `false`                 | Show the copy control and global line numbers.                                                                                                         |
-| `shiki.theme` / `themes`              | GitHub themes                   | One shared theme or `{ light, dark }`; `theme` wins. `languages` adds grammars and `unknownLanguage` is `error`, `warning` (default), or `plain-text`. |
+| `shiki.theme` / `themes`              | GitHub themes                   | One shared theme or `{ light, dark }`; `theme` wins. `languages` adds grammars — bundled names, or [custom TextMate grammars](https://shiki.style/guide/load-lang) — and `unknownLanguage` is `error`, `warning` (default), or `plain-text`. |
 | `tableOfContents`                     | H2–H3                           | Heading range; depths are 1–6.                                                                                                                         |
 | `remarkPlugins`, `rehypePlugins`      | `[]`                            | Unified plugins or `[plugin, options]` entries.                                                                                                        |
+
+Each entry in `shiki.languages` can be a bundled language name, a raw grammar object, or a loader returning one — anything [Shiki's `langs` option](https://shiki.style/guide/load-lang) accepts:
+
+```ts
+shiki: {
+  languages: [
+    "ts",
+    async () => (await import("./my-lang.tmLanguage.json", { with: { type: "json" } })).default,
+  ],
+},
+```
+
+A fenced block then opts in with its grammar's `name`, e.g. ` ```my-lang `.
 
 See [Markdown syntax](../03-guides/01-markdown-syntax.md) for source and rendering examples.
 

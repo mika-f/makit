@@ -21,6 +21,7 @@ import type {
   MakitWarningCode,
   NavigationGroup,
   NavigationMode,
+  ShikiLanguageInput,
   ShikiUnknownLanguageBehavior,
   UnifiedPluginEntry,
   UnorderedPosition,
@@ -71,7 +72,7 @@ export interface ResolvedI18nConfig {
 
 export interface ResolvedShikiConfig {
   themes: { light: string; dark: string };
-  languages?: string[];
+  languages?: ShikiLanguageInput[];
   unknownLanguage: ShikiUnknownLanguageBehavior;
 }
 

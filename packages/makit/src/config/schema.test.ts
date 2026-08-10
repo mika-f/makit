@@ -133,6 +133,22 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("accepts shiki.languages with bundled names, grammar objects, and loaders", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      markdown: {
+        shiki: {
+          languages: [
+            "ts",
+            { name: "my-lang", scopeName: "source.my-lang", patterns: [] },
+            async () => ({ name: "async-lang", scopeName: "source.async-lang", patterns: [] }),
+          ],
+        },
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("accepts navigation.auto (ORDER-PREFIX §18)", () => {
     const result = makitConfigSchema.safeParse({
       title: "My Docs",
