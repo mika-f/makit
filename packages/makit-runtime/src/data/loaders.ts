@@ -12,11 +12,13 @@ import {
   routeMapPath,
   searchPath,
   sitePath,
+  staticPagePath,
   translationMapPath,
 } from "./paths.js";
 import type {
   CollectionData,
   GeneratedPage,
+  GeneratedStaticPage,
   GlobalNavigationGroup,
   I18nData,
   LocalePageMap,
@@ -122,6 +124,11 @@ export async function getPageForRoute(
   return getPageById(locale, entry.collectionId, entry.pageId);
 }
 
+/** One static page's generated record (STATIC-PAGES §12.2). */
+export function getStaticPage(locale: string, id: string): Promise<GeneratedStaticPage> {
+  return readJson(staticPagePath(locale, id));
+}
+
 /** The resolved payload for a synthesized portal home (spec §33.2, `home/{locale}.json`). */
 export function getHomeData(locale: string): Promise<PortalHomeData> {
   return readJson(homePath(locale));
@@ -132,12 +139,12 @@ export function getSearchIndex(locale: string): Promise<SearchEntry[]> {
   return readJson<SearchEntry[]>(searchPath(locale)).catch(() => []);
 }
 
-/** The locale's home route — whatever occupies `segments: []` (a page, an aliased page, or a portal). */
+/** The locale's home route — whatever occupies `segments: []` (a page, an aliased page, a portal, or a static page). */
 export async function getHomeRoute(locale: string): Promise<string | undefined> {
   const routeMap = await getRouteMap();
   const entry = routeMap[locale]?.[""];
   if (!entry) return undefined;
-  if (entry.kind === "portal") return entry.route;
+  if (entry.kind === "portal" || entry.kind === "static") return entry.route;
   return (await getPageById(locale, entry.collectionId, entry.pageId)).route;
 }
 

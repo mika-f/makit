@@ -15,6 +15,7 @@ export {
   getRouteMap,
   getSearchIndex,
   getSiteData,
+  getStaticPage,
   getTranslationMap,
 } from "./data/loaders.js";
 export type {
@@ -30,6 +31,7 @@ export type {
   GeneratedNavigationPosition,
   GeneratedPage,
   GeneratedPageLink,
+  GeneratedStaticPage,
   GlobalNavigationGroup,
   GlobalNavigationItem,
   HeaderData,
@@ -55,9 +57,15 @@ export type {
   SearchEntry,
   SeoData,
   SiteData,
+  StaticPageComponentProps,
+  StaticPageLayout,
   ThemeData,
 } from "./data/types.js";
-export { buildPageMetadata, buildSiteMetadata } from "./metadata/build-metadata.js";
+export {
+  buildPageMetadata,
+  buildSiteMetadata,
+  buildStaticPageMetadata,
+} from "./metadata/build-metadata.js";
 export { localeAliasFallback } from "./i18n/locale-alias.js";
 
 // Every theme slot's default implementation (THEME §5). A theme may import
