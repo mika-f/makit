@@ -257,10 +257,18 @@ export async function startDevServer(
       staticPagesWatcher = undefined;
       return;
     }
-    staticPagesWatcher = chokidar.watch(join(config.root, dir), { ignoreInitial: true });
+    const dirAbsolute = join(config.root, dir);
+    staticPagesWatcher = chokidar.watch(dirAbsolute, { ignoreInitial: true });
     staticPagesWatcher.on("all", (event, path) => {
       if (event === "change" && /\.(tsx|jsx)$/.test(path)) return;
       logger.debug(`${event}: ${relative(config.root, path)}`);
+      // The directory itself appearing or disappearing changes what
+      // `generateApp` writes (Tailwind `@source`, STATIC-PAGES §12.4), which
+      // only a config reload re-runs — it regenerates content too.
+      if ((event === "addDir" || event === "unlinkDir") && path === dirAbsolute) {
+        reloadConfig();
+        return;
+      }
       runRegenerate();
     });
   }
