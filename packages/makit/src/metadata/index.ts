@@ -3,6 +3,7 @@ export {
   defineCollection,
   defineNavigation,
   definePageMetadata,
+  defineStaticPageMetadata,
 } from "./define.js";
 export type {
   CategoryMetadata,
@@ -18,4 +19,6 @@ export type {
   NavigationSectionNode,
   PageMetadata,
   PageTaxonomy,
+  StaticPageLayout,
+  StaticPageMetadata,
 } from "./types.js";

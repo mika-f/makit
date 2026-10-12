@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MakitError } from "../core/errors.js";
+import { pageMetaSource, staticPageMetaSource } from "../testing/fixtures.js";
 import { loadMetadataFile, metadataLoadDiagnostics } from "./loader.js";
 
 // Fixture files import the define functions by absolute path because the
@@ -329,5 +330,28 @@ describe("metadataLoadDiagnostics", () => {
     });
 
     expect(diagnostics).toEqual([]);
+  });
+});
+
+describe("loadMetadataFile static page metadata (STATIC-PAGES §9)", () => {
+  it("loads metadata created with defineStaticPageMetadata", async () => {
+    const path = await write(
+      "pages/pricing.meta.ts",
+      staticPageMetaSource({ title: "Pricing", layout: "bare" }),
+    );
+
+    const loaded = await loadMetadataFile(path, "static-page", { projectRoot: dir });
+
+    expect(loaded.value).toEqual({ title: "Pricing", layout: "bare" });
+  });
+
+  it("rejects page metadata where static page metadata is required", async () => {
+    const path = await write("pages/pricing.meta.ts", pageMetaSource({ title: "Pricing" }));
+
+    const error = await expectError(
+      loadMetadataFile(path, "static-page", { projectRoot: dir }),
+      "metadata-wrong-define-function",
+    );
+    expect(error.message).toContain("defineStaticPageMetadata");
   });
 });

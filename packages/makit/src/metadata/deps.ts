@@ -110,7 +110,8 @@ function extractImportSpecifiers(source: string): string[] {
     // es-module-lexer can reject TypeScript-only syntax; fall back to a
     // conservative regex over import/export-from statements.
     const specifiers: string[] = [];
-    const pattern = /(?:import|export)\s[^"'`;]*?from\s*["']([^"']+)["']|import\s*["']([^"']+)["']/g;
+    const pattern =
+      /(?:import|export)\s[^"'`;]*?from\s*["']([^"']+)["']|import\s*["']([^"']+)["']/g;
     for (const match of source.matchAll(pattern)) {
       const specifier = match[1] ?? match[2];
       if (specifier) specifiers.push(specifier);

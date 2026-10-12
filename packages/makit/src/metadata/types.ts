@@ -225,6 +225,53 @@ export interface PageChangelogConfig {
 /** A repository shorthand (`"owner/repository"`) or a full configuration. */
 export type PageChangelog = string | PageChangelogConfig;
 
+/** Outer shell of a static page (STATIC-PAGES §10). */
+export type StaticPageLayout = "default" | "bare";
+
+/**
+ * Metadata for a static page (STATIC-PAGES §9).
+ *
+ * Defined in a `{filename}.meta.ts` file next to `pages/{filename}.tsx` /
+ * `.jsx` / `.html`. One file covers every locale of the page — use
+ * `LocalizedValue` for per-locale values.
+ */
+export interface StaticPageMetadata {
+  /** Page title, used for `<title>`. Falls back to the file name (STATIC-PAGES §9.4). */
+  title?: string | LocalizedValue<string>;
+
+  description?: string | LocalizedValue<string>;
+
+  /**
+   * - `"default"`: wrapped in the site-wide Header / Footer
+   * - `"bare"`: no shell at all
+   *
+   * @default "default"
+   */
+  layout?: StaticPageLayout;
+
+  /**
+   * Include the page in site search (STATIC-PAGES §11).
+   *
+   * @default false
+   */
+  search?: boolean;
+
+  /** @default false */
+  draft?: boolean;
+
+  /** @default false */
+  noindex?: boolean;
+
+  /** @default false */
+  nofollow?: boolean;
+
+  /** Overrides the canonical URL. */
+  canonical?: string;
+
+  /** Open Graph image. */
+  image?: string;
+}
+
 /** Classification facets for a page (spec §16.2). */
 export interface PageTaxonomy {
   topics?: string[];
