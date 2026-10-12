@@ -71,6 +71,8 @@ Makit は以下を目的とする。
 * サーバーレス Function の自動生成
 * 学習進捗やクイズ機能
 
+React コンポーネントや HTML で自由に記述するページは、固定ページ（[STATIC-PAGES](./07-STATIC-PAGES.md)）として提供する。固定ページは Makit が route map に登録するページの一種であり、Next.js の拡張点を公開するものではない。
+
 ---
 
 # 5. 設計原則
@@ -1439,6 +1441,10 @@ export interface HomeConfig {
 }
 ```
 
+## 33.3 固定ページ
+
+`pages/index.tsx` などの固定ページ `index` がある場合、そのロケールのサイトトップは固定ページとなる。`home.layout` を明示している場合は `static-page-home-conflict` エラーとする（STATIC-PAGES §14）。
+
 ---
 
 # 34. Collection トップ
@@ -1802,6 +1808,8 @@ export interface GeneratedPage {
     └── translation-map.json
 ```
 
+固定ページは `static-pages/{locale}/{id}.json` に出力する（STATIC-PAGES §12.2）。
+
 ---
 
 # 41. Next.js ルーティング
@@ -1834,6 +1842,8 @@ export function generateStaticParams() {
 `[locale]` はロケール接頭辞を持たない URL も捕捉する。route map に一致しない場合は、ロケールなし URL（§35.7）として解決し、いずれのロケールにも存在しなければ 404 とする。
 
 静的出力のため、Locale Gateway も `generateStaticParams` に含める。実在するルートを先に列挙し、同じ params を持つ Gateway は生成しない。
+
+route map のエントリには `static`（固定ページ）も含まれ、`StaticPage` Slot で描画する。固定ページのコンポーネントは `.makit/app/static-pages.js` から静的 import する（STATIC-PAGES §12.1、§12.3）。
 
 ---
 
@@ -1985,6 +1995,7 @@ Adapter は以下のフェーズを持つ。
 * `defaultLocale` が存在しない
 * Adapter Resolve / Validate エラー
 * Next.js ビルド失敗
+* 固定ページの診断（`static-page-*`、STATIC-PAGES §16）
 
 ---
 
@@ -2008,6 +2019,7 @@ Adapter は以下のフェーズを持つ。
 * メタデータ評価時間が長い
 * 非推奨フィールド
 * Deployment Target の非対応機能
+* 固定ページのタイトル欠落、HTML 文書の混入、ロケール別メタデータ（STATIC-PAGES §16）
 
 ---
 
