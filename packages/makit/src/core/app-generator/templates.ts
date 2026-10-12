@@ -349,6 +349,9 @@ const nextConfig = {
   output: "export",
   trailingSlash: ${JSON.stringify(config.build.trailingSlash)},
   basePath: ${JSON.stringify(config.basePath)},
+  // Routes in the generated data already include basePath; the runtime's
+  // RouteLink strips it before next/link prefixes it again (spec §28).
+  env: { MAKIT_BASE_PATH: ${JSON.stringify(config.basePath)} },
   images: { unoptimized: true },
   turbopack: {
     // Theme components live in the user's project (THEME §7.4), so their

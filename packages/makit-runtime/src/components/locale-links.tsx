@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { LocaleLink } from "../i18n/static-page-locale-links.js";
+import { RouteLink } from "./route-link.js";
 
 /** A row of language links for page shells without a `LocaleSwitcher` page (portal home, static pages). */
 export function LocaleLinks({ links }: { links: readonly LocaleLink[] }) {
@@ -8,7 +8,7 @@ export function LocaleLinks({ links }: { links: readonly LocaleLink[] }) {
   return (
     <div className="flex items-center gap-1 text-sm">
       {links.map(({ locale, href, current }) => (
-        <Link
+        <RouteLink
           key={locale.urlLocale}
           href={href}
           aria-current={current ? "true" : undefined}
@@ -19,7 +19,7 @@ export function LocaleLinks({ links }: { links: readonly LocaleLink[] }) {
           }
         >
           {locale.label}
-        </Link>
+        </RouteLink>
       ))}
     </div>
   );

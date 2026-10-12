@@ -15,6 +15,24 @@ export function markdownPathForRoute(route: string): string {
   return pathname === "/" ? "/index.md" : `${pathname}.md`;
 }
 
+/**
+ * The Markdown file's path under the output directory. Routes include
+ * `basePath`, but the output directory is what gets served *at* `basePath`
+ * (spec §28), so it is stripped before mapping the route to a file.
+ */
+function markdownFilePath(route: string, basePath: string): string {
+  const withoutBase =
+    basePath && (route === basePath || route.startsWith(`${basePath}/`))
+      ? route.slice(basePath.length) || "/"
+      : route;
+  return markdownPathForRoute(withoutBase);
+}
+
+/** The public URL path of a page's Markdown file — its output path under `basePath`. */
+function markdownUrlPath(route: string, basePath: string): string {
+  return `${basePath}${markdownFilePath(route, basePath)}`;
+}
+
 function absoluteUrl(config: ResolvedConfig, path: string): string {
   return config.siteUrl ? `${config.siteUrl.replace(/\/$/, "")}${path}` : path;
 }
@@ -40,13 +58,13 @@ export async function writeLlmsFiles(
 
   await Promise.all(
     rawPages.map(({ page, content }) =>
-      atomicWriteFile(join(outDir, markdownPathForRoute(page.route)), content),
+      atomicWriteFile(join(outDir, markdownFilePath(page.route, config.basePath)), content),
     ),
   );
 
   const intro = [`# ${config.title}`, ...(config.description ? [`> ${config.description}`] : [])];
   const list = rawPages.map(({ page }) => {
-    const path = markdownPathForRoute(page.route);
+    const path = markdownUrlPath(page.route, config.basePath);
     return `- [${page.title}](${absoluteUrl(config, path)})${pageSummary(page)}`;
   });
   const llms = [...intro, "", "## Documentation", "", ...list, ""].join("\n");
@@ -54,7 +72,7 @@ export async function writeLlmsFiles(
   const fullPages = rawPages.flatMap(({ page, content }) => [
     `## ${page.title}`,
     "",
-    `Source: ${absoluteUrl(config, markdownPathForRoute(page.route))}`,
+    `Source: ${absoluteUrl(config, markdownUrlPath(page.route, config.basePath))}`,
     "",
     content.trimEnd(),
     "",

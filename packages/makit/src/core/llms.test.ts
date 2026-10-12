@@ -96,4 +96,48 @@ describe("LLM-ready static output", () => {
     );
     await expect(readFile(join(outDir, "guides", "getting-started.md"), "utf-8")).rejects.toThrow();
   });
+
+  it("writes Markdown under the output root while URLs keep basePath", async () => {
+    const outDir = join(dir, "dist");
+    await mkdir(outDir, { recursive: true });
+    await writeFile(join(dir, "getting-started.md"), "# Start\n", "utf-8");
+    await writeFile(join(dir, "index.md"), "# Home\n", "utf-8");
+    const config = resolveConfig(
+      { title: "Makit", siteUrl: "https://makit.example", basePath: "/docs" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+
+    await writeLlmsFiles(
+      outDir,
+      [
+        page({ route: "/docs/ja-jp/getting-started/" }),
+        page({
+          pageId: "index",
+          route: "/docs/",
+          segments: [],
+          pathSegments: [],
+          sourcePath: join(dir, "index.md"),
+          title: "Home",
+          description: undefined,
+        }),
+      ],
+      config,
+    );
+
+    await expect(readFile(join(outDir, "ja-jp", "getting-started.md"), "utf-8")).resolves.toBe(
+      "# Start\n",
+    );
+    await expect(readFile(join(outDir, "index.md"), "utf-8")).resolves.toBe("# Home\n");
+    await expect(
+      readFile(join(outDir, "docs", "ja-jp", "getting-started.md"), "utf-8"),
+    ).rejects.toThrow();
+    const llms = await readFile(join(outDir, "llms.txt"), "utf-8");
+    expect(llms).toContain(
+      "[Getting started](https://makit.example/docs/ja-jp/getting-started.md): Set up Makit.",
+    );
+    expect(llms).toContain("[Home](https://makit.example/docs/index.md)");
+    await expect(readFile(join(outDir, "llms-full.txt"), "utf-8")).resolves.toContain(
+      "Source: https://makit.example/docs/ja-jp/getting-started.md",
+    );
+  });
 });

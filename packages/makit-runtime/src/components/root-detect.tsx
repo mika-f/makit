@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import Link from "next/link";
 import type { RootLocaleOption } from "../data/types.js";
 import { LOCALE_STORAGE_KEY } from "../i18n/locale-storage.js";
 import { negotiateLocale } from "../i18n/negotiate-locale.js";
+import { RouteLink } from "./route-link.js";
 
 /** Client-side language detection for `i18n.root.behavior: "detect"` (spec §16.10). */
 export function RootDetect({
@@ -40,9 +40,12 @@ export function RootDetect({
   return (
     <p className="flex min-h-screen items-center justify-center text-[var(--makit-color-foreground)]">
       Redirecting… If you are not redirected automatically,{" "}
-      <Link href={defaultHref} className="ml-1 text-[var(--makit-color-accent)] hover:underline">
+      <RouteLink
+        href={defaultHref}
+        className="ml-1 text-[var(--makit-color-accent)] hover:underline"
+      >
         click here
-      </Link>
+      </RouteLink>
       .
     </p>
   );

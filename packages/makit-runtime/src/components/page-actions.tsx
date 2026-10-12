@@ -2,6 +2,7 @@
 
 import { ExternalLink } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { BASE_PATH, toLinkHref } from "../navigation/route-href.js";
 
 type IconName = "edit" | "top" | "copy" | "chat" | "ai";
 
@@ -53,9 +54,10 @@ function SimpleIcon({ slug }: { slug: "claude" | "perplexity" }) {
   );
 }
 
+/** Mirrors the CLI's llms output: mapped without `basePath`, served under it. */
 function markdownPathForRoute(route: string): string {
-  const pathname = route.replace(/\/+$/, "") || "/";
-  return pathname === "/" ? "/index.md" : `${pathname}.md`;
+  const pathname = toLinkHref(route).replace(/\/+$/, "") || "/";
+  return `${BASE_PATH}${pathname === "/" ? "/index.md" : `${pathname}.md`}`;
 }
 
 async function copyText(text: string): Promise<void> {

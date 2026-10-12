@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { FooterData } from "../data/types.js";
+import { RouteLink } from "./route-link.js";
 
 export interface FooterProps {
   footer: FooterData;
@@ -27,13 +27,13 @@ export function Footer({ footer }: FooterProps) {
                 <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
               </a>
             ) : (
-              <Link
+              <RouteLink
                 key={link.href}
                 href={link.href}
                 className="transition hover:text-[var(--makit-color-foreground)]"
               >
                 {link.label}
-              </Link>
+              </RouteLink>
             ),
           )}
         </nav>

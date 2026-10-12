@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { ResolvedNavContainerNode, ResolvedNavNode } from "../data/types.js";
+import { RouteLink } from "./route-link.js";
 
 function containsRoute(node: ResolvedNavNode, currentRoute: string): boolean {
   if (node.type === "page") return node.href === currentRoute;
@@ -42,7 +42,7 @@ function ItemLink({
       <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
     </a>
   ) : (
-    <Link
+    <RouteLink
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={
@@ -52,7 +52,7 @@ function ItemLink({
       }
     >
       {title}
-    </Link>
+    </RouteLink>
   );
 }
 
