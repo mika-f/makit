@@ -1,6 +1,7 @@
 import { isAbsolute, relative, sep } from "node:path";
 import { THEME_SLOT_NAMES } from "@natsuneko-laboratory/makit-runtime/slot-names";
 import type { ResolvedConfig, ResolvedThemeConfig } from "../../types/resolved-config.js";
+import type { GeneratedStaticPage } from "../../types/static-page.js";
 
 /** Import specifier for a slot bound to a project-local file, relative to `.makit/app`. */
 function slotRequest(appDir: string, filePath: string): string {
@@ -58,6 +59,39 @@ export function themeModuleTemplate(theme: ResolvedThemeConfig, appDir: string):
   return `${imports.join("\n")}
 
 export const themeComponents = resolveThemeComponents(${overrides});
+`;
+}
+
+/**
+ * Generates `.makit/app/static-pages.js` (STATIC-PAGES §12.3): the static
+ * imports that put each Static Page Component into the Next.js module graph.
+ * Keyed by `componentKey`, so a locale-specific file (`pricing.ja-jp.tsx`)
+ * is its own entry; HTML pages need no import and are left out.
+ */
+export function staticPagesModuleTemplate(
+  staticPages: readonly GeneratedStaticPage[],
+  appDir: string,
+): string {
+  const sourcesByKey = new Map<string, string>();
+  for (const page of staticPages) {
+    if (page.kind !== "component" || !page.componentKey) continue;
+    sourcesByKey.set(page.componentKey, page.sourcePath);
+  }
+
+  const keys = [...sourcesByKey.keys()].sort();
+  if (keys.length === 0) return "export const staticPageComponents = {};\n";
+
+  const imports = keys.map(
+    (key, index) =>
+      `import StaticPage${index} from ${JSON.stringify(slotRequest(appDir, sourcesByKey.get(key)!))};`,
+  );
+  const entries = keys.map((key, index) => `  ${JSON.stringify(key)}: StaticPage${index},`);
+
+  return `${imports.join("\n")}
+
+export const staticPageComponents = {
+${entries.join("\n")}
+};
 `;
 }
 
@@ -180,6 +214,8 @@ export interface SlugPageTemplateOptions {
   localeExpression: string;
   /** Import specifier for the generated theme module, relative to the page file. */
   themeModulePath: string;
+  /** Import specifier for the generated `static-pages.js`, relative to the page file (STATIC-PAGES §12.3). */
+  staticPagesModulePath: string;
   /** Whether i18n is enabled — only then can a path be locale-less (spec §35.7). */
   i18nEnabled: boolean;
 }
@@ -193,6 +229,7 @@ export interface SlugPageTemplateOptions {
 export function slugPageTemplate({
   localeExpression,
   themeModulePath,
+  staticPagesModulePath,
   i18nEnabled,
 }: SlugPageTemplateOptions): string {
   // With i18n on, `[locale]` also catches paths whose first segment is not a
@@ -225,14 +262,17 @@ export function slugPageTemplate({
 import {
   buildPageMetadata,
   buildSiteMetadata,
+  buildStaticPageMetadata,
   getAllStaticParams,
   getCollectionNavigation,
   getHomeData,${i18nEnabled ? "\n  getLocaleAliasTargets," : ""}
   getLocalesData,
   getPageForRoute,
   getRouteEntry,
-  getSiteData,${i18nEnabled ? "\n  localeAliasFallback," : ""}
+  getSiteData,
+  getStaticPage,${i18nEnabled ? "\n  localeAliasFallback," : ""}
 } from "@natsuneko-laboratory/makit-runtime";
+import { staticPageComponents } from ${JSON.stringify(staticPagesModulePath)};
 import { themeComponents } from ${JSON.stringify(themeModulePath)};
 
 export async function generateStaticParams() {
@@ -247,6 +287,7 @@ export async function generateMetadata({ params }) {
   }
   const site = await getSiteData();
   if (entry.kind === "portal") return buildSiteMetadata(site);
+  if (entry.kind === "static") return buildStaticPageMetadata(await getStaticPage(locale, entry.id), site);
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) return {};
   return buildPageMetadata(page, site);
@@ -260,6 +301,23 @@ export default async function Page({ params }) {
   }
 
   const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
+
+  if (entry.kind === "static") {
+    const page = await getStaticPage(locale, entry.id);
+    // In \`makit dev\` a just-added page's JSON can land before Turbopack has
+    // reloaded static-pages.js; render nothing until the dev refresh arrives.
+    const Component = page.componentKey ? staticPageComponents[page.componentKey] : undefined;
+    const { StaticPage } = themeComponents;
+    return (
+      <StaticPage page={page} site={site} i18n={i18n} locale={locale} components={themeComponents}>
+        {page.kind === "html" ? (
+          <div dangerouslySetInnerHTML={{ __html: page.html }} />
+        ) : Component ? (
+          <Component page={page} site={site} i18n={i18n} locale={locale} />
+        ) : null}
+      </StaticPage>
+    );
+  }
 
   if (entry.kind === "portal") {
     const home = await getHomeData(locale);
@@ -338,6 +396,8 @@ export interface GlobalsCssOptions {
   themeSources: string[];
   /** CSS the base theme ships, imported ahead of the user's own (THEME §13.2). */
   themeStyleImports: string[];
+  /** Absolute globs for the static pages directory (STATIC-PAGES §12.4). */
+  staticPageSources: string[];
 }
 
 export function globalsCssTemplate(options: GlobalsCssOptions): string {
@@ -365,6 +425,8 @@ export function globalsCssTemplate(options: GlobalsCssOptions): string {
     '@source "../app/**/*.js";',
     // Theme packages and per-slot overrides (THEME §13.1).
     ...options.themeSources.map((source) => `@source "${source}";`),
+    // Static pages and the `_` helpers they import (STATIC-PAGES §12.4).
+    ...options.staticPageSources.map((source) => `@source "${source}";`),
     "",
     "html {",
     "  scroll-behavior: smooth;",

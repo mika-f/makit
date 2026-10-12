@@ -9,6 +9,7 @@ export const THEME_PAGE_SLOT_NAMES = [
   "RootLayout",
   "DocsPage",
   "PortalHomePage",
+  "StaticPage",
   "RootPage",
   "NotFoundPage",
 ] as const;

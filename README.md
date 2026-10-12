@@ -11,6 +11,7 @@ Makit is a Node.js CLI for building searchable, multilingual static documentatio
 - Support localized content and fallbacks for missing translations
 - Add full-text search with Pagefind
 - Build changelog pages from a GitHub repository's releases at build time
+- Add fully custom React or HTML pages, such as landing pages, next to the documentation
 - Optionally generate `llms.txt`, `llms-full.txt`, and Markdown endpoints for every page
 - Use official adapters for GitHub Pages, Cloudflare Pages, Netlify, and Vercel
 
@@ -45,6 +46,7 @@ The generated site is written to `dist/` by default.
 my-docs/
 ├── docs/
 │   └── index.md
+├── pages/          # optional: fully custom React / HTML pages
 ├── public/
 ├── makit.config.ts
 └── package.json
@@ -75,6 +77,31 @@ export default definePageMetadata({
 ```
 
 Numeric filename prefixes control display order only; they are not included in URLs. For example, `docs/02-guides/01-installation.md` becomes `/guides/installation/`.
+
+## Static pages
+
+Files in `pages/` become pages outside the documentation shell — a landing page, a pricing page, a playground. Write a React component (`.tsx` / `.jsx`) or an HTML fragment (`.html`); the URL follows the file path, and `pages/index.tsx` becomes the site top.
+
+```tsx
+// pages/pricing.tsx → /pricing/
+import type { StaticPageComponentProps } from "@natsuneko-laboratory/makit-runtime";
+
+export default function Pricing({ page }: StaticPageComponentProps) {
+  return <h1 className="text-4xl font-semibold">{page.title}</h1>;
+}
+```
+
+```ts
+// pages/pricing.meta.ts
+import { defineStaticPageMetadata } from "@natsuneko-laboratory/makit/metadata";
+
+export default defineStaticPageMetadata({
+  title: "Pricing",
+  layout: "default", // "bare" drops the site header and footer
+});
+```
+
+See the [static pages specification](https://github.com/mika-f/makit/blob/main/docs/07-STATIC-PAGES.md) for localized files, search, and diagnostics.
 
 ## Deployment
 

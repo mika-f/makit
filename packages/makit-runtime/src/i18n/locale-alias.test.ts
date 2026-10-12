@@ -108,7 +108,10 @@ describe("resolveLocaleAliasTargets", () => {
   it("resolves a portal home route straight from the route map", () => {
     const targets = resolveLocaleAliasTargets(
       i18nData(),
-      { routeMap: { "en-us": { portal: { kind: "portal", route: "/en-us/portal/" } } }, pageMap: {} },
+      {
+        routeMap: { "en-us": { portal: { kind: "portal", route: "/en-us/portal/" } } },
+        pageMap: {},
+      },
       ["portal"],
     );
 
@@ -197,5 +200,25 @@ describe("localeAliasFallback", () => {
 
   it("falls back to the first available target when neither is present", () => {
     expect(localeAliasFallback(i18nData(), [{ locale: "ja-JP" }])?.locale).toBe("ja-JP");
+  });
+});
+
+describe("locale-less static pages (STATIC-PAGES §5.2)", () => {
+  const maps: LocaleAliasMaps = {
+    routeMap: {
+      "en-us": { pricing: { kind: "static", id: "pricing", route: "/en-us/pricing/" } },
+      "ja-jp": { pricing: { kind: "static", id: "pricing", route: "/ja-jp/pricing/" } },
+    },
+    pageMap: {},
+  };
+
+  it("offers each locale's static page from the route map", () => {
+    const targets = resolveLocaleAliasTargets(i18nData(), maps, ["pricing"]);
+
+    expect(targets.map((target) => target.href)).toEqual(["/en-us/pricing/", "/ja-jp/pricing/"]);
+  });
+
+  it("generates a gateway for a static page path", () => {
+    expect(collectLocaleAliasRoutes(i18nData(), maps)).toEqual([["pricing"]]);
   });
 });

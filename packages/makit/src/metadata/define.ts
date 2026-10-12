@@ -3,6 +3,7 @@ import type {
   CollectionMetadata,
   NavigationMetadata,
   PageMetadata,
+  StaticPageMetadata,
 } from "./types.js";
 
 /**
@@ -10,7 +11,7 @@ import type {
  * loader can verify a file default-exports the result of the *matching*
  * define function (spec §20).
  */
-export type MetadataKind = "collection" | "navigation" | "category" | "page";
+export type MetadataKind = "collection" | "navigation" | "category" | "page" | "static-page";
 
 /**
  * `Symbol.for` so the brand survives when the user's project resolves a
@@ -53,4 +54,9 @@ export function defineCategory(metadata: CategoryMetadata): CategoryMetadata {
 /** Defines page metadata for a `{filename}.meta.ts` file (spec §16). */
 export function definePageMetadata(metadata: PageMetadata): PageMetadata {
   return brand("page", metadata);
+}
+
+/** Defines static page metadata for a `pages/{filename}.meta.ts` file (STATIC-PAGES §9). */
+export function defineStaticPageMetadata(metadata: StaticPageMetadata): StaticPageMetadata {
+  return brand("static-page", metadata);
 }

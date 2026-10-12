@@ -12,6 +12,7 @@ export const DEFAULT_OUT_DIR = "dist";
 export const DEFAULT_BASE_PATH = "";
 /** Convention directory scanned for theme slot files (THEME §8). */
 export const DEFAULT_THEME_DIR = "theme";
+export const DEFAULT_STATIC_PAGES_DIR = "pages";
 /** Extensions a theme slot file may use, in resolution order (THEME §8). */
 export const THEME_SLOT_EXTENSIONS = [".tsx", ".jsx", ".ts", ".js"] as const;
 

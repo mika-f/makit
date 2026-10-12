@@ -7,8 +7,10 @@ import {
   notFoundTemplate,
   rootLayoutTemplate,
   slugPageTemplate,
+  staticPagesModuleTemplate,
   themeModuleTemplate,
 } from "./templates.js";
+import type { GeneratedStaticPage } from "../../types/static-page.js";
 
 const APP_DIR = "/project/.makit/app";
 
@@ -162,6 +164,7 @@ describe("generated entries", () => {
     const template = slugPageTemplate({
       localeExpression: "params.locale",
       themeModulePath: "../../theme.js",
+      staticPagesModulePath: "../../static-pages.js",
       i18nEnabled: true,
     });
 
@@ -175,6 +178,7 @@ describe("generated entries", () => {
     const template = slugPageTemplate({
       localeExpression: "params.locale",
       themeModulePath: "../../theme.js",
+      staticPagesModulePath: "../../static-pages.js",
       i18nEnabled: true,
     });
 
@@ -191,6 +195,7 @@ describe("generated entries", () => {
     const template = slugPageTemplate({
       localeExpression: '"en"',
       themeModulePath: "../theme.js",
+      staticPagesModulePath: "../static-pages.js",
       i18nEnabled: false,
     });
 
@@ -202,7 +207,10 @@ describe("generated entries", () => {
 
   it("records the visitor's locale from the layout only when i18n is enabled", () => {
     const single = rootLayoutTemplate(
-      resolveConfig({ title: "Test" }, { root: "/project", configPath: "/project/makit.config.ts" }),
+      resolveConfig(
+        { title: "Test" },
+        { root: "/project", configPath: "/project/makit.config.ts" },
+      ),
     );
     const localized = rootLayoutTemplate(
       resolveConfig(
@@ -234,6 +242,7 @@ describe("globalsCssTemplate", () => {
       customStyleImports: ["../../styles/custom.css"],
       themeSources: ["/project/theme/**/*.{ts,tsx}"],
       themeStyleImports: ["../../my-theme/theme.css"],
+      staticPageSources: [],
     });
 
     expect(css).toContain('@source "/project/theme/**/*.{ts,tsx}";');
@@ -263,5 +272,122 @@ describe("nextConfigTemplate", () => {
       '"@natsuneko-laboratory/makit-runtime/client": "../node_modules/x/dist/client.mjs",',
     );
     expect(template).toContain('root: "/project"');
+  });
+});
+
+function staticPage(overrides: Partial<GeneratedStaticPage>): GeneratedStaticPage {
+  return {
+    id: "pricing",
+    route: "/pricing/",
+    segments: ["pricing"],
+    locale: "en",
+    sourcePath: "/project/pages/pricing.tsx",
+    kind: "component",
+    componentKey: "pricing",
+    title: "Pricing",
+    layout: "default",
+    search: false,
+    draft: false,
+    metadata: { noindex: false, nofollow: false, alternates: [] },
+    ...overrides,
+  };
+}
+
+describe("staticPagesModuleTemplate (STATIC-PAGES §12.3)", () => {
+  it("imports each component once by a path relative to .makit/app", () => {
+    const template = staticPagesModuleTemplate(
+      [
+        staticPage({ locale: "en-us" }),
+        staticPage({ locale: "fr-fr" }),
+        staticPage({
+          locale: "ja-jp",
+          componentKey: "pricing.ja-jp",
+          sourcePath: "/project/pages/pricing.ja-jp.tsx",
+        }),
+        staticPage({
+          id: "about",
+          kind: "html",
+          componentKey: undefined,
+          html: "<p>a</p>",
+          sourcePath: "/project/pages/about.html",
+        }),
+      ],
+      APP_DIR,
+    );
+
+    const imports = template.split("\n").filter((line) => line.startsWith("import"));
+    expect(imports).toEqual([
+      'import StaticPage0 from "../../pages/pricing.tsx";',
+      'import StaticPage1 from "../../pages/pricing.ja-jp.tsx";',
+    ]);
+    expect(template).toContain('"pricing": StaticPage0,');
+    expect(template).toContain('"pricing.ja-jp": StaticPage1,');
+    expect(template).not.toContain("about");
+  });
+
+  it("drops a component that is no longer a static page", () => {
+    const before = staticPagesModuleTemplate(
+      [
+        staticPage({}),
+        staticPage({ id: "new", componentKey: "new", sourcePath: "/project/pages/new.tsx" }),
+      ],
+      APP_DIR,
+    );
+    const after = staticPagesModuleTemplate([staticPage({})], APP_DIR);
+
+    expect(before).toContain("pages/new.tsx");
+    expect(after).not.toContain("pages/new.tsx");
+  });
+
+  it("exports an empty map when there are no component pages", () => {
+    expect(staticPagesModuleTemplate([], APP_DIR)).toContain(
+      "export const staticPageComponents = {};",
+    );
+  });
+});
+
+describe("slugPageTemplate static entries (STATIC-PAGES §12.3)", () => {
+  const template = slugPageTemplate({
+    localeExpression: "params.locale",
+    themeModulePath: "../../theme.js",
+    staticPagesModulePath: "../../static-pages.js",
+    i18nEnabled: true,
+  });
+
+  it("imports the generated component map", () => {
+    expect(template).toContain('import { staticPageComponents } from "../../static-pages.js";');
+  });
+
+  it("renders static entries through the StaticPage slot", () => {
+    expect(template).toContain('entry.kind === "static"');
+    expect(template).toContain("getStaticPage(locale, entry.id)");
+    expect(template).toContain("staticPageComponents[page.componentKey]");
+    expect(template).toContain("const { StaticPage } = themeComponents;");
+    expect(template).toContain("dangerouslySetInnerHTML={{ __html: page.html }}");
+  });
+
+  it("never renders a component page through the HTML branch", () => {
+    // Right after a page is added in dev, the generated JSON can name a
+    // component that Turbopack has not loaded yet; that must not fall
+    // through to `dangerouslySetInnerHTML` with an undefined `html`.
+    expect(template).toContain('page.kind === "html"');
+  });
+
+  it("builds static page metadata", () => {
+    expect(template).toContain("buildStaticPageMetadata(");
+  });
+});
+
+describe("globalsCssTemplate static pages (STATIC-PAGES §12.4)", () => {
+  it("scans the whole static pages directory, underscore helpers included", () => {
+    const css = globalsCssTemplate({
+      makitRuntimeDistPath: "/runtime/dist",
+      customStyleImports: [],
+      themeSources: [],
+      themeStyleImports: [],
+      staticPageSources: ["/project/pages/**/*.{tsx,jsx,ts,js,html}"],
+    });
+
+    expect(css).toContain('@source "/project/pages/**/*.{tsx,jsx,ts,js,html}";');
   });
 });

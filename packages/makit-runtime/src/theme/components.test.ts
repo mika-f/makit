@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { defaultThemeComponents, pickThemeSlots, resolveThemeComponents } from "./components.js";
+import { StaticPage } from "../components/static-page.js";
 import { THEME_SLOT_NAMES } from "./slot-names.js";
 
 function CustomHeader() {
@@ -54,5 +55,19 @@ describe("pickThemeSlots", () => {
 
   it("returns an empty map for a namespace with no slots", () => {
     expect(pickThemeSlots({ default: CustomHeader })).toEqual({});
+  });
+});
+
+describe("StaticPage slot (STATIC-PAGES §10.1)", () => {
+  function CustomStaticPage() {
+    return null;
+  }
+
+  it("defaults to the standard StaticPage", () => {
+    expect(resolveThemeComponents({}).StaticPage).toBe(StaticPage);
+  });
+
+  it("can be supplied by a theme package", () => {
+    expect(pickThemeSlots({ StaticPage: CustomStaticPage }).StaticPage).toBe(CustomStaticPage);
   });
 });

@@ -132,6 +132,7 @@ theme: { components: { Header: "./theme/header.tsx" } }
 | `RootLayout` | `RootLayoutProps` | 不可 | `<html>` と `<body>` を含むドキュメントシェル |
 | `DocsPage` | `DocsPageProps` | 不可 | 通常ページのシェル（Header / Sidebar / 本文 / ToC / Footer） |
 | `PortalHomePage` | `PortalHomePageProps` | 不可 | Portal レイアウトのサイトトップ（spec §33.2） |
+| `StaticPage` | `StaticPageProps` | 不可 | 固定ページの外枠。本文は `children` で受け取る（STATIC-PAGES §10） |
 | `RootPage` | `RootPageProps` | 不可 | ロケール判定・選択ページ。i18n ルート（`/`、spec §35.1）とロケールなし URL（spec §35.7）の双方で使う |
 | `NotFoundPage` | `NotFoundPageProps` | 不可 | 404 ページ |
 
@@ -403,7 +404,8 @@ theme/
 ├── header.tsx            → Header
 ├── footer.tsx            → Footer
 ├── page-header.tsx       → PageHeader
-└── docs-page.tsx         → DocsPage
+├── docs-page.tsx         → DocsPage
+└── static-page.tsx       → StaticPage
 ```
 
 対応する拡張子は `.tsx`、`.jsx`、`.ts`、`.js` とし、この順で最初に見つかったものを採用する。同一 Slot に複数の拡張子が存在する場合は `theme-ambiguous-slot-file` エラーとする。
@@ -746,6 +748,7 @@ export default function Footer(props: FooterProps) {
 * `theme.extends` で指定したテーマのパッケージルート（Manifest の `tailwindSources`、既定は `**/*.{js,mjs,jsx}`）
 * `theme.components` で指定したローカルファイルの各パス
 * 規約ディレクトリ（`theme.dir`）配下の `**/*.{ts,tsx,js,jsx}`
+* 固定ページのディレクトリ（`staticPages.dir`）配下の `**/*.{tsx,jsx,ts,js,html}`（STATIC-PAGES §12.4）
 
 ローカルファイルは Tailwind の自動走査対象外（`source(none)` を使用している、spec §40 の注記参照）であるため、明示的な登録が必須となる。
 

@@ -15,6 +15,7 @@ export {
   getRouteMap,
   getSearchIndex,
   getSiteData,
+  getStaticPage,
   getTranslationMap,
 } from "./data/loaders.js";
 export type {
@@ -30,6 +31,7 @@ export type {
   GeneratedNavigationPosition,
   GeneratedPage,
   GeneratedPageLink,
+  GeneratedStaticPage,
   GlobalNavigationGroup,
   GlobalNavigationItem,
   HeaderData,
@@ -55,9 +57,15 @@ export type {
   SearchEntry,
   SeoData,
   SiteData,
+  StaticPageComponentProps,
+  StaticPageLayout,
   ThemeData,
 } from "./data/types.js";
-export { buildPageMetadata, buildSiteMetadata } from "./metadata/build-metadata.js";
+export {
+  buildPageMetadata,
+  buildSiteMetadata,
+  buildStaticPageMetadata,
+} from "./metadata/build-metadata.js";
 export { localeAliasFallback } from "./i18n/locale-alias.js";
 
 // Every theme slot's default implementation (THEME §5). A theme may import
@@ -78,6 +86,7 @@ export { PortalHomePage } from "./components/portal-home-page.js";
 export { PrevNextLinks } from "./components/prev-next-links.js";
 export { RootLayout } from "./components/root-layout.js";
 export { RootPage } from "./components/root-page.js";
+export { StaticPage } from "./components/static-page.js";
 export { SearchDialog } from "./components/search-dialog.js";
 export { Sidebar } from "./components/sidebar.js";
 export { TableOfContents } from "./components/table-of-contents.js";
@@ -113,6 +122,7 @@ export type { RootLayoutProps } from "./components/root-layout.js";
 export type { RootPageProps } from "./components/root-page.js";
 export type { SearchDialogProps } from "./components/search-dialog.js";
 export type { SidebarProps } from "./components/sidebar.js";
+export type { StaticPageProps } from "./components/static-page.js";
 export type { TableOfContentsProps } from "./components/table-of-contents.js";
 export type { ThemeToggleProps } from "./components/theme-toggle.js";
 export type { ThemeScriptProps } from "./theme/theme-script.js";

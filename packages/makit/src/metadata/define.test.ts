@@ -4,6 +4,7 @@ import {
   defineCollection,
   defineNavigation,
   definePageMetadata,
+  defineStaticPageMetadata,
   getMetadataKind,
 } from "./define.js";
 
@@ -13,6 +14,7 @@ describe("define functions", () => {
     expect(getMetadataKind(defineNavigation({ items: [] }))).toBe("navigation");
     expect(getMetadataKind(defineCategory({ title: "Guides" }))).toBe("category");
     expect(getMetadataKind(definePageMetadata({ title: "Page" }))).toBe("page");
+    expect(getMetadataKind(defineStaticPageMetadata({ title: "Pricing" }))).toBe("static-page");
   });
 
   it("return the input value unchanged", () => {

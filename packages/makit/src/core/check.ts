@@ -8,6 +8,7 @@ import { generateFallbackPages, populateAlternates } from "./i18n.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
+import { assertStaticPageRoutes, buildStaticPages } from "./static-pages.js";
 import type { Diagnostic } from "./validation.js";
 import { validatePages } from "./validation.js";
 import type { DeploymentDiagnostic } from "../types/adapter.js";
@@ -19,6 +20,8 @@ import {
 
 export interface CheckResult {
   pageCount: number;
+  /** Static pages across all locales (STATIC-PAGES §17). */
+  staticPageCount: number;
   localeCount: number;
   /** Plain pipeline warnings (e.g. unknown code languages) — no diagnostic code. */
   pipelineWarnings: string[];
@@ -70,10 +73,21 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     collections,
   );
 
+  const { staticPages, diagnostics: staticPageDiagnostics } = await buildStaticPages(config, {
+    jiti,
+    metadataCache,
+    includeDrafts: false,
+  });
+  assertStaticPageRoutes(staticPages, allPages, config);
+
   // Resolving home per locale surfaces home config errors (spec §33, §45)
-  // without needing a full build — `resolveHome` throws MakitErrors.
+  // without needing a full build — `resolveHome` throws MakitErrors. A locale
+  // whose root is a static `index` has no home to resolve (STATIC-PAGES §14).
   for (const locale of config.i18n.locales) {
-    resolveHome(locale, allPages, config, collections);
+    const staticIndex = staticPages.some(
+      (page) => page.locale === locale.urlLocale && page.segments.length === 0,
+    );
+    if (!staticIndex) resolveHome(locale, allPages, config, collections);
   }
 
   const diagnostics = [
@@ -84,6 +98,7 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     ...pageDiagnostics,
     ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
+    ...staticPageDiagnostics,
     ...validatePages(allPages, config, { navigationByLocale }),
   ];
   const preparedDeployment = await prepareDeploymentAdapter(config, allPages);
@@ -92,6 +107,7 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
 
   return {
     pageCount: allPages.length,
+    staticPageCount: staticPages.length,
     localeCount: config.i18n.locales.length,
     pipelineWarnings: [...collectionWarnings, ...pipelineWarnings, ...navigationWarnings],
     diagnostics,

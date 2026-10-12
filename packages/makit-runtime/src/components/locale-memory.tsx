@@ -26,7 +26,8 @@ export function LocaleMemory({
   useEffect(() => {
     try {
       const path = window.location.pathname;
-      const withoutBase = basePath && path.startsWith(basePath) ? path.slice(basePath.length) : path;
+      const withoutBase =
+        basePath && path.startsWith(basePath) ? path.slice(basePath.length) : path;
       const first = withoutBase.split("/").find((segment) => segment.length > 0);
       if (first && urlLocales.includes(first)) {
         localStorage.setItem(LOCALE_STORAGE_KEY, first);

@@ -126,7 +126,9 @@ export type LocalePageMap = Record<string, Record<string, PageMapEntry>>;
 export type RouteMapEntry =
   | { kind: "page"; collectionId: string; pageId: string }
   /** The synthesized site home (spec §33.2) — see `home/{locale}.json`. */
-  | { kind: "portal"; route: string };
+  | { kind: "portal"; route: string }
+  /** A static page (STATIC-PAGES §12.1) — see `static-pages/{locale}/{id}.json`. */
+  | { kind: "static"; id: string; route: string };
 
 export type LocaleRouteMap = Record<string, RouteMapEntry>;
 
@@ -324,4 +326,38 @@ export interface RootLocaleOption {
   urlLocale: string;
   label: string;
   href: string;
+}
+
+/** Outer shell of a static page (STATIC-PAGES §10). */
+export type StaticPageLayout = "default" | "bare";
+
+/** One static page in one locale, `static-pages/{locale}/{id}.json` (STATIC-PAGES §12.2). */
+export interface GeneratedStaticPage {
+  /** Static Page ID (STATIC-PAGES §2). */
+  id: string;
+  route: string;
+  /** URL path segments below the locale prefix. */
+  segments: string[];
+  /** URL-facing locale this page is served under. */
+  locale: string;
+  kind: "component" | "html";
+  /** Key into the generated `static-pages.js` (kind: "component" only). */
+  componentKey?: string;
+  /** Processed HTML Fragment (kind: "html" only). */
+  html?: string;
+  title: string;
+  description?: string;
+  layout: StaticPageLayout;
+  search: boolean;
+  draft: boolean;
+  metadata: GeneratedMetadata;
+}
+
+/** Props every Static Page Component receives — all serializable (STATIC-PAGES §7.2). */
+export interface StaticPageComponentProps {
+  /** URL-facing locale (e.g. "ja-jp"). */
+  locale: string;
+  page: GeneratedStaticPage;
+  site: SiteData;
+  i18n: I18nData;
 }

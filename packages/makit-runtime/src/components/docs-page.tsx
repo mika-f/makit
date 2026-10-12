@@ -6,6 +6,7 @@ import {
 } from "../data/loaders.js";
 import type { GeneratedPage, I18nData, ResolvedNavNode, SiteData } from "../data/types.js";
 import type { ThemeComponents } from "../theme/components.js";
+import { HeaderActions } from "./header-actions.js";
 
 export interface DocsPageProps {
   page: GeneratedPage;
@@ -41,12 +42,7 @@ export async function DocsPage({ page, site, i18n, navigation, components: C }: 
       : "grid-cols-1";
 
   const headerActions = (
-    <>
-      <C.SearchDialog
-        entries={searchEntries}
-        pagefindEnabled={process.env.NODE_ENV === "production"}
-        pagefindBundlePath={`${site.basePath}/pagefind/`}
-      />
+    <HeaderActions site={site} searchEntries={searchEntries} components={C}>
       <C.CollectionSwitcher
         collections={collections}
         currentCollectionId={page.collectionId}
@@ -59,8 +55,7 @@ export async function DocsPage({ page, site, i18n, navigation, components: C }: 
           missingPageBehavior={i18n.localeSwitcher.missingPage}
         />
       )}
-      {site.theme.colorScheme === "system" && <C.ThemeToggle />}
-    </>
+    </HeaderActions>
   );
 
   return (

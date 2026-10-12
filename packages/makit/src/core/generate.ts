@@ -3,6 +3,7 @@ import { join } from "node:path";
 import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import type { GeneratedStaticPage } from "../types/static-page.js";
 import { atomicWriteFile } from "./atomic-write.js";
 import type { ResolvedCollection } from "./collections.js";
 import { resolveCollectionLocale } from "./collections.js";
@@ -58,7 +59,9 @@ export interface PageMapEntry {
 export type RouteMapEntry =
   | { kind: "page"; collectionId: string; pageId: string }
   /** The synthesized site home (spec §33.2) — see `home/{locale}.json`. */
-  | { kind: "portal"; route: string };
+  | { kind: "portal"; route: string }
+  /** A static page (STATIC-PAGES §12.1) — see `static-pages/{locale}/{id}.json`. */
+  | { kind: "static"; id: string; route: string };
 
 /** One entry of `collections.json`. */
 export interface CollectionData {
@@ -82,13 +85,15 @@ export interface CollectionData {
 /**
  * Writes `.makit/generated/` in the spec §40 layout: site/locale/collection
  * descriptors, per-(locale, collection) navigation and pages, and the
- * page/route/collection/translation index maps.
+ * page/route/collection/translation index maps — plus static pages
+ * (STATIC-PAGES §12), which take the route map ahead of the site home.
  */
 export async function writeGeneratedData(
   config: ResolvedConfig,
   pages: readonly GeneratedPage[],
   collections: readonly ResolvedCollection[],
   navigationByLocale: Readonly<Record<string, Record<string, ResolvedNavNode[]>>> = {},
+  staticPages: readonly GeneratedStaticPage[] = [],
 ): Promise<WriteGeneratedDataResult> {
   const generatedDir = join(config.root, ".makit", "generated");
   // Stale files from a previous layout (deleted pages, renamed collections)
@@ -109,7 +114,16 @@ export async function writeGeneratedData(
     home: config.home,
     header: config.header,
     footer: config.footer,
-    theme: config.theme,
+    // Only the tokens the runtime reads (ThemeData). Slot bindings, package
+    // roots, and style paths are absolute build-machine paths, and `site`
+    // reaches "use client" static pages as a prop (STATIC-PAGES §7.2).
+    theme: {
+      colorScheme: config.theme.colorScheme,
+      accentColor: config.theme.accentColor,
+      radius: config.theme.radius,
+      breadcrumbs: config.theme.breadcrumbs,
+      codeTheme: config.theme.codeTheme,
+    },
     seo: config.seo,
     styles: config.styles,
     navigation: {
@@ -198,6 +212,18 @@ export async function writeGeneratedData(
       (translationMap[translationKey(page)] ??= {})[page.locale] = page.route;
     }
   }
+  for (const page of staticPages) {
+    // Source paths are CLI-only: the record is serialized into the HTML of
+    // "use client" static pages (STATIC-PAGES §7.2, §12.2).
+    const { sourcePath: _sourcePath, metadataPath: _metadataPath, ...published } = page;
+    await write(join(generatedDir, "static-pages", page.locale, `${page.id}.json`), published);
+    (routeMap[page.locale] ??= {})[page.segments.join("/")] = {
+      kind: "static",
+      id: page.id,
+      route: page.route,
+    };
+  }
+
   const collectionMap: Record<string, Record<string, string>> = {};
   for (const collection of collectionsData) {
     collectionMap[collection.id] = Object.fromEntries(
@@ -206,6 +232,8 @@ export async function writeGeneratedData(
   }
 
   for (const locale of config.i18n.locales) {
+    // A static `index` already owns this locale's root (STATIC-PAGES §14).
+    if (routeMap[locale.urlLocale]?.[""]?.kind === "static") continue;
     const home = resolveHome(locale, pages, config, collections);
     if (home.kind === "page") {
       (routeMap[locale.urlLocale] ??= {})[""] = {
@@ -229,7 +257,7 @@ export async function writeGeneratedData(
   await write(join(generatedDir, "indexes", "collection-map.json"), collectionMap);
   await write(join(generatedDir, "indexes", "translation-map.json"), translationMap);
 
-  const searchByLocale = buildSearchIndex(pages);
+  const searchByLocale = buildSearchIndex(pages, staticPages);
   for (const [locale, entries] of Object.entries(searchByLocale)) {
     await write(join(generatedDir, "search", `${locale}.json`), entries);
   }

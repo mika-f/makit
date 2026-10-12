@@ -1,5 +1,6 @@
-import type { GeneratedPage } from "../types/page.js";
+import type { GeneratedAlternate, GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import type { GeneratedStaticPage } from "../types/static-page.js";
 
 function escapeXml(value: string): string {
   return value
@@ -9,10 +10,26 @@ function escapeXml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-/** Generates `sitemap.xml` (spec §25). Returns `undefined` when disabled or `siteUrl` isn't configured. */
+function urlEntry(
+  siteUrl: string,
+  route: string,
+  alternates: readonly GeneratedAlternate[],
+): string {
+  const loc = escapeXml(`${siteUrl}${route}`);
+  const alternateLinks = alternates
+    .map(
+      (alternate) =>
+        `    <xhtml:link rel="alternate" hreflang="${escapeXml(alternate.hreflang)}" href="${escapeXml(`${siteUrl}${alternate.href}`)}" />`,
+    )
+    .join("\n");
+  return `  <url>\n    <loc>${loc}</loc>\n${alternateLinks ? `${alternateLinks}\n` : ""}  </url>`;
+}
+
+/** Generates `sitemap.xml` (spec §25, STATIC-PAGES §12.5). Returns `undefined` when disabled or `siteUrl` isn't configured. */
 export function generateSitemapXml(
   pages: readonly GeneratedPage[],
   config: ResolvedConfig,
+  staticPages: readonly GeneratedStaticPage[] = [],
 ): string | undefined {
   if (!config.sitemap.enabled || !config.siteUrl) return undefined;
 
@@ -25,16 +42,12 @@ export function generateSitemapXml(
     return true;
   });
 
-  const urlEntries = eligible.map((page) => {
-    const loc = escapeXml(`${siteUrl}${page.route}`);
-    const alternateLinks = page.metadata.alternates
-      .map(
-        (alternate) =>
-          `    <xhtml:link rel="alternate" hreflang="${escapeXml(alternate.hreflang)}" href="${escapeXml(`${siteUrl}${alternate.href}`)}" />`,
-      )
-      .join("\n");
-    return `  <url>\n    <loc>${loc}</loc>\n${alternateLinks ? `${alternateLinks}\n` : ""}  </url>`;
-  });
+  const urlEntries = [
+    ...eligible.map((page) => urlEntry(siteUrl, page.route, page.metadata.alternates)),
+    ...staticPages
+      .filter((page) => !page.draft && !page.metadata.noindex)
+      .map((page) => urlEntry(siteUrl, page.route, page.metadata.alternates)),
+  ];
 
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${urlEntries.join("\n")}\n</urlset>\n`;
 }

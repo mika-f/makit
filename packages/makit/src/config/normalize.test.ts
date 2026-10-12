@@ -283,3 +283,68 @@ describe("resolveConfig theme", () => {
     expect(config.theme.tailwindSources).toEqual([]);
   });
 });
+
+describe("resolveConfig staticPages (STATIC-PAGES §13)", () => {
+  function invalidDirCode(dir: string): string | undefined {
+    try {
+      resolveConfig({ title: "T", staticPages: { dir } }, ctx);
+      return undefined;
+    } catch (error) {
+      return error instanceof MakitError ? error.code : "not-a-makit-error";
+    }
+  }
+
+  it("defaults the directory to pages/", () => {
+    expect(resolveConfig({ title: "T" }, ctx).staticPages).toEqual({ dir: "pages" });
+  });
+
+  it("accepts a custom directory or false", () => {
+    expect(resolveConfig({ title: "T", staticPages: { dir: "site" } }, ctx).staticPages).toEqual({
+      dir: "site",
+    });
+    expect(resolveConfig({ title: "T", staticPages: { dir: false } }, ctx).staticPages).toEqual({
+      dir: false,
+    });
+  });
+
+  it("rejects a directory nested inside the source directory", () => {
+    expect(invalidDirCode("docs/pages")).toBe("static-page-invalid-dir");
+  });
+
+  it("rejects a directory equal to public/, theme/, or the output directory", () => {
+    expect(invalidDirCode("public")).toBe("static-page-invalid-dir");
+    expect(invalidDirCode("theme")).toBe("static-page-invalid-dir");
+    expect(invalidDirCode("dist")).toBe("static-page-invalid-dir");
+  });
+
+  it("rejects a directory that contains another managed directory", () => {
+    expect(invalidDirCode(".")).toBe("static-page-invalid-dir");
+  });
+
+  it("disables the default directory instead of failing when it overlaps a managed directory", () => {
+    // An existing `sourceDir: "."` site must keep building (THEME §3.1 spirit).
+    expect(resolveConfig({ title: "T", sourceDir: "." }, ctx).staticPages).toEqual({ dir: false });
+  });
+
+  it("still rejects an explicit directory that overlaps", () => {
+    expect(() =>
+      resolveConfig({ title: "T", sourceDir: ".", staticPages: { dir: "pages" } }, ctx),
+    ).toThrow(expect.objectContaining({ code: "static-page-invalid-dir" }));
+  });
+
+  it("rejects a directory nested inside a locale's source directory", () => {
+    expect(() =>
+      resolveConfig(
+        {
+          title: "T",
+          i18n: {
+            defaultLocale: "en-US",
+            locales: [{ locale: "en-US", sourceDir: "content/en" }],
+          },
+          staticPages: { dir: "content/en/pages" },
+        },
+        ctx,
+      ),
+    ).toThrow(expect.objectContaining({ code: "static-page-invalid-dir" }));
+  });
+});

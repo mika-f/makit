@@ -1,3 +1,4 @@
+import { isAbsolute, relative, resolve } from "node:path";
 import { MakitError } from "../core/errors.js";
 import type { MakitMessages, ShikiLanguageInput } from "../types/config.js";
 import type {
@@ -24,6 +25,7 @@ import {
   DEFAULT_SHIKI_THEME_DARK,
   DEFAULT_SHIKI_THEME_LIGHT,
   DEFAULT_SOURCE_DIR,
+  DEFAULT_STATIC_PAGES_DIR,
   DEFAULT_THEME_DIR,
 } from "./defaults.js";
 import type { MakitConfigParsed } from "./schema.js";
@@ -187,8 +189,61 @@ function resolveI18n(parsed: MakitConfigParsed, topLevelLang: string): ResolvedI
   };
 }
 
+/** Whether `a` and `b` are the same directory or one contains the other. */
+function directoriesOverlap(a: string, b: string): boolean {
+  const isInside = (child: string, parent: string): boolean => {
+    const rel = relative(parent, child);
+    return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+  };
+  return isInside(a, b) || isInside(b, a);
+}
+
+/**
+ * Resolves `staticPages.dir` (STATIC-PAGES §13). The directory must not
+ * overlap any other directory Makit owns — Markdown sources, `public/`, the
+ * output, or the theme convention directory — since a file there would
+ * otherwise be claimed by two pipelines at once. Only an explicit `dir` is
+ * an error; an overlapping default disables static pages.
+ */
+function resolveStaticPagesDir(
+  parsed: MakitConfigParsed,
+  ctx: ResolveContext,
+  i18n: ResolvedI18nConfig,
+): string | false {
+  const explicit = parsed.staticPages?.dir;
+  const dir = explicit ?? DEFAULT_STATIC_PAGES_DIR;
+  if (dir === false) return false;
+
+  const managed: { label: string; dir: string }[] = [
+    { label: "sourceDir", dir: parsed.sourceDir ?? DEFAULT_SOURCE_DIR },
+    ...i18n.locales.map((locale) => ({
+      label: `the sourceDir of locale "${locale.locale}"`,
+      dir: locale.sourceDir,
+    })),
+    { label: "publicDir", dir: parsed.publicDir ?? DEFAULT_PUBLIC_DIR },
+    { label: "outDir", dir: parsed.outDir ?? DEFAULT_OUT_DIR },
+  ];
+  const themeDir = parsed.theme?.dir ?? DEFAULT_THEME_DIR;
+  if (themeDir !== false) managed.push({ label: "theme.dir", dir: themeDir });
+
+  const absolute = resolve(ctx.root, dir);
+  for (const other of managed) {
+    if (directoriesOverlap(absolute, resolve(ctx.root, other.dir))) {
+      // The default must never break a config that predates static pages
+      // (e.g. `sourceDir: "."`), so it quietly turns the feature off instead.
+      if (explicit === undefined) return false;
+      throw new MakitError(
+        "static-page-invalid-dir",
+        `staticPages.dir "${dir}" overlaps ${other.label} "${other.dir}" (STATIC-PAGES §13).`,
+      );
+    }
+  }
+  return dir;
+}
+
 export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): ResolvedConfig {
   const lang = parsed.lang ?? DEFAULT_LANG;
+  const i18n = resolveI18n(parsed, lang);
   const shikiThemes = parsed.markdown?.shiki?.theme
     ? { light: parsed.markdown.shiki.theme, dark: parsed.markdown.shiki.theme }
     : (parsed.markdown?.shiki?.themes ?? {
@@ -214,7 +269,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       featuredCollections: parsed.home?.featuredCollections ?? [],
       sections: parsed.home?.sections ?? [],
     },
-    i18n: resolveI18n(parsed, lang),
+    i18n,
     navigation: {
       mode: parsed.navigation?.mode ?? "auto",
       includeFallbackPages: parsed.navigation?.includeFallbackPages ?? true,
@@ -259,6 +314,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
       packageRoots: [],
       diagnostics: [],
     },
+    staticPages: { dir: resolveStaticPagesDir(parsed, ctx, i18n) },
     markdown: {
       gfm: parsed.markdown?.gfm ?? true,
       headingIds: parsed.markdown?.headingIds ?? true,

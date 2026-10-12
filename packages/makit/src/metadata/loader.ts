@@ -59,6 +59,7 @@ const DEFINE_FUNCTION_BY_KIND: Record<MetadataKind, string> = {
   navigation: "defineNavigation",
   category: "defineCategory",
   page: "definePageMetadata",
+  "static-page": "defineStaticPageMetadata",
 };
 
 /** Creates the jiti instance used to evaluate metadata files (spec §22). */

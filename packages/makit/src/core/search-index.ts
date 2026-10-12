@@ -1,4 +1,5 @@
 import type { GeneratedPage } from "../types/page.js";
+import type { GeneratedStaticPage } from "../types/static-page.js";
 
 export interface SearchEntry {
   pageId: string;
@@ -33,7 +34,10 @@ function htmlToPlainText(html: string): string {
  * Fallback, hidden, and draft pages are excluded: they either duplicate
  * another locale's content or shouldn't be discoverable at all.
  */
-export function buildSearchIndex(pages: readonly GeneratedPage[]): Record<string, SearchEntry[]> {
+export function buildSearchIndex(
+  pages: readonly GeneratedPage[],
+  staticPages: readonly GeneratedStaticPage[] = [],
+): Record<string, SearchEntry[]> {
   const byLocale: Record<string, SearchEntry[]> = {};
 
   for (const page of pages) {
@@ -50,6 +54,22 @@ export function buildSearchIndex(pages: readonly GeneratedPage[]): Record<string
 
     const list = byLocale[page.locale] ?? [];
     list.push(entry);
+    byLocale[page.locale] = list;
+  }
+
+  // Static pages opt in with `search: true`, and contribute only their title
+  // and description — their bodies are arbitrary UI (STATIC-PAGES §11).
+  for (const page of staticPages) {
+    if (!page.search || page.draft) continue;
+    const list = byLocale[page.locale] ?? [];
+    list.push({
+      pageId: `static:${page.id}`,
+      title: page.title,
+      route: page.route,
+      locale: page.locale,
+      headings: [],
+      content: page.description ?? "",
+    });
     byLocale[page.locale] = list;
   }
 

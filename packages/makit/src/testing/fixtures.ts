@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { createMetadataJiti } from "../metadata/loader.js";
-import type { PageMetadata } from "../metadata/types.js";
+import type { PageMetadata, StaticPageMetadata } from "../metadata/types.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { resolveCollections, type ResolvedCollection } from "../core/collections.js";
 import {
@@ -20,6 +20,13 @@ export const METADATA_ENTRY = fileURLToPath(new URL("../metadata/index.ts", impo
 export function pageMetaSource(metadata: PageMetadata): string {
   return `import { definePageMetadata } from ${JSON.stringify(METADATA_ENTRY)};
 export default definePageMetadata(${JSON.stringify(metadata)});
+`;
+}
+
+/** Source text of a static page `{page}.meta.ts` fixture (STATIC-PAGES §9). */
+export function staticPageMetaSource(metadata: StaticPageMetadata): string {
+  return `import { defineStaticPageMetadata } from ${JSON.stringify(METADATA_ENTRY)};
+export default defineStaticPageMetadata(${JSON.stringify(metadata)});
 `;
 }
 

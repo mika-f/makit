@@ -1,0 +1,19 @@
+{
+  "name": "makit-example-static-pages",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "makit dev",
+    "build": "makit build",
+    "preview": "makit preview",
+    "check": "makit check"
+  },
+  "dependencies": {
+    "@natsuneko-laboratory/makit": "workspace:*"
+  },
+  "devDependencies": {
+    "@natsuneko-laboratory/makit-runtime": "workspace:*",
+    "@types/react": "^19.2.17"
+  }
+}

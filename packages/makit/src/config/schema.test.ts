@@ -238,3 +238,34 @@ describe("theme config", () => {
     );
   });
 });
+
+describe("makitConfigSchema staticPages (STATIC-PAGES §13, §16)", () => {
+  it("accepts a directory string or false", () => {
+    expect(makitConfigSchema.safeParse({ title: "T", staticPages: { dir: "pages" } }).success).toBe(
+      true,
+    );
+    expect(makitConfigSchema.safeParse({ title: "T", staticPages: { dir: false } }).success).toBe(
+      true,
+    );
+  });
+
+  it("rejects a non-string directory", () => {
+    expect(makitConfigSchema.safeParse({ title: "T", staticPages: { dir: 1 } }).success).toBe(
+      false,
+    );
+  });
+
+  it("accepts static page warnings in validation.failOn", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "T",
+      validation: {
+        failOn: [
+          "static-page-missing-title",
+          "static-page-html-document",
+          "static-page-locale-metadata",
+        ],
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+});

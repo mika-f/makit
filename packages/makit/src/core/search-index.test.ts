@@ -7,6 +7,7 @@ import type { PageMetadata } from "../metadata/types.js";
 import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
 import type { MakitConfigParsed } from "../config/schema.js";
 import { generateFallbackPages } from "./i18n.js";
+import type { GeneratedStaticPage } from "../types/static-page.js";
 import { buildSearchIndex } from "./search-index.js";
 
 let dir: string;
@@ -88,5 +89,44 @@ describe("buildSearchIndex", () => {
     const index = buildSearchIndex([...pages, ...fallbackPages]);
     expect(index["ja-jp"]).toBeUndefined();
     expect(index["en-us"]?.map((e) => e.pageId).sort()).toEqual(["guides.deployment"]);
+  });
+});
+
+describe("buildSearchIndex static pages (STATIC-PAGES §11)", () => {
+  function staticPage(overrides: Partial<GeneratedStaticPage>): GeneratedStaticPage {
+    return {
+      id: "pricing",
+      route: "/pricing/",
+      segments: ["pricing"],
+      locale: "en",
+      sourcePath: "/p/pages/pricing.tsx",
+      kind: "component",
+      componentKey: "pricing",
+      title: "Pricing",
+      layout: "default",
+      search: true,
+      draft: false,
+      metadata: { noindex: false, nofollow: false, alternates: [] },
+      ...overrides,
+    };
+  }
+
+  it("adds static pages with search enabled", () => {
+    const index = buildSearchIndex([], [staticPage({ description: "Plans" })]);
+
+    expect(index.en).toEqual([
+      {
+        pageId: "static:pricing",
+        title: "Pricing",
+        route: "/pricing/",
+        locale: "en",
+        headings: [],
+        content: "Plans",
+      },
+    ]);
+  });
+
+  it("skips static pages with search disabled", () => {
+    expect(buildSearchIndex([], [staticPage({ search: false })])).toEqual({});
   });
 });

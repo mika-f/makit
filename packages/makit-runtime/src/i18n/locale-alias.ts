@@ -46,7 +46,9 @@ export function resolveLocaleAliasTargets(
     const entry = maps.routeMap[locale.urlLocale]?.[key];
     if (!entry) continue;
     let href: string;
-    if (entry.kind === "portal") {
+    if (entry.kind === "portal" || entry.kind === "static") {
+      // Drafts are never written in production (STATIC-PAGES §15), so a
+      // static entry always has a route to send visitors to.
       href = entry.route;
     } else {
       const page = maps.pageMap[locale.urlLocale]?.[entry.collectionId]?.[entry.pageId];

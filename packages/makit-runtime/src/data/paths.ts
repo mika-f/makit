@@ -40,6 +40,10 @@ export function pageMapPath(): string {
   return join(GENERATED_DIR, "indexes", "page-map.json");
 }
 
+export function staticPagePath(locale: string, id: string): string {
+  return join(GENERATED_DIR, "static-pages", locale, `${id}.json`);
+}
+
 export function routeMapPath(): string {
   return join(GENERATED_DIR, "indexes", "route-map.json");
 }
