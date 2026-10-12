@@ -256,6 +256,8 @@ export interface ResolvedConfig {
   header: HeaderConfig;
   footer: FooterConfig;
   theme: ResolvedThemeConfig;
+  /** Static pages directory relative to the project root; `false` when disabled (STATIC-PAGES §13). */
+  staticPages: { dir: string | false };
   markdown: ResolvedMarkdownConfig;
   styles: string[];
   seo: ResolvedSeoConfig;

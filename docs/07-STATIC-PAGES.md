@@ -555,6 +555,8 @@ export interface StaticPagesConfig {
 
 `staticPages.dir` が `sourceDir`、`publicDir`、`outDir`、`theme.dir` と同一または入れ子の場合は `static-page-invalid-dir` エラーとする。
 
+ただし `staticPages.dir` を指定しておらず、既定値の `pages` がこれらと重なる場合（`sourceDir: "."` など）は、エラーにせず固定ページ機能を無効化する（`dir: false` と同じ）。固定ページ導入前から有効だった設定ファイルの動作を変えないためである（THEME §3.1 と同じ方針）。
+
 ---
 
 ## 14. サイトトップとの関係

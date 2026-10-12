@@ -52,6 +52,11 @@ export type MakitErrorCode =
   | "theme-slot-not-optional"
   | "theme-ambiguous-slot-file"
   | "theme-manifest-invalid"
+  | "static-page-ambiguous-file"
+  | "static-page-route-conflict"
+  | "static-page-home-conflict"
+  | "static-page-unknown-locale"
+  | "static-page-invalid-dir"
   | "output-write-failed"
   | "project-exists"
   | "not-implemented";

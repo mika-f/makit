@@ -25,6 +25,8 @@ export interface MakitConfig {
   header?: HeaderConfig;
   footer?: FooterConfig;
   theme?: ThemeConfig;
+  /** Fully custom React / HTML pages (STATIC-PAGES §13). */
+  staticPages?: StaticPagesConfig;
   markdown?: MarkdownConfig;
   styles?: string[];
   seo?: SeoConfig;
@@ -46,6 +48,21 @@ export interface MakitConfig {
   headers?: GeneratedHeaderRule[];
   experimental?: ExperimentalConfig;
 }
+
+// #region staticPages
+
+/** Fully custom pages outside the documentation shell (STATIC-PAGES §13). */
+export interface StaticPagesConfig {
+  /**
+   * Directory scanned for `.tsx` / `.jsx` / `.html` static pages, relative
+   * to the project root. `false` disables static pages entirely.
+   *
+   * @default "pages"
+   */
+  dir?: string | false;
+}
+
+// #endregion
 
 // #region analytics
 
@@ -536,7 +553,10 @@ export type MakitWarningCode =
   | "changelog-empty"
   | "route-group-category-ignored"
   | "theme-slot-file-ignored"
-  | "theme-outside-project";
+  | "theme-outside-project"
+  | "static-page-missing-title"
+  | "static-page-html-document"
+  | "static-page-locale-metadata";
 
 /**
  * Codes accepted by `validation.failOn`. In addition to the warnings above,

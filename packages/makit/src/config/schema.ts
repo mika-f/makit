@@ -243,6 +243,10 @@ const themeComponentRefSchema = z.union([
   z.literal(false),
 ]);
 
+const staticPagesConfigSchema = z.strictObject({
+  dir: z.union([z.string().min(1), z.literal(false)]).optional(),
+});
+
 const themeConfigSchema = z.strictObject({
   colorScheme: z.enum(["light", "dark", "system"]).optional(),
   accentColor: z.string().optional(),
@@ -394,6 +398,9 @@ const warningCodeSchema = z.enum([
   "changelog-fetch-failed",
   "changelog-empty",
   "route-group-category-ignored",
+  "static-page-missing-title",
+  "static-page-html-document",
+  "static-page-locale-metadata",
 ]);
 
 const failOnCodeSchema = z.union([
@@ -463,6 +470,7 @@ export const makitConfigSchema = z.strictObject({
   header: headerConfigSchema.optional(),
   footer: footerConfigSchema.optional(),
   theme: themeConfigSchema.optional(),
+  staticPages: staticPagesConfigSchema.optional(),
   markdown: markdownConfigSchema.optional(),
   styles: z.array(z.string()).optional(),
   seo: seoConfigSchema.optional(),
