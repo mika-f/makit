@@ -7,6 +7,7 @@ import { createMetadataJiti } from "../metadata/loader.js";
 import type { PageMetadata } from "../metadata/types.js";
 import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
 import { writeGeneratedData } from "./generate.js";
+import { buildStaticPages } from "./static-pages.js";
 import { generateAllNavigation } from "./navigation.js";
 
 let dir: string;
@@ -211,5 +212,80 @@ describe("writeGeneratedData (spec §40 layout)", () => {
 
     const { generatedDir } = await writeGeneratedData(config, pages, collections);
     await expect(readJson(join(generatedDir, "manifest.json"))).rejects.toThrow();
+  });
+});
+
+describe("writeGeneratedData static pages (STATIC-PAGES §12)", () => {
+  function multiCollectionConfig() {
+    return resolveConfig(
+      {
+        title: "My Docs",
+        collections: [
+          { id: "makit", title: "Makit", path: "/makit" },
+          { id: "enduroq", title: "Enduroq", path: "/enduroq" },
+        ],
+      },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+  }
+
+  it("writes static page JSON and a static route-map entry", async () => {
+    await write("docs/guide.md", "# Guide\n");
+    await write("pages/pricing.tsx", "");
+    const config = resolveConfig(
+      { title: "My Docs" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages, collections } = await buildPagesForTest(config);
+    const { staticPages } = await buildStaticPages(config, { includeDrafts: false });
+
+    const { generatedDir } = await writeGeneratedData(config, pages, collections, {}, staticPages);
+
+    const page = (await readJson(join(generatedDir, "static-pages", "en", "pricing.json"))) as {
+      id: string;
+      route: string;
+    };
+    expect(page).toMatchObject({ id: "pricing", route: "/pricing/" });
+    const routeMap = (await readJson(join(generatedDir, "indexes", "route-map.json"))) as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(routeMap.en?.["pricing"]).toEqual({ kind: "static", id: "pricing", route: "/pricing/" });
+  });
+
+  it("lets a static index own the site root instead of a portal", async () => {
+    await write("docs/makit/index.md", "# Makit\n");
+    await write("docs/enduroq/index.md", "# Enduroq\n");
+    await write("pages/index.tsx", "");
+    const config = multiCollectionConfig();
+    const { pages, collections } = await buildPagesForTest(config);
+    const { staticPages } = await buildStaticPages(config, { includeDrafts: false });
+
+    const { generatedDir } = await writeGeneratedData(config, pages, collections, {}, staticPages);
+
+    const routeMap = (await readJson(join(generatedDir, "indexes", "route-map.json"))) as Record<
+      string,
+      Record<string, unknown>
+    >;
+    expect(routeMap.en?.[""]).toEqual({ kind: "static", id: "index", route: "/" });
+    await expect(readJson(join(generatedDir, "home", "en.json"))).rejects.toThrow();
+  });
+
+  it("removes a deleted static page's JSON on the next generation", async () => {
+    await write("docs/guide.md", "# Guide\n");
+    await write("pages/pricing.tsx", "");
+    const config = resolveConfig(
+      { title: "My Docs" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages, collections } = await buildPagesForTest(config);
+    const { staticPages } = await buildStaticPages(config, { includeDrafts: false });
+    const { generatedDir } = await writeGeneratedData(config, pages, collections, {}, staticPages);
+
+    await writeGeneratedData(config, pages, collections, {}, []);
+
+    await expect(
+      readJson(join(generatedDir, "static-pages", "en", "pricing.json")),
+    ).rejects.toThrow();
   });
 });
