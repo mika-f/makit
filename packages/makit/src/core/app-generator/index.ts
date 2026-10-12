@@ -2,8 +2,10 @@ import { cp, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import type { ResolvedConfig } from "../../types/resolved-config.js";
+import type { GeneratedStaticPage } from "../../types/static-page.js";
 import { atomicWriteFile } from "../atomic-write.js";
 import { commonAncestorDir } from "../common-ancestor.js";
+import { staticPagesDirectory } from "../static-page-sources.js";
 import {
   ALIASED_RUNTIME_PACKAGES,
   RUNTIME_PACKAGES,
@@ -19,6 +21,7 @@ import {
   rootLayoutTemplate,
   rootPageTemplate,
   slugPageTemplate,
+  staticPagesModuleTemplate,
   themeModuleTemplate,
 } from "./templates.js";
 
@@ -102,7 +105,15 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
       .filter((slot) => slot && slot.filePath)
       .map((slot) => dirname((slot as { filePath: string }).filePath)),
   ];
-  const turbopackRoot = commonAncestorDir([config.root, ...runtimePackageRoots, ...themeRoots]);
+  // Static pages sit in the project (STATIC-PAGES §12.4), but a custom
+  // `staticPages.dir` may point anywhere, so it joins the root calculation.
+  const staticPagesDir = staticPagesDirectory(config);
+  const turbopackRoot = commonAncestorDir([
+    config.root,
+    ...runtimePackageRoots,
+    ...themeRoots,
+    ...(staticPagesDir ? [staticPagesDir] : []),
+  ]);
 
   await writeText(
     join(makitDir, "next.config.mjs"),
@@ -128,6 +139,7 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
       slugPageTemplate({
         localeExpression: "params.locale",
         themeModulePath: "../../theme.js",
+        staticPagesModulePath: "../../static-pages.js",
         i18nEnabled: true,
       }),
     );
@@ -138,6 +150,7 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
       slugPageTemplate({
         localeExpression: JSON.stringify(singleLocale),
         themeModulePath: "../theme.js",
+        staticPagesModulePath: "../static-pages.js",
         i18nEnabled: false,
       }),
     );
@@ -159,6 +172,9 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
       customStyleImports,
       themeSources: config.theme.tailwindSources,
       themeStyleImports,
+      staticPageSources: staticPagesDir
+        ? [`${staticPagesDir.split(sep).join("/")}/**/*.{tsx,jsx,ts,js,html}`]
+        : [],
     }),
   );
 
@@ -172,4 +188,19 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
   }
 
   await linkRuntimeDependencies(makitDir);
+}
+
+/**
+ * Writes `.makit/app/static-pages.js` (STATIC-PAGES §12.3). Runs with every
+ * content regeneration rather than from `generateApp`, so a page added or
+ * removed during `makit dev` updates the import map without a config reload;
+ * `atomicWriteFile` keeps an unchanged map from touching the file at all.
+ */
+export async function writeStaticPagesModule(
+  config: ResolvedConfig,
+  staticPages: readonly GeneratedStaticPage[],
+): Promise<void> {
+  const appDir = join(config.root, ".makit", "app");
+  await mkdir(appDir, { recursive: true });
+  await writeText(join(appDir, "static-pages.js"), staticPagesModuleTemplate(staticPages, appDir));
 }
