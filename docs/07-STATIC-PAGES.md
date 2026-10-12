@@ -408,13 +408,15 @@ Header に渡す actions（`SearchDialog`、言語切替、`ThemeToggle`）の�
 export type RouteMapEntry =
   | { kind: "page"; collectionId: string; pageId: string }
   | { kind: "portal"; route: string }
-  | { kind: "static"; id: string };
+  | { kind: "static"; id: string; route: string };
 ```
+
+`route` はロケールゲートウェイ（spec §35.7）と `getHomeRoute` が生成データを読まずにリンク先を得るために持つ。
 
 登録順序:
 
 1. Markdown ページ
-2. 固定ページ（衝突は §14 のエラー）
+2. 固定ページ（衝突は §16 のエラー）
 3. サイトトップ（spec §33）。ロケールのルートに固定ページ `index` がある場合、サイトトップの解決は行わない
 
 `getAllStaticParams` は `static` エントリも列挙する。
@@ -594,7 +596,11 @@ export interface StaticPagesConfig {
 | `static-page-unknown-locale` | i18n が有効で、ロケール接尾辞が設定されたどのロケールにも一致しない                          |
 | `static-page-invalid-dir`    | `staticPages.dir` が他の管理ディレクトリと同一または入れ子                                   |
 
-ロケール接尾辞の判定は、拡張子の直前のドット区切りの部分が BCP-47 の形式（`xx-yy` など）である場合のみ行う。`pricing.v2.tsx` は ID `pricing.v2` の固定ページとして扱う。
+ロケール接尾辞の判定は i18n が有効な場合のみ、拡張子の直前のドット区切りの部分（大文字小文字を区別しない）に対して次のとおり行う。
+
+1. 設定されたいずれかのロケールの urlLocale と一致する: そのロケールのロケール別ファイルとする
+2. `/^[a-z]{2,3}-[a-z0-9]{2,8}$/i` に一致する（`xx-yy` 形式）が、どのロケールとも一致しない: `static-page-unknown-locale` エラーとする
+3. それ以外: ロケール接尾辞ではなく ID の一部とする。`pricing.v2.tsx` は ID `pricing.v2`、`about.old.tsx` は ID `about.old` の固定ページとなる
 
 警告（`validation.failOn` / `validation.strict` で昇格可能）:
 
