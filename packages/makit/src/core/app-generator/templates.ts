@@ -304,15 +304,17 @@ export default async function Page({ params }) {
 
   if (entry.kind === "static") {
     const page = await getStaticPage(locale, entry.id);
+    // In \`makit dev\` a just-added page's JSON can land before Turbopack has
+    // reloaded static-pages.js; render nothing until the dev refresh arrives.
     const Component = page.componentKey ? staticPageComponents[page.componentKey] : undefined;
     const { StaticPage } = themeComponents;
     return (
       <StaticPage page={page} site={site} i18n={i18n} locale={locale} components={themeComponents}>
-        {Component ? (
-          <Component page={page} site={site} i18n={i18n} locale={locale} />
-        ) : (
+        {page.kind === "html" ? (
           <div dangerouslySetInnerHTML={{ __html: page.html }} />
-        )}
+        ) : Component ? (
+          <Component page={page} site={site} i18n={i18n} locale={locale} />
+        ) : null}
       </StaticPage>
     );
   }

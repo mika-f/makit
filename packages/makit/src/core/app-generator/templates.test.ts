@@ -366,6 +366,13 @@ describe("slugPageTemplate static entries (STATIC-PAGES §12.3)", () => {
     expect(template).toContain("dangerouslySetInnerHTML={{ __html: page.html }}");
   });
 
+  it("never renders a component page through the HTML branch", () => {
+    // Right after a page is added in dev, the generated JSON can name a
+    // component that Turbopack has not loaded yet; that must not fall
+    // through to `dangerouslySetInnerHTML` with an undefined `html`.
+    expect(template).toContain('page.kind === "html"');
+  });
+
   it("builds static page metadata", () => {
     expect(template).toContain("buildStaticPageMetadata(");
   });
