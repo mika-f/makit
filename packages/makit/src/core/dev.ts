@@ -6,7 +6,7 @@ import chokidar from "chokidar";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { loadConfig } from "../config/load.js";
 import { createMetadataJiti } from "../metadata/loader.js";
-import { generateApp } from "./app-generator/index.js";
+import { generateApp, writeStaticPagesModule } from "./app-generator/index.js";
 import { devRefreshTemplate } from "./app-generator/templates.js";
 import { atomicWriteFile } from "./atomic-write.js";
 import { MetadataCache } from "./cache.js";
@@ -20,6 +20,7 @@ import type { Logger } from "./logger.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
+import { assertStaticPageRoutes, buildStaticPages } from "./static-pages.js";
 
 export interface DevOptions {
   port: number;
@@ -89,12 +90,21 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
     config,
     collections,
   );
-  await writeGeneratedData(config, allPages, collections, byLocale);
+  // Unlike `makit build`, dev keeps draft static pages visible too (STATIC-PAGES §15).
+  const {
+    staticPages,
+    diagnostics: staticPageDiagnostics,
+    watchPaths: staticPageWatchPaths,
+  } = await buildStaticPages(config, { jiti, metadataCache, includeDrafts: true });
+  assertStaticPageRoutes(staticPages, allPages, config);
+  await writeGeneratedData(config, allPages, collections, byLocale, staticPages);
+  await writeStaticPagesModule(config, staticPages);
   for (const warning of [...collectionWarnings, ...warnings]) logger.warn(warning);
   for (const diagnostic of [
     ...collectionDiagnostics,
     ...pageDiagnostics,
     ...navigationMetadataDiagnostics,
+    ...staticPageDiagnostics,
   ]) {
     logger.warn(
       diagnostic.sourcePath
@@ -103,7 +113,11 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
       diagnostic.code,
     );
   }
-  logger.success(`Regenerated ${allPages.length} page(s)`);
+  logger.success(
+    staticPages.length > 0
+      ? `Regenerated ${allPages.length} page(s) and ${staticPages.length} static page(s)`
+      : `Regenerated ${allPages.length} page(s)`,
+  );
 
   // Generated JSON is read via fs at request time, invisible to Turbopack's
   // watcher — rewriting this layout-imported marker is what actually pushes
@@ -114,7 +128,10 @@ async function regenerateContent(config: ResolvedConfig, logger: Logger): Promis
     devRefreshTemplate(Date.now().toString(36)),
   );
 
-  return collectMetadataWatchPaths(collections, pageMetadataPaths, navMetadataPaths);
+  return [
+    ...collectMetadataWatchPaths(collections, pageMetadataPaths, navMetadataPaths),
+    ...staticPageWatchPaths,
+  ];
 }
 
 /** Starts `next dev` over `.makit/app`, watching sources and regenerating on change (spec §9.3, §43). */
@@ -133,6 +150,7 @@ export async function startDevServer(
   let metadataWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let publicWatcher: ReturnType<typeof chokidar.watch> | undefined;
   let themeWatcher: ReturnType<typeof chokidar.watch> | undefined;
+  let staticPagesWatcher: ReturnType<typeof chokidar.watch> | undefined;
 
   // A single mutex around every regeneration path (content-only and
   // config-triggered): `generateApp` and `writeGeneratedData` both write
@@ -228,6 +246,25 @@ export async function startDevServer(
     });
   }
 
+  // Static pages (STATIC-PAGES §15): an edited `.tsx`/`.jsx` is already in
+  // Turbopack's module graph, so HMR covers it. Everything else — HTML and
+  // metadata edits, and any add/remove/rename (which changes
+  // `static-pages.js`) — needs a content regeneration.
+  function watchStaticPagesDir(): void {
+    staticPagesWatcher?.close();
+    const dir = config.staticPages.dir;
+    if (dir === false) {
+      staticPagesWatcher = undefined;
+      return;
+    }
+    staticPagesWatcher = chokidar.watch(join(config.root, dir), { ignoreInitial: true });
+    staticPagesWatcher.on("all", (event, path) => {
+      if (event === "change" && /\.(tsx|jsx)$/.test(path)) return;
+      logger.debug(`${event}: ${relative(config.root, path)}`);
+      runRegenerate();
+    });
+  }
+
   function watchPublicDir(): void {
     publicWatcher?.close();
     const publicSrcDir = join(config.root, config.publicDir);
@@ -250,6 +287,7 @@ export async function startDevServer(
   watchMetadataDependencies();
   watchPublicDir();
   watchThemeDir();
+  watchStaticPagesDir();
 
   // `makit.config.ts` itself (spec §43): most fields (title, theme, navigation,
   // collections, home, i18n messages, ...) only affect `.makit/generated/*`
@@ -271,6 +309,7 @@ export async function startDevServer(
         watchSources();
         watchPublicDir();
         watchThemeDir();
+        watchStaticPagesDir();
         const paths = await regenerateContent(config, logger);
         metadataWatchPaths = paths;
         watchMetadataDependencies();
@@ -304,6 +343,7 @@ export async function startDevServer(
           metadataWatcher?.close(),
           publicWatcher?.close(),
           themeWatcher?.close(),
+          staticPagesWatcher?.close(),
           configWatcher.close(),
         ]).finally(() => {
           child.once("exit", () => resolvePromise());

@@ -23,6 +23,9 @@ export const checkCommand = defineCommand({
 
       const result = await check(config);
       ctx.logger.info(`Found ${result.pageCount} page(s) across ${result.localeCount} locale(s)`);
+      if (result.staticPageCount > 0) {
+        ctx.logger.info(`Found ${result.staticPageCount} static page(s)`);
+      }
 
       for (const warning of result.pipelineWarnings) {
         ctx.logger.warn(warning);

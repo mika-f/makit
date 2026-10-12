@@ -3,7 +3,7 @@ import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ResolvedConfig } from "../types/resolved-config.js";
 import { createMetadataJiti } from "../metadata/loader.js";
-import { generateApp } from "./app-generator/index.js";
+import { generateApp, writeStaticPagesModule } from "./app-generator/index.js";
 import { MetadataCache } from "./cache.js";
 import { synthesizeCollectionTopPages } from "./collection-top.js";
 import { resolveCollections } from "./collections.js";
@@ -16,6 +16,7 @@ import type { Logger } from "./logger.js";
 import { decoratePagesWithNavigation } from "./nav-decorate.js";
 import { generateAllNavigation } from "./navigation.js";
 import { buildAllPages } from "./pages.js";
+import { assertStaticPageRoutes, buildStaticPages } from "./static-pages.js";
 import { generateSitemapXml } from "./sitemap.js";
 import { writeLlmsFiles } from "./llms.js";
 import { writePagefindIndex } from "./pagefind.js";
@@ -35,6 +36,7 @@ export interface BuildOptions {
 
 export interface BuildResult {
   pageCount: number;
+  staticPageCount: number;
   localeCount: number;
   fallbackCount: number;
   warnings: string[];
@@ -130,6 +132,16 @@ export async function build(
     config,
     collections,
   );
+  const { staticPages, diagnostics: staticPageDiagnostics } = await buildStaticPages(config, {
+    jiti,
+    metadataCache,
+    includeDrafts: false,
+  });
+  assertStaticPageRoutes(staticPages, allPages, config);
+  if (staticPages.length > 0) {
+    logger.info(`Processed ${staticPages.length} static page(s)`);
+  }
+
   const warnings = [...collectionWarnings, ...pipelineWarnings, ...navigationWarnings];
 
   for (const warning of warnings) {
@@ -142,6 +154,7 @@ export async function build(
     ...pageDiagnostics,
     ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
+    ...staticPageDiagnostics,
     ...validatePages(allPages, config, { navigationByLocale }),
   ];
   for (const diagnostic of diagnostics) {
@@ -167,7 +180,8 @@ export async function build(
     else logger.info(diagnostic.message);
   }
 
-  await writeGeneratedData(config, allPages, collections, navigationByLocale);
+  await writeGeneratedData(config, allPages, collections, navigationByLocale, staticPages);
+  await writeStaticPagesModule(config, staticPages);
   logger.success("Wrote .makit/generated/");
 
   await generateApp(config);
@@ -185,7 +199,7 @@ export async function build(
   await writePagefindIndex(outDirAbsolute);
   logger.success("Built Pagefind search index");
 
-  const sitemapXml = generateSitemapXml(allPages, config);
+  const sitemapXml = generateSitemapXml(allPages, config, staticPages);
   if (sitemapXml) {
     await writeFile(join(outDirAbsolute, "sitemap.xml"), sitemapXml, "utf-8");
   }
@@ -207,6 +221,7 @@ export async function build(
 
   return {
     pageCount: allPages.length,
+    staticPageCount: staticPages.length,
     localeCount: config.i18n.locales.length,
     fallbackCount: fallbackPages.length,
     warnings,
