@@ -340,8 +340,6 @@ export interface GeneratedStaticPage {
   segments: string[];
   /** URL-facing locale this page is served under. */
   locale: string;
-  sourcePath: string;
-  metadataPath?: string;
   kind: "component" | "html";
   /** Key into the generated `static-pages.js` (kind: "component" only). */
   componentKey?: string;

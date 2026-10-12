@@ -114,7 +114,16 @@ export async function writeGeneratedData(
     home: config.home,
     header: config.header,
     footer: config.footer,
-    theme: config.theme,
+    // Only the tokens the runtime reads (ThemeData). Slot bindings, package
+    // roots, and style paths are absolute build-machine paths, and `site`
+    // reaches "use client" static pages as a prop (STATIC-PAGES §7.2).
+    theme: {
+      colorScheme: config.theme.colorScheme,
+      accentColor: config.theme.accentColor,
+      radius: config.theme.radius,
+      breadcrumbs: config.theme.breadcrumbs,
+      codeTheme: config.theme.codeTheme,
+    },
     seo: config.seo,
     styles: config.styles,
     navigation: {
@@ -204,7 +213,10 @@ export async function writeGeneratedData(
     }
   }
   for (const page of staticPages) {
-    await write(join(generatedDir, "static-pages", page.locale, `${page.id}.json`), page);
+    // Source paths are CLI-only: the record is serialized into the HTML of
+    // "use client" static pages (STATIC-PAGES §7.2, §12.2).
+    const { sourcePath: _sourcePath, metadataPath: _metadataPath, ...published } = page;
+    await write(join(generatedDir, "static-pages", page.locale, `${page.id}.json`), published);
     (routeMap[page.locale] ??= {})[page.segments.join("/")] = {
       kind: "static",
       id: page.id,

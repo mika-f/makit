@@ -15,7 +15,6 @@ function staticPage(overrides: Partial<GeneratedStaticPage> = {}): GeneratedStat
     route: "/en-us/pricing/",
     segments: ["pricing"],
     locale: "en-us",
-    sourcePath: "/p/pages/pricing.tsx",
     kind: "component",
     componentKey: "pricing",
     title: "Pricing",

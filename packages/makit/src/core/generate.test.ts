@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resolveConfig } from "../config/normalize.js";
 import { createMetadataJiti } from "../metadata/loader.js";
 import type { PageMetadata } from "../metadata/types.js";
-import { buildPagesForTest, pageMetaSource } from "../testing/fixtures.js";
+import { buildPagesForTest, pageMetaSource, staticPageMetaSource } from "../testing/fixtures.js";
 import { writeGeneratedData } from "./generate.js";
 import { buildStaticPages } from "./static-pages.js";
 import { generateAllNavigation } from "./navigation.js";
@@ -269,6 +269,47 @@ describe("writeGeneratedData static pages (STATIC-PAGES §12)", () => {
     >;
     expect(routeMap.en?.[""]).toEqual({ kind: "static", id: "index", route: "/" });
     await expect(readJson(join(generatedDir, "home", "en.json"))).rejects.toThrow();
+  });
+
+  it("keeps build-machine paths out of the static page JSON", async () => {
+    // The record reaches "use client" components as props, so it ends up
+    // serialized into the exported HTML (STATIC-PAGES §7.2).
+    await write("docs/guide.md", "# Guide\n");
+    await write("pages/pricing.tsx", "");
+    await write("pages/pricing.meta.ts", staticPageMetaSource({ title: "Pricing" }));
+    const config = resolveConfig(
+      { title: "My Docs" },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages, collections } = await buildPagesForTest(config);
+    const { staticPages } = await buildStaticPages(config, { includeDrafts: false });
+
+    const { generatedDir } = await writeGeneratedData(config, pages, collections, {}, staticPages);
+
+    const raw = await readFile(join(generatedDir, "static-pages", "en", "pricing.json"), "utf-8");
+    expect(raw).not.toContain(dir);
+    expect(JSON.parse(raw)).not.toHaveProperty("sourcePath");
+    expect(JSON.parse(raw)).not.toHaveProperty("metadataPath");
+  });
+
+  it("writes only theme tokens to site.json", async () => {
+    await write("docs/guide.md", "# Guide\n");
+    const config = resolveConfig(
+      { title: "My Docs", theme: { accentColor: "teal" } },
+      { root: dir, configPath: join(dir, "makit.config.ts") },
+    );
+    const { pages, collections } = await buildPagesForTest(config);
+
+    const { generatedDir } = await writeGeneratedData(config, pages, collections);
+
+    const site = (await readJson(join(generatedDir, "site.json"))) as { theme: object };
+    expect(Object.keys(site.theme).sort()).toEqual([
+      "accentColor",
+      "breadcrumbs",
+      "codeTheme",
+      "colorScheme",
+      "radius",
+    ]);
   });
 
   it("removes a deleted static page's JSON on the next generation", async () => {

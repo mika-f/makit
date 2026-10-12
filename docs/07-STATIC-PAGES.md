@@ -443,10 +443,6 @@ export interface GeneratedStaticPage {
   segments: string[];
   /** URL-facing locale this page is served under. */
   locale: string;
-  /** Absolute path of the source file actually used for this locale. */
-  sourcePath: string;
-  /** Absolute path of the `.meta.ts`, when one exists. */
-  metadataPath?: string;
   kind: "component" | "html";
   /** Key into `.makit/app/static-pages.js` (kind: "component" only). */
   componentKey?: string;
@@ -460,6 +456,8 @@ export interface GeneratedStaticPage {
   metadata: GeneratedMetadata;
 }
 ```
+
+ソースファイルや `.meta.ts` の絶対パスは CLI 内部でのみ扱い、生成データへは書き出さない。生成データは `"use client"` の Static Page Component へ props として渡り、出力 HTML に埋め込まれるためである。同じ理由で、`site.json` の `theme` にはテーマのトークン（`colorScheme`、`accentColor`、`radius`、`breadcrumbs`、`codeTheme`）のみを書き出す。
 
 `GeneratedMetadata`（spec §39）の `alternates` には、同じ Static Page ID を持つ他ロケールの固定ページを登録する。
 

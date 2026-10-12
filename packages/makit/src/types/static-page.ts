@@ -10,9 +10,9 @@ export interface GeneratedStaticPage {
   segments: string[];
   /** URL-facing locale this page is served under. */
   locale: string;
-  /** Absolute path of the source file actually used for this locale. */
+  /** Absolute path of the source file actually used for this locale. CLI-only — never written to the generated JSON. */
   sourcePath: string;
-  /** Absolute path of the `.meta.ts`, when one exists. */
+  /** Absolute path of the `.meta.ts`, when one exists. CLI-only — never written to the generated JSON. */
   metadataPath?: string;
   kind: "component" | "html";
   /** Key into `.makit/app/static-pages.js` (kind: "component" only). */
