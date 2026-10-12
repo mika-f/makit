@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
 import type { I18nData, PortalCollectionCard, PortalHomeData, SiteData } from "../data/types.js";
+import type { LocaleLink } from "../i18n/static-page-locale-links.js";
 import type { ThemeComponents } from "../theme/components.js";
+import { HeaderActions } from "./header-actions.js";
+import { LocaleLinks } from "./locale-links.js";
 
 function CollectionCard({ card }: { card: PortalCollectionCard }) {
   return (
@@ -60,43 +63,21 @@ export async function PortalHomePage({
     getSearchIndex(locale),
   ]);
 
-  const localeLinks =
+  const localeLinks: LocaleLink[] =
     i18n.enabled && i18n.locales.length > 1
       ? await Promise.all(
           i18n.locales.map(async (candidate) => ({
             locale: candidate,
             href: (await getHomeRoute(candidate.urlLocale)) ?? homeHref,
+            current: candidate.urlLocale === locale,
           })),
         )
       : [];
 
   const headerActions = (
-    <>
-      <C.SearchDialog
-        entries={searchEntries}
-        pagefindEnabled={process.env.NODE_ENV === "production"}
-        pagefindBundlePath={`${site.basePath}/pagefind/`}
-      />
-      {localeLinks.length > 1 && (
-        <div className="flex items-center gap-1 text-sm">
-          {localeLinks.map(({ locale: candidate, href }) => (
-            <Link
-              key={candidate.urlLocale}
-              href={href}
-              aria-current={candidate.urlLocale === locale ? "true" : undefined}
-              className={
-                candidate.urlLocale === locale
-                  ? "rounded-[var(--makit-radius)] bg-[var(--makit-color-muted)] px-2 py-1 font-medium text-[var(--makit-color-accent)]"
-                  : "rounded-[var(--makit-radius)] px-2 py-1 text-[var(--makit-color-foreground)] opacity-80 hover:opacity-100"
-              }
-            >
-              {candidate.label}
-            </Link>
-          ))}
-        </div>
-      )}
-      {site.theme.colorScheme === "system" && <C.ThemeToggle />}
-    </>
+    <HeaderActions site={site} searchEntries={searchEntries} components={C}>
+      <LocaleLinks links={localeLinks} />
+    </HeaderActions>
   );
 
   return (

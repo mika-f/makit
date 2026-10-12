@@ -19,6 +19,7 @@ import { PrevNextLinks, type PrevNextLinksProps } from "../components/prev-next-
 import { RootLayout, type RootLayoutProps } from "../components/root-layout.js";
 import { RootPage, type RootPageProps } from "../components/root-page.js";
 import { SearchDialog, type SearchDialogProps } from "../components/search-dialog.js";
+import { StaticPage, type StaticPageProps } from "../components/static-page.js";
 import { Sidebar, type SidebarProps } from "../components/sidebar.js";
 import { TableOfContents, type TableOfContentsProps } from "../components/table-of-contents.js";
 import { ThemeToggle, type ThemeToggleProps } from "../components/theme-toggle.js";
@@ -38,6 +39,7 @@ export interface ThemeComponents {
   RootLayout: ThemeSlotComponent<RootLayoutProps>;
   DocsPage: ThemeSlotComponent<DocsPageProps>;
   PortalHomePage: ThemeSlotComponent<PortalHomePageProps>;
+  StaticPage: ThemeSlotComponent<StaticPageProps>;
   RootPage: ThemeSlotComponent<RootPageProps>;
   NotFoundPage: ThemeSlotComponent<NotFoundPageProps>;
   Header: ThemeSlotComponent<HeaderProps>;
@@ -73,6 +75,7 @@ export const defaultThemeComponents: ThemeComponents = {
   RootLayout,
   DocsPage,
   PortalHomePage,
+  StaticPage,
   RootPage,
   NotFoundPage,
   Header,

@@ -46,3 +46,11 @@ describe("theme slot names", () => {
     expect(THEME_SLOT_NAME_BY_FILE_NAME["theme-variables"]).toBe("ThemeVariables");
   });
 });
+
+describe("StaticPage slot (STATIC-PAGES §10.1)", () => {
+  it("is a required page slot with a convention file name", () => {
+    expect(THEME_PAGE_SLOT_NAMES).toContain("StaticPage");
+    expect(isOptionalThemeSlotName("StaticPage")).toBe(false);
+    expect(THEME_SLOT_NAME_BY_FILE_NAME["static-page"]).toBe("StaticPage");
+  });
+});
