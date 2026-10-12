@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import type { ReactNode } from "react";
 import type { GlobalNavigationGroup, GlobalNavigationItem, HeaderData } from "../data/types.js";
+import { RouteLink } from "./route-link.js";
 
 function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
   if (item.items && item.items.length > 0) {
@@ -24,13 +24,13 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
                 <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
               </a>
             ) : (
-              <Link
+              <RouteLink
                 key={child.title}
                 href={child.href ?? "#"}
                 className="block rounded-lg px-2.5 py-2 text-sm text-[var(--makit-color-subtle)] transition hover:bg-[var(--makit-color-muted)] hover:text-[var(--makit-color-foreground)]"
               >
                 {child.title}
-              </Link>
+              </RouteLink>
             ),
           )}
         </div>
@@ -48,12 +48,12 @@ function GlobalNavItem({ item }: { item: GlobalNavigationItem }) {
       <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
     </a>
   ) : (
-    <Link
+    <RouteLink
       href={item.href ?? "#"}
       className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
     >
       {item.title}
-    </Link>
+    </RouteLink>
   );
 }
 
@@ -86,7 +86,7 @@ export function Header({ header, siteTitle, homeHref, actions, globalNavigation 
     <header className="sticky top-0 z-40 border-b border-[var(--makit-color-border)] bg-[color-mix(in_srgb,var(--makit-color-background)_88%,transparent)] backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-[96rem] items-center justify-between gap-4 px-4 sm:px-6">
         <div className="flex min-w-0 items-center gap-7">
-          <Link
+          <RouteLink
             href={homeHref}
             className="flex min-w-0 items-center gap-2.5 font-semibold tracking-[-0.02em] text-[var(--makit-color-foreground)]"
           >
@@ -111,7 +111,7 @@ export function Header({ header, siteTitle, homeHref, actions, globalNavigation 
               </span>
             )}
             <span className="truncate">{header.title ?? siteTitle}</span>
-          </Link>
+          </RouteLink>
           {hasGlobalNav ? (
             <GlobalNav groups={globalNavigation!} />
           ) : (
@@ -129,13 +129,13 @@ export function Header({ header, siteTitle, homeHref, actions, globalNavigation 
                     <ExternalLink aria-hidden="true" className="ml-1 inline size-3.5" />
                   </a>
                 ) : (
-                  <Link
+                  <RouteLink
                     key={link.href}
                     href={link.href}
                     className="text-sm text-[var(--makit-color-subtle)] transition hover:text-[var(--makit-color-foreground)]"
                   >
                     {link.label}
-                  </Link>
+                  </RouteLink>
                 ),
               )}
             </nav>

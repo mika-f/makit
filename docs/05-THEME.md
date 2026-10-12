@@ -737,6 +737,18 @@ export default function Footer(props: FooterProps) {
 }
 ```
 
+### 12.1 生成されたルートへのリンク
+
+Slot Props に含まれる href（`page.route`、ナビゲーション、パンくず、前後リンク、ロケール切り替え、`homeHref` など）は `basePath` を含む公開パスである（spec §28）。`next/link` は `basePath` をさらに付与するため、これらは `next/link` に直接渡さず `RouteLink` を使う。`RouteLink` は先頭の `basePath` を取り除いてから `next/link` に渡し、`basePath` を含まない href はそのまま渡す。
+
+```tsx
+import { RouteLink } from "@natsuneko-laboratory/makit-runtime";
+
+<RouteLink href={page.route}>{page.title}</RouteLink>;
+```
+
+`<a>` や `window.location`、`<meta http-equiv="refresh">` など `basePath` を付与しない用途では、生成された href をそのまま使う。
+
 ---
 
 ## 13. スタイル

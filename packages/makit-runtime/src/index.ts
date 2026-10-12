@@ -157,6 +157,11 @@ export type {
 } from "./theme/slot-names.js";
 
 export { findPrevNext, flattenNavigation } from "./navigation/flatten.js";
+// Generated hrefs already include `basePath`; links to them must go through
+// these rather than plain `next/link`, which would prefix it again (spec §28).
+export { RouteLink } from "./components/route-link.js";
+export type { RouteLinkProps } from "./components/route-link.js";
+export { toLinkHref } from "./navigation/route-href.js";
 
 export { negotiateLocale } from "./i18n/negotiate-locale.js";
 export type { LocaleCandidate, NegotiateLocaleOptions } from "./i18n/negotiate-locale.js";

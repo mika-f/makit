@@ -273,6 +273,18 @@ describe("nextConfigTemplate", () => {
     );
     expect(template).toContain('root: "/project"');
   });
+
+  it("exposes basePath to the runtime so RouteLink can strip it", () => {
+    const config = resolveConfig(
+      { title: "Test", basePath: "/docs" },
+      { root: "/project", configPath: "/project/makit.config.ts" },
+    );
+
+    const template = nextConfigTemplate(config, "/project", {});
+
+    expect(template).toContain('basePath: "/docs",');
+    expect(template).toContain('env: { MAKIT_BASE_PATH: "/docs" },');
+  });
 });
 
 function staticPage(overrides: Partial<GeneratedStaticPage>): GeneratedStaticPage {

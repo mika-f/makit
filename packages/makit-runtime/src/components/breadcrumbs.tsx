@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { GeneratedBreadcrumb } from "../data/types.js";
+import { RouteLink } from "./route-link.js";
 
 /** Site > Collection > Section > Group > Page (spec §31). The last item is never a link. */
 export interface BreadcrumbsProps {
@@ -24,12 +24,12 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
               </span>
             )}
             {item.href && !isLast ? (
-              <Link
+              <RouteLink
                 href={item.href}
                 className="transition hover:text-[var(--makit-color-foreground)]"
               >
                 {item.title}
-              </Link>
+              </RouteLink>
             ) : (
               <span aria-current={isLast ? "page" : undefined}>{item.title}</span>
             )}

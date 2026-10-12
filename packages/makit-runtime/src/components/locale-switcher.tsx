@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getHomeRoute, getPageMap } from "../data/loaders.js";
 import type { GeneratedPage, LocaleData, MissingPageBehavior } from "../data/types.js";
+import { RouteLink } from "./route-link.js";
 
 /** Switches between translations of the *same* page (spec §16.11, §17). */
 export interface LocaleSwitcherProps {
@@ -35,7 +35,7 @@ export async function LocaleSwitcher({ page, locales, missingPageBehavior }: Loc
   return (
     <div className="hidden items-center gap-1 text-sm sm:flex">
       {links.map(({ locale, href }) => (
-        <Link
+        <RouteLink
           key={locale.urlLocale}
           href={href}
           aria-current={locale.urlLocale === page.locale ? "true" : undefined}
@@ -46,7 +46,7 @@ export async function LocaleSwitcher({ page, locales, missingPageBehavior }: Loc
           }
         >
           {locale.label}
-        </Link>
+        </RouteLink>
       ))}
     </div>
   );

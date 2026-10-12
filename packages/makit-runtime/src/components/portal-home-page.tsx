@@ -1,14 +1,14 @@
-import Link from "next/link";
 import { getGlobalNavigation, getHomeRoute, getSearchIndex } from "../data/loaders.js";
 import type { I18nData, PortalCollectionCard, PortalHomeData, SiteData } from "../data/types.js";
 import type { LocaleLink } from "../i18n/static-page-locale-links.js";
 import type { ThemeComponents } from "../theme/components.js";
 import { HeaderActions } from "./header-actions.js";
 import { LocaleLinks } from "./locale-links.js";
+import { RouteLink } from "./route-link.js";
 
 function CollectionCard({ card }: { card: PortalCollectionCard }) {
   return (
-    <Link
+    <RouteLink
       href={card.href}
       className="group block rounded-2xl border border-[var(--makit-color-border)] bg-[var(--makit-color-surface)] p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--makit-color-border-strong)] hover:shadow-lg"
     >
@@ -25,7 +25,7 @@ function CollectionCard({ card }: { card: PortalCollectionCard }) {
           {card.description}
         </p>
       )}
-    </Link>
+    </RouteLink>
   );
 }
 
