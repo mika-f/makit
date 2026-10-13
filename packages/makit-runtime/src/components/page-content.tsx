@@ -1,4 +1,5 @@
 import { CodeCopyEnhancer } from "./code-copy-enhancer.js";
+import { TabsEnhancer } from "./tabs-enhancer.js";
 
 export interface PageContentProps {
   html: string;
@@ -8,7 +9,7 @@ export interface PageContentProps {
 export function PageContent({ html, copyButton }: PageContentProps) {
   return (
     <CodeCopyEnhancer enabled={copyButton}>
-      <div className="makit-prose prose max-w-none" dangerouslySetInnerHTML={{ __html: html }} />
+      <TabsEnhancer html={html} />
     </CodeCopyEnhancer>
   );
 }

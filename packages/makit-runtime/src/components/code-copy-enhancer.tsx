@@ -38,13 +38,16 @@ export function CodeCopyEnhancer({ enabled, children }: { enabled: boolean; chil
 
       button.addEventListener("click", onClick);
       pre.appendChild(button);
-      cleanups.push(() => button.removeEventListener("click", onClick));
+      cleanups.push(() => {
+        button.removeEventListener("click", onClick);
+        button.remove();
+      });
     }
 
     return () => {
       for (const cleanup of cleanups) cleanup();
     };
-  }, [enabled]);
+  }, [enabled, children]);
 
   return <div ref={ref}>{children}</div>;
 }

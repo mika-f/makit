@@ -1631,6 +1631,40 @@ Generated page data
 * 引用
 * 外部リンク
 
+## 36.1. Markdown タブ
+
+MDX を使わず、標準の Markdown パイプラインでタブを提供する。追加設定は不要で、`markdown.allowDangerousHtml: false` の場合も利用できる。
+
+````md
+::::tabs[Package manager]{default="pnpm"}
+:::tab[npm]
+
+```sh
+npm install -D @natsuneko-laboratory/makit
+```
+
+:::
+:::tab[pnpm]
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+::::
+````
+
+* Remark directives のコンテナ記法を使い、`tabs` の直下にラベル付きの `tab` を置く。コロンと名前の間に空白は入れない。
+* タブ本文はインデント不要で、通常の Markdown 処理（見出し ID、リンク書き換え、表、Shiki など）を適用する。
+* 外側のフェンスを内側より長くする。さらに長いフェンスを使えばタブの入れ子も可能。
+* グループのラベルはタブ一覧のアクセシブルな名前（省略時 `Tabs`）。`default` 属性は初期タブのラベルで、省略時は先頭を選択する。任意の HTML 属性は出力しない。
+* 存在しない `default` は警告して先頭に戻す。不正なグループやグループ外のタブは警告し、内容を通常の Markdown として保持する。
+* コードフェンスとインラインコードの内部ではタブ記法を解釈しない。未処理の他の directive は通常の Markdown として保持し、利用者の Remark プラグインで処理することもできる。
+* HTML に `tablist` / `tab` / `tabpanel`、相互参照 ID と ARIA 属性を付与する。`PageContent` はクリック、左右矢印、Home / End、roving tabindex を提供する。
+* グループは独立して動作する。初期ロードと hash 変更時には対象の見出しを含むパネルを開き、入れ子の親も開く。
+* JavaScript 無効時と印刷時は、ラベルとすべての本文を表示する。ページ遷移時にはイベントを解除して再初期化する。
+* 基本スタイルは `--makit-color-*` と `--makit-radius` に従う。幅が足りないタブ一覧は横スクロールできる。
+
 ---
 
 # 37. Shiki

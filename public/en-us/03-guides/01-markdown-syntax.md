@@ -86,6 +86,88 @@ const removed = false; // [!code --]
 
 In `markdown`, `md`, and `mdx` fences, annotations remain visible as example text.
 
+## Tabs
+
+Switch between installation methods or OS-specific instructions in an ordinary `.md` file. No MDX, component imports, or extra configuration is required.
+
+Create a group with `::::tabs` and add `:::tab[Label]` containers inside it. Write each body without indentation. Tabs support ordinary Markdown, including paragraphs, lists, tables, images, alerts, and code blocks.
+
+````markdown
+::::tabs[Package manager]{default="pnpm"}
+:::tab[npm]
+
+```sh
+npm install -D @natsuneko-laboratory/makit
+```
+
+:::
+:::tab[pnpm]
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+::::
+````
+
+Rendered result:
+
+::::tabs[Package manager]{default="pnpm"}
+:::tab[npm]
+
+```sh
+npm install -D @natsuneko-laboratory/makit
+```
+
+:::
+:::tab[pnpm]
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+::::
+
+- The group's `[Package manager]` label names the tab list for assistive technology. It defaults to `Tabs`.
+- `{default="pnpm"}` selects the initial tab by label. Without it, the first tab is selected. An unknown label produces a warning and selects the first tab.
+- Click a tab or focus it and use Left/Right Arrow, Home, or End to switch.
+- Groups operate independently. Opening a heading anchor reveals the tab containing that heading.
+- Without JavaScript, and when printing, all labels and panel contents remain readable.
+
+Do not add a space between `:` and `tabs` or `tab`. The outer fence must have more colons than the inner fences. Nested groups work the same way: increase the fence length for each enclosing container.
+
+```markdown
+::::::tabs
+:::::tab[macOS]
+
+::::tabs
+:::tab[Apple Silicon]
+
+Instructions for Apple Silicon.
+
+:::
+:::tab[Intel]
+
+Instructions for Intel.
+
+:::
+::::
+
+:::::
+:::::tab[Windows]
+
+Instructions for Windows.
+
+:::::
+::::::
+```
+
+A group must contain only labelled `tab` containers as direct children. Empty groups, missing labels, and orphan tabs produce warnings and retain their content as ordinary Markdown. Tab syntax inside code fences remains literal.
+
+The syntax takes its container structure from the [VitePress tabs plugin](https://github.com/Red-Asuka/vitepress-plugin-tabs#usage) and uses [Markdown directive](https://github.com/remarkjs/remark-directive) labels and attributes to fit Makit's Remark pipeline. Unlike [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/content-tabs/)'s `=== "Label"` syntax, tab bodies need no indentation.
+
 ## GitHub-style alerts
 
 ```markdown
@@ -122,13 +204,13 @@ both sides, or right aligns the column left, center, or right respectively.
 ```markdown
 | Left | Center | Right |
 | :--- | :----: | ----: |
-| a    | b      | c     |
+| a    |   b    |     c |
 ```
 
 Rendered result:
 
 | Left | Center | Right |
 | :--- | :----: | ----: |
-| a    | b      | c     |
+| a    |   b    |     c |
 
 Raw HTML is disabled by default. Configure HTML, Shiki, external links, plugins, and the table-of-contents range in the [configuration reference](../04-reference/02-configuration.md#markdown).
