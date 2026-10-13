@@ -1,4 +1,5 @@
 import remarkGfm from "remark-gfm";
+import remarkDirective from "remark-directive";
 import remarkParse from "remark-parse";
 import remarkRehype from "remark-rehype";
 import rehypeRaw from "rehype-raw";
@@ -16,6 +17,7 @@ import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
 import { rehypeTableCellAlign } from "./rehype/table-cell-align.js";
 import { rehypeWrapTables } from "./rehype/wrap-tables.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
+import { remarkTabs } from "./remark/tabs.js";
 
 export interface MarkdownProcessResult {
   html: string;
@@ -63,8 +65,10 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   if (config.markdown.gfm) {
     processor.use(remarkGfm);
   }
+  processor.use(remarkDirective);
 
   applyUnifiedPlugins(processor, config.markdown.remarkPlugins);
+  processor.use(remarkTabs, { gfm: config.markdown.gfm });
   processor.use(remarkCodeFilename);
 
   processor.use(remarkRehype, { allowDangerousHtml: config.markdown.allowDangerousHtml });
