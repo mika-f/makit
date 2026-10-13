@@ -168,6 +168,74 @@ Windows 向けの手順。
 
 記法は [VitePress のタブプラグイン](https://github.com/Red-Asuka/vitepress-plugin-tabs#usage) のコンテナ形式を参考にし、Makit の Remark パイプラインに合わせて [Markdown directives](https://github.com/remarkjs/remark-directive) のラベルと属性を使っています。[Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/content-tabs/) の `=== "ラベル"` 形式と異なり、タブ本文のインデントは不要です。
 
+## トグルとアコーディオン
+
+補足や FAQ を折りたたむには `:::toggle[見出し]` を使います。本文はインデント不要で、段落、リスト、表、アラート、コードブロックなど通常の Markdown を書けます。MDX や追加設定は不要です。
+
+````markdown
+:::toggle[インストール手順]{open}
+
+**pnpm** でインストールできます。
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+````
+
+レンダリング結果:
+
+:::toggle[インストール手順]{open}
+
+**pnpm** でインストールできます。
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+
+複数のトグルを `::::accordion` で囲むと、同時に一つだけ開くアコーディオンになります。
+
+```markdown
+::::accordion[よくある質問]
+:::toggle[MDX は必要ですか？]
+
+通常の `.md` ファイルだけで使えます。
+
+:::
+:::toggle[本文に何を書けますか？]
+
+リスト、表、コードブロックなどの Markdown を使えます。
+
+:::
+::::
+```
+
+レンダリング結果:
+
+::::accordion[よくある質問]
+:::toggle[MDX は必要ですか？]
+
+通常の `.md` ファイルだけで使えます。
+
+:::
+:::toggle[本文に何を書けますか？]
+
+リスト、表、コードブロックなどの Markdown を使えます。
+
+:::
+::::
+
+- トグルの `[見出し]` は必須で、プレーンテキストとして表示します。クリックまたはフォーカス後の Enter / Space キーで開閉できます。
+- `{open}` を付けると最初から開きます。省略時と `{open="false"}` は閉じた状態です。一つだけ開くグループで複数に `{open}` を付けると、警告して先頭の指定だけを採用します。
+- `::::accordion[よくある質問]{multiple}` は複数の項目を同時に開けます。グループのラベルは支援技術向けの名前で、省略すると `Accordion` になります。
+- グループはそれぞれ独立しています。トグルの入れ子やタブとの組み合わせも可能です。外側ほどコロンを増やしてください。
+- 開閉は HTML の `details` / `summary` を使い、JavaScript が無効でも動作します。JavaScript が有効な場合、本文の見出しへのアンカーリンクで、その見出しを含むトグルが開きます。印刷時はすべての本文を展開し、印刷後に元の状態へ戻します。
+
+アコーディオン直下にはラベル付きの `toggle` だけを置きます。空のグループ、ラベルのないトグル、通常の段落が混在するグループは警告になり、記法と本文を通常の Markdown として残します。コードフェンス内の記法はそのままサンプルとして表示します。
+
 ## GitHub 形式のアラート
 
 次の構文は情報の重要度を明確にします。`NOTE`、`TIP`、`IMPORTANT`、`WARNING`、`CAUTION` を使えます。

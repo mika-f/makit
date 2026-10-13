@@ -3,30 +3,11 @@ import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
 import { unified } from "unified";
 import type { VFile } from "vfile";
-
-interface MarkdownNode {
-  type: string;
-  name?: string;
-  value?: string;
-  attributes?: Record<string, string | null | undefined>;
-  children?: MarkdownNode[];
-  position?: { start: { offset?: number }; end: { offset?: number } };
-  data?: Record<string, unknown>;
-}
-
-function text(node: MarkdownNode): string {
-  return node.value ?? node.children?.map(text).join("") ?? "";
-}
-
-function label(node: MarkdownNode): string {
-  const first = node.children?.[0];
-  return first?.data?.directiveLabel ? text(first).trim() : "";
-}
-
-function body(node: MarkdownNode): MarkdownNode[] {
-  const children = node.children ?? [];
-  return children[0]?.data?.directiveLabel ? children.slice(1) : children;
-}
+import {
+  directiveBody as body,
+  directiveLabel as label,
+  type MarkdownNode,
+} from "./directive-utils.js";
 
 function element(tagName: string, properties: Properties, children: ElementContent[]): Element {
   return { type: "element", tagName, properties, children };
