@@ -17,6 +17,7 @@ import { rehypeShikiHighlight } from "./rehype/shiki-highlight.js";
 import { rehypeTableCellAlign } from "./rehype/table-cell-align.js";
 import { rehypeWrapTables } from "./rehype/wrap-tables.js";
 import { remarkCodeFilename } from "./remark/code-filename.js";
+import { remarkDisclosures } from "./remark/disclosures.js";
 import { remarkTabs } from "./remark/tabs.js";
 
 export interface MarkdownProcessResult {
@@ -68,6 +69,7 @@ export function createMarkdownProcessor(config: ResolvedConfig): AnyProcessor {
   processor.use(remarkDirective);
 
   applyUnifiedPlugins(processor, config.markdown.remarkPlugins);
+  processor.use(remarkDisclosures);
   processor.use(remarkTabs, { gfm: config.markdown.gfm });
   processor.use(remarkCodeFilename);
 

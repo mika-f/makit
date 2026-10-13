@@ -168,6 +168,74 @@ A group must contain only labelled `tab` containers as direct children. Empty gr
 
 The syntax takes its container structure from the [VitePress tabs plugin](https://github.com/Red-Asuka/vitepress-plugin-tabs#usage) and uses [Markdown directive](https://github.com/remarkjs/remark-directive) labels and attributes to fit Makit's Remark pipeline. Unlike [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/reference/content-tabs/)'s `=== "Label"` syntax, tab bodies need no indentation.
 
+## Toggles and accordions
+
+Use `:::toggle[Title]` to collapse supplementary content or answers to frequently asked questions. Bodies need no indentation and support ordinary Markdown, including paragraphs, lists, tables, alerts, and code blocks. No MDX or extra configuration is required.
+
+````markdown
+:::toggle[Installation instructions]{open}
+
+Install with **pnpm**.
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+````
+
+Rendered result:
+
+:::toggle[Installation instructions]{open}
+
+Install with **pnpm**.
+
+```sh
+pnpm add -D @natsuneko-laboratory/makit
+```
+
+:::
+
+Wrap several toggles in `::::accordion` to allow only one item to be open at a time.
+
+```markdown
+::::accordion[Frequently asked questions]
+:::toggle[Do I need MDX?]
+
+An ordinary `.md` file is enough.
+
+:::
+:::toggle[What can I put in the body?]
+
+Use Markdown lists, tables, code blocks, and more.
+
+:::
+::::
+```
+
+Rendered result:
+
+::::accordion[Frequently asked questions]
+:::toggle[Do I need MDX?]
+
+An ordinary `.md` file is enough.
+
+:::
+:::toggle[What can I put in the body?]
+
+Use Markdown lists, tables, code blocks, and more.
+
+:::
+::::
+
+- Each toggle requires a `[Title]`, displayed as plain text. Click it, or focus it and press Enter or Space, to expand or collapse the body.
+- Add `{open}` to expand an item initially. Without it, or with `{open="false"}`, the item starts closed. If an exclusive group has several initially open items, Makit warns and keeps only the first requested item open.
+- Use `::::accordion[Frequently asked questions]{multiple}` to allow multiple open items. The optional group label names the group for assistive technology and defaults to `Accordion`.
+- Groups operate independently. Toggles can be nested and combined with tabs. Increase the number of colons for each enclosing container.
+- Native HTML `details` / `summary` controls work even without JavaScript. With JavaScript enabled, opening a heading anchor reveals its enclosing toggles. Printing expands all bodies and restores their previous state afterward.
+
+An accordion must contain only labelled `toggle` containers as direct children. Empty groups, missing toggle labels, and groups mixed with ordinary paragraphs produce warnings and retain their syntax and content as ordinary Markdown. Syntax inside code fences remains literal.
+
 ## GitHub-style alerts
 
 ```markdown
