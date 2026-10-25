@@ -66,6 +66,8 @@ function runtimeResolveAlias(makitDir: string): Record<string, string> {
   alias["@natsuneko-laboratory/makit-runtime/client"] = `${runtimeRoot}/dist/client.mjs`;
   alias["@natsuneko-laboratory/makit-runtime/slot-names"] =
     `${runtimeRoot}/dist/theme/slot-names.mjs`;
+  alias["@natsuneko-laboratory/makit-runtime/navigation"] =
+    `${runtimeRoot}/dist/next/navigation.mjs`;
   return alias;
 }
 

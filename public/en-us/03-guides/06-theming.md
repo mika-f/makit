@@ -170,11 +170,19 @@ Your components live in your project, but they are compiled as part of the gener
 - `react`, `react-dom` (including subpaths such as `react/jsx-runtime`)
 - `next` (`next/link`, `next/navigation`, `next/image`, `next/script`, …)
 - `lucide-react`
-- `@natsuneko-laboratory/makit-runtime`, plus its `/client` entry point
+- `@natsuneko-laboratory/makit-runtime`, plus its `/client` and `/navigation` entry points
 
 So a component can `import Link from "next/link"` without your project depending on Next.js. Relative imports of your own modules work as usual.
 
-Types are a separate matter: to have your editor resolve `HeaderProps` and friends, add `@natsuneko-laboratory/makit-runtime` and `@types/react` to `devDependencies`. Neither is needed to build.
+Types are a separate matter: to have your editor (or `tsc`) resolve `HeaderProps` and friends, add `@natsuneko-laboratory/makit-runtime` and `@types/react` to `devDependencies`. Neither is needed to build.
+
+Your project still cannot resolve `next`'s own types without depending on it. For the App Router hooks and helpers (`usePathname`, `useSearchParams`, `notFound`, …), import from `@natsuneko-laboratory/makit-runtime/navigation` instead: it re-exports `next/navigation`, types included.
+
+```tsx
+"use client";
+
+import { usePathname } from "@natsuneko-laboratory/makit-runtime/navigation";
+```
 
 Server components can also read generated site data through the loaders the runtime exports (`getCollections`, `getGlobalNavigation`, `getSearchIndex`, …).
 
