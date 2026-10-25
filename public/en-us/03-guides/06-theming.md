@@ -62,6 +62,8 @@ Each name maps to a file. Add `theme/<file>.tsx` to replace it.
 | `ThemeVariables`     | `theme-variables.tsx`     | The `--makit-color-*` CSS variables          |
 | `ThemeScript`        | `theme-script.tsx`        | The pre-hydration color-scheme script        |
 
+A replacement `RootLayout` must spread `htmlProps` onto `<html>`: it already carries the page locale's `lang` and `dir`. The locale itself arrives as `locale` — undefined on `/`, the 404 page, and single-locale sites — for anything else that depends on the language, such as a locale-specific font.
+
 `.tsx`, `.jsx`, `.ts`, and `.js` all work. Files in `theme/` whose name is not on this list are ignored, so helper modules can live next to your components:
 
 ```text

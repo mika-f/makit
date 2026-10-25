@@ -1,10 +1,20 @@
 import type { ComponentProps, ReactNode } from "react";
-import type { SiteData } from "../data/types.js";
+import type { LocaleData, SiteData } from "../data/types.js";
 import type { ThemeComponents } from "../theme/components.js";
 
 export interface RootLayoutProps {
   site: SiteData;
-  /** Attributes the generated app requires on `<html>` (`lang`, `data-theme`, ...). */
+  /**
+   * The locale of the page being rendered. Undefined for routes that belong
+   * to no locale — the i18n root (`/`), locale-less URLs, the 404 page — and
+   * on sites without i18n.
+   */
+  locale?: LocaleData;
+  /**
+   * Attributes the generated app requires on `<html>` (`lang`, `dir`,
+   * `data-theme`, ...). `lang` and `dir` already follow `locale`, falling
+   * back to `site.lang` when there is none.
+   */
   htmlProps: ComponentProps<"html">;
   /** Attributes the generated app requires on `<body>` (dev-refresh marker, ...). */
   bodyProps: ComponentProps<"body">;

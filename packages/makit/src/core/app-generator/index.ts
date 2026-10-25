@@ -14,7 +14,9 @@ import {
 } from "../link-runtime-deps.js";
 import {
   devRefreshTemplate,
+  documentTemplate,
   globalsCssTemplate,
+  localeLayoutTemplate,
   nextConfigTemplate,
   notFoundTemplate,
   postcssConfigTemplate,
@@ -124,8 +126,9 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
   await writeText(join(makitDir, "postcss.config.mjs"), postcssConfigTemplate());
 
   await writeText(join(appDir, "theme.js"), themeModuleTemplate(config.theme, appDir));
+  await writeText(join(appDir, "document.js"), documentTemplate(config));
   await writeText(join(appDir, "layout.js"), rootLayoutTemplate(config));
-  await writeText(join(appDir, "not-found.js"), notFoundTemplate());
+  await writeText(join(appDir, "not-found.js"), notFoundTemplate(config.i18n.enabled));
   // Only seeded when absent: in dev this file carries a per-regeneration
   // token (see dev.ts), and a config reload re-running generateApp must not
   // reset it — that would fire a redundant refresh on top of the one the
@@ -136,6 +139,7 @@ export async function generateApp(config: ResolvedConfig): Promise<void> {
 
   if (config.i18n.enabled) {
     await writeText(join(appDir, "page.js"), rootPageTemplate());
+    await writeText(join(appDir, "[locale]", "layout.js"), localeLayoutTemplate());
     await writeText(
       join(appDir, "[locale]", "[[...slug]]", "page.js"),
       slugPageTemplate({

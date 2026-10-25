@@ -1852,13 +1852,17 @@ export interface GeneratedPage {
 
 ```text
 .makit/app/
+├── document.tsx
 ├── layout.tsx
 ├── page.tsx
 ├── not-found.tsx
 └── [locale]/
+    ├── layout.tsx
     └── [[...slug]]/
         └── page.tsx
 ```
+
+`<html>` は `document.tsx` が描画し、`lang` と `dir` をページのロケールから決める（THEME §10.2）。ルートレイアウトは下位セグメントの params を受け取れないため、ロケール付きのページは `[locale]/layout.tsx` から、ロケールを持たない `/` と 404 ページは各ページから描画する。ロケールを持たないページの `lang` はトップレベルの `lang` とする。
 
 Collection 専用の Next.js Route は作成しない。
 

@@ -187,7 +187,9 @@ Slot Props は `@natsuneko-laboratory/makit-runtime` から export する。以�
 ```ts
 export interface RootLayoutProps {
   site: SiteData;
-  /** `<html>` へ展開する属性（`lang`、`data-theme`、`suppressHydrationWarning`）。 */
+  /** 描画中のページのロケール。ロケールに属さないルート（i18n ルート `/`、ロケールなし URL、404 ページ）と i18n 無効時は undefined。 */
+  locale?: LocaleData;
+  /** `<html>` へ展開する属性（`lang`、`dir`、`data-theme`、`suppressHydrationWarning`）。`lang` と `dir` は `locale` に従い、`locale` がなければ `site.lang` とする。 */
   htmlProps: ComponentProps<"html">;
   /** `<body>` へ展開する属性（dev サーバーの再読込マーカーを含む）。 */
   bodyProps: ComponentProps<"body">;
@@ -551,25 +553,32 @@ export const themeComponents = resolveThemeComponents({
 
 生成される Next.js のエントリーは、Slot を `theme.js` 経由で参照する形へ変更する。
 
+`<html>` を描画する処理は `layout.js` ではなく `document.js` の `MakitDocument` に置く。Next.js のルートレイアウトは下位セグメントの params を受け取れず、ページのロケールを知る手段がないためである。
+
 ```js
-// .makit/app/layout.js（抜粋）
+// .makit/app/document.js（抜粋）
 import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
 import { themeComponents } from "./theme.js";
-import { AnalyticsScripts, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, getLocalesData, getSiteData } from "@natsuneko-laboratory/makit-runtime";
 
 const analytics = { /* 設定から埋め込み */ };
 
-export default async function RootLayout({ children }) {
-  const site = await getSiteData();
+export async function MakitDocument({ urlLocale, children }) {
+  const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
+  // ロケールなし URL（spec §35.7）も [locale] に一致するため、未知の値はロケールなしとして扱う
+  const locale =
+    urlLocale === undefined ? undefined : i18n.locales.find((entry) => entry.urlLocale === urlLocale);
   const { RootLayout: Layout, ThemeVariables, ThemeScript } = themeComponents;
   const colorScheme = site.theme.colorScheme;
 
   return (
     <Layout
       site={site}
+      locale={locale}
       htmlProps={{
-        lang: site.lang,
+        lang: locale?.lang ?? site.lang,
+        dir: locale?.dir,
         "data-theme": colorScheme !== "system" ? colorScheme : undefined,
         suppressHydrationWarning: true,
       }}
@@ -591,6 +600,15 @@ export default async function RootLayout({ children }) {
 }
 ```
 
+`MakitDocument` を描画する場所は i18n の有無で異なる。どの構成でも、1 つのページで描画するのは 1 度だけとする。
+
+| 構成 | `layout.js` | `[locale]/layout.js` | `page.js`（`/`） | `not-found.js` |
+| --- | --- | --- | --- | --- |
+| i18n 有効 | `children` をそのまま返す | `<MakitDocument urlLocale={locale}>` | `<MakitDocument>` で包む | `<MakitDocument>` で包む |
+| i18n 無効 | `<MakitDocument>` | 生成しない | 生成しない | 包まない |
+
+i18n 有効時、`[locale]` 配下で `notFound()` が呼ばれた場合はルートの not-found 境界が受け取る。この境界は `[locale]/layout.js` の外側にあるため、404 ページの `<html>` が二重になることはない。404 ページは単一の `404.html` として出力されるため、ロケールを持たず `site.lang` を使う。
+
 ```js
 // .makit/app/[locale]/[[...slug]]/page.js（抜粋）
 const { DocsPage, PortalHomePage } = themeComponents;
@@ -606,7 +624,7 @@ return <DocsPage page={page} site={site} i18n={i18n} navigation={navigation} com
 
 `RootLayout` の差し替え実装は次を満たさなければならない。
 
-1. `<html>` を 1 度だけ描画し、`htmlProps` を展開する。
+1. `<html>` を 1 度だけ描画し、`htmlProps` を展開する。`lang` と `dir` はページのロケールに従うため、上書きしない。
 2. `<body>` を 1 度だけ描画し、`bodyProps` を展開する。
 3. `<body>` の内側に `bodyStart` を描画する。
 4. `children` を描画する。

@@ -62,6 +62,8 @@ export default function Header(props: HeaderProps) {
 | `ThemeVariables`     | `theme-variables.tsx`     | `--makit-color-*` の CSS 変数                   |
 | `ThemeScript`        | `theme-script.tsx`        | ハイドレーション前のテーマ判定スクリプト        |
 
+`RootLayout` を差し替える場合は、`htmlProps` を `<html>` に展開してください。ページの locale に応じた `lang` と `dir` が含まれています。locale そのものは `locale` として渡ります（`/`、404 ページ、単一言語サイトでは undefined）。locale 別のフォントなど、言語に応じて変えたいものに使えます。
+
 拡張子は `.tsx`、`.jsx`、`.ts`、`.js` が使えます。上の一覧にない名前のファイルは無視されるため、ヘルパーモジュールを同じディレクトリに置けます。
 
 ```text
