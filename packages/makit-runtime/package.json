@@ -22,6 +22,10 @@
     "./slot-names": {
       "types": "./dist/theme/slot-names.d.mts",
       "import": "./dist/theme/slot-names.mjs"
+    },
+    "./navigation": {
+      "types": "./dist/next/navigation.d.mts",
+      "import": "./dist/next/navigation.mjs"
     }
   },
   "sideEffects": false,
@@ -36,6 +40,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {
+    "@types/react": "^19.0.0",
     "next": "^16.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

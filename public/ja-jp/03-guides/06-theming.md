@@ -170,11 +170,19 @@ import type { ThemeToggleProps } from "@natsuneko-laboratory/makit-runtime";
 - `react`、`react-dom`（`react/jsx-runtime` などのサブパスを含む）
 - `next`（`next/link`、`next/navigation`、`next/image`、`next/script` など）
 - `lucide-react`
-- `@natsuneko-laboratory/makit-runtime` とその `/client` エントリーポイント
+- `@natsuneko-laboratory/makit-runtime` とその `/client`、`/navigation` エントリーポイント
 
 そのため、プロジェクトが Next.js に依存していなくても `import Link from "next/link"` と書けます。自分のモジュールへの相対 import も通常どおり使えます。
 
-型は別の話です。エディタで `HeaderProps` などを解決させるには、`@natsuneko-laboratory/makit-runtime` と `@types/react` を `devDependencies` へ追加してください。どちらもビルドには不要です。
+型は別の話です。エディタ（や `tsc`）で `HeaderProps` などを解決させるには、`@natsuneko-laboratory/makit-runtime` と `@types/react` を `devDependencies` へ追加してください。どちらもビルドには不要です。
+
+ただし、`next` に依存しない限り、`next` 自身の型はプロジェクトから解決できません。App Router のフックやヘルパー（`usePathname`、`useSearchParams`、`notFound` など）は、代わりに `@natsuneko-laboratory/makit-runtime/navigation` から import してください。`next/navigation` を型ごと re-export しています。
+
+```tsx
+"use client";
+
+import { usePathname } from "@natsuneko-laboratory/makit-runtime/navigation";
+```
 
 Server Component からは、ランタイムが export しているローダー（`getCollections`、`getGlobalNavigation`、`getSearchIndex` など）で生成データを読めます。
 

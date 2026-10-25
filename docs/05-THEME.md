@@ -678,16 +678,22 @@ resolveAlias: {
   "@natsuneko-laboratory/makit-runtime": "../node_modules/@natsuneko-laboratory/makit-runtime",
   "@natsuneko-laboratory/makit-runtime/client": ".../dist/client.mjs",
   "@natsuneko-laboratory/makit-runtime/slot-names": ".../dist/theme/slot-names.mjs",
+  "@natsuneko-laboratory/makit-runtime/navigation": ".../dist/next/navigation.mjs",
 }
 ```
 
 * 対象は `react`、`react-dom`、`next`、`lucide-react`、`@natsuneko-laboratory/makit-runtime` とする。Tailwind CSS 関連は `.makit/` 内の PostCSS が読み込むものであり、利用者コードからは import されないため対象外とする。
-* サブパス（`next/link`、`react/jsx-runtime` など）はワイルドカードで一括して解決する。`@natsuneko-laboratory/makit-runtime` はサブパスがパッケージ内のファイル配置と一致しないため、`client` と `slot-names` を明示的に指定する。
+* サブパス（`next/link`、`react/jsx-runtime` など）はワイルドカードで一括して解決する。`@natsuneko-laboratory/makit-runtime` はサブパスがパッケージ内のファイル配置と一致しないため、`client`、`slot-names`、`navigation` を明示的に指定する。
 * エイリアスの解決先は `.makit/`（Turbopack のプロジェクトディレクトリ）からの相対パスで書き出す。Turbopack は絶対パスをプロジェクトディレクトリ基準として解釈するため、絶対パスは使えない。
 
 この結果、利用者は差し替えコンポーネントを書くために `react` や `next` をインストールする必要がない。また、テーマパッケージと生成アプリが常に同一の React インスタンスを共有する。
 
 型定義のみが必要な場合（`import type { HeaderProps } from "@natsuneko-laboratory/makit-runtime"`）は、プロジェクトの `tsconfig.json` から解決できる必要がある。`@natsuneko-laboratory/makit` に依存していれば、その依存として解決できる。
+
+型の解決は次の規則に従う。
+
+* **`makit-runtime` は `@types/react`（`^19`）を `peerDependencies` に宣言する。** 宣言ファイルは `react` の型を `makit-runtime` の位置から解決するため、宣言がないと、ワークスペース内の別パッケージが巻き上げた古い `@types/react` を拾い、利用側の `ReactNode` などと型が一致しなくなる。peer として宣言すれば、パッケージマネージャーが互換性のある版を `makit-runtime` から解決できる位置へ置く。
+* **`next/navigation` は `@natsuneko-laboratory/makit-runtime/navigation` から re-export する。** `next` に依存しないプロジェクトからは `next` の型を解決できないため、App Router のフック（`usePathname` など）を型ごと `makit-runtime` 経由で提供する。ビルド時は上記のエイリアスにより、生成アプリと同じ `next` へ解決される。
 
 ---
 
@@ -877,7 +883,7 @@ theme/
 | Turbopack root | Theme Package のパッケージルート、および差し替えファイルの所在ディレクトリを Turbopack root の算出対象へ含める |
 | `turbopack.resolveAlias` | 共有パッケージのエイリアスを生成する（§11 モジュール解決） |
 | `makit-runtime` の `package.json` | `"sideEffects": false` を宣言する。これがないと、Client Component の差し替えが `@natsuneko-laboratory/makit-runtime` から既定実装を import した時点で、バレル経由で `node:fs` に依存するローダーまで Client バンドルへ引きずり込まれ、ビルドが失敗する |
-| `makit-runtime` の `exports` | `./slot-names`（CLI が React を読み込まずに Slot 名を参照するため）と `./client`（Client Component が安全に値を import するため、§11）を追加する |
+| `makit-runtime` の `exports` | `./slot-names`（CLI が React を読み込まずに Slot 名を参照するため）、`./client`（Client Component が安全に値を import するため、§11）、`./navigation`（`next` に依存せず `next/navigation` を型ごと import するため、§11）を追加する |
 | `makit` の `exports` | `./theme` を追加する（`defineTheme`） |
 
 Theme Package は利用者の依存関係であり、Makit 自身の依存ではない。`.makit/node_modules` へのリンクは不要で、`.makit/app` からの通常のモジュール解決（利用者のプロジェクトの `node_modules`）で解決する。ただし Turbopack root の算出には、そのパッケージルートを含める必要がある。

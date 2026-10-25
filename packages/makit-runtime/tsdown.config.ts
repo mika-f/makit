@@ -9,6 +9,9 @@ export default defineConfig({
     // Exposed on its own so the Makit CLI can read the slot list in plain
     // Node, without pulling React or Next.js in (THEME §7.6).
     "theme/slot-names": "./src/theme/slot-names.ts",
+    // `next/navigation` for theme code that cannot resolve `next` itself
+    // (THEME §11).
+    "next/navigation": "./src/next/navigation.ts",
   },
   format: ["esm"],
   platform: "node",

@@ -18,5 +18,6 @@ export default function Footer(props: FooterProps) {
 - `@natsuneko-laboratory/makit-runtime` — every theme slot's default component, Slot Props types, generated-data loaders, and theme/locale helpers. Only import **types** from this entry inside a Client Component; importing a value drags in the filesystem-backed data loaders.
 - `@natsuneko-laboratory/makit-runtime/client` — React-free constants (`THEME_STORAGE_KEY`, `LOCALE_STORAGE_KEY`) safe to import from a Client Component.
 - `@natsuneko-laboratory/makit-runtime/slot-names` — the list of theme slot names and file-name mappings, importable without pulling in React.
+- `@natsuneko-laboratory/makit-runtime/navigation` — `next/navigation` (`usePathname`, `useSearchParams`, `notFound`, …) re-exported with its types, for theme code that does not depend on `next` itself.
 
 See the [theme specification](https://github.com/mika-f/makit/blob/main/docs/05-THEME.md) for the full slot list and the rules for writing a theme.
