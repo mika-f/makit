@@ -99,7 +99,7 @@ export async function check(config: ResolvedConfig): Promise<CheckResult> {
     ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
     ...staticPageDiagnostics,
-    ...validatePages(allPages, config, { navigationByLocale }),
+    ...validatePages(allPages, config, { navigationByLocale, staticPages }),
   ];
   const preparedDeployment = await prepareDeploymentAdapter(config, allPages);
   const deployment = await generateDeploymentAdapter(config, preparedDeployment);

@@ -4,6 +4,7 @@ import type { ResolvedNavNode } from "./nav-nodes.js";
 import type { MakitWarningCode } from "../types/config.js";
 import type { GeneratedPage } from "../types/page.js";
 import type { ResolvedConfig } from "../types/resolved-config.js";
+import type { GeneratedStaticPage } from "../types/static-page.js";
 import { groupPagesByPageId } from "./i18n.js";
 
 export interface Diagnostic {
@@ -14,6 +15,7 @@ export interface Diagnostic {
 
 const HREF_RE = /<a\s[^>]*href="([^"]*)"/g;
 const IMG_SRC_RE = /<img\s[^>]*src="([^"]*)"/g;
+const ID_RE = /<[a-z][^>]*\sid="([^"]*)"/gi;
 
 function extractAttrValues(html: string, regex: RegExp): string[] {
   return [...html.matchAll(regex)].map((match) => match[1]!);
@@ -23,11 +25,33 @@ function isExternalUrl(href: string): boolean {
   return /^[a-z][a-z0-9+.-]*:/i.test(href);
 }
 
+/**
+ * Anchor ids each static page route exposes (STATIC-PAGES §12.2). HTML
+ * pages expose their `id` attributes; component pages render at runtime, so
+ * their anchors are unknown (`undefined`) and are not checked.
+ */
+function collectStaticPageAnchors(
+  staticPages: readonly GeneratedStaticPage[],
+): Map<string, Set<string> | undefined> {
+  const anchors = new Map<string, Set<string> | undefined>();
+  for (const page of staticPages) {
+    anchors.set(
+      page.route,
+      page.kind === "html" ? new Set(extractAttrValues(page.html ?? "", ID_RE)) : undefined,
+    );
+  }
+  return anchors;
+}
+
 /** Broken internal links, missing anchors, invalid external URL syntax, and drafts linked from production pages (spec §27.3). */
-export function validateInternalLinks(pages: readonly GeneratedPage[]): Diagnostic[] {
+export function validateInternalLinks(
+  pages: readonly GeneratedPage[],
+  staticPages: readonly GeneratedStaticPage[] = [],
+): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
   const routeMap = new Map<string, GeneratedPage>();
   for (const page of pages) routeMap.set(page.route, page);
+  const staticPageAnchors = collectStaticPageAnchors(staticPages);
 
   for (const page of pages) {
     for (const href of extractAttrValues(page.html, HREF_RE)) {
@@ -62,6 +86,18 @@ export function validateInternalLinks(pages: readonly GeneratedPage[]): Diagnost
       const routePart = hashIndex === -1 ? href : href.slice(0, hashIndex);
       const anchorPart = hashIndex === -1 ? undefined : href.slice(hashIndex + 1);
       const targetPage = routeMap.get(routePart);
+
+      if (!targetPage && staticPageAnchors.has(routePart)) {
+        const anchorIds = staticPageAnchors.get(routePart);
+        if (anchorPart && anchorIds && !anchorIds.has(anchorPart)) {
+          diagnostics.push({
+            code: "missing-anchor",
+            message: `Anchor "#${anchorPart}" not found on "${routePart}"`,
+            sourcePath: page.sourcePath,
+          });
+        }
+        continue;
+      }
 
       if (!targetPage) {
         diagnostics.push({
@@ -320,6 +356,8 @@ export function validateFallbackRatio(
 
 export interface ValidatePagesOptions {
   navigationByLocale?: Readonly<Record<string, Record<string, ResolvedNavNode[]>>>;
+  /** Static pages are valid link targets (STATIC-PAGES §12.2). */
+  staticPages?: readonly GeneratedStaticPage[];
 }
 
 /** Runs every document-level check (spec §9.7 `makit check` targets, §31.2 warnings). */
@@ -331,7 +369,7 @@ export function validatePages(
   const realPages = allPages.filter((page) => !page.isFallback);
 
   const diagnostics: Diagnostic[] = [
-    ...validateInternalLinks(allPages),
+    ...validateInternalLinks(allPages, options.staticPages),
     ...validateImages(allPages, config),
     ...validateTitles(realPages),
     ...validatePageMetadata(realPages),

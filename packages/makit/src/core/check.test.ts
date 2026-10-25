@@ -89,4 +89,28 @@ describe("check static pages (STATIC-PAGES §16, §17)", () => {
     );
     expect(result.staticPageCount).toBe(1);
   });
+
+  it("accepts links to static pages and their anchors (#34)", async () => {
+    await write(
+      "docs/guide.md",
+      "# Guide\n\n[About](/about/) [Team](/about/#team) [Showcase](/showcase/#playground)",
+    );
+    await write("pages/about.html", '<h2 id="team">Team</h2>');
+    await write("pages/showcase.tsx", "");
+    const result = await check(makeConfig({ title: "Docs" }));
+    const linkCodes = new Set(["broken-link", "missing-anchor"]);
+    expect(result.diagnostics.filter((diagnostic) => linkCodes.has(diagnostic.code))).toEqual([]);
+  });
+
+  it("flags a missing anchor on an HTML static page", async () => {
+    await write("docs/guide.md", "# Guide\n\n[Missing](/about/#missing)");
+    await write("pages/about.html", '<h2 id="team">Team</h2>');
+    const result = await check(makeConfig({ title: "Docs" }));
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: "missing-anchor",
+        message: 'Anchor "#missing" not found on "/about/"',
+      }),
+    );
+  });
 });

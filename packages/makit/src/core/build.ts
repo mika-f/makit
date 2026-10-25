@@ -155,7 +155,7 @@ export async function build(
     ...navigationMetadataDiagnostics,
     ...navigationDiagnostics,
     ...staticPageDiagnostics,
-    ...validatePages(allPages, config, { navigationByLocale }),
+    ...validatePages(allPages, config, { navigationByLocale, staticPages }),
   ];
   for (const diagnostic of diagnostics) {
     logger.warn(
