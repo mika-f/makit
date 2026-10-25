@@ -206,6 +206,7 @@ export default defineConfig({
 | `llms.enabled`                 | boolean、`false`            | `llms.txt`、`llms-full.txt`、各ページの Markdown を生成します。   |
 | `github.repository`            | `owner/repository`          | ページの「GitHub で編集」リンクの対象リポジトリ。                 |
 | `github.branch`                | `string`、`"main"`          | ドキュメントを置くブランチ。                                      |
+| `github.directory`             | `string`、`""`              | リポジトリルートからプロジェクトルートまでのパス。モノレポのサブディレクトリにあるサイトで指定します（例: `"packages/website"`）。 |
 
 ## Changelog
 

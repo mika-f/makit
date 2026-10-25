@@ -268,4 +268,24 @@ describe("buildAllPages", () => {
     expect(warnings[0]).toContain("index.md");
     expect(warnings[0]).toContain("not-a-lang");
   });
+
+  it("builds the Edit on GitHub URL from the project root by default", async () => {
+    await write("docs/guides/configuration.md", "content");
+    const { pages } = await buildPagesForTest(
+      configFor(dir, { github: { repository: "example/docs" } }),
+    );
+    expect(pages[0]?.editUrl).toBe(
+      "https://github.com/example/docs/edit/main/docs/guides/configuration.md",
+    );
+  });
+
+  it("prefixes the Edit on GitHub URL with github.directory for monorepo sites", async () => {
+    await write("docs/guides/configuration.md", "content");
+    const { pages } = await buildPagesForTest(
+      configFor(dir, { github: { repository: "example/mono", directory: "packages/website" } }),
+    );
+    expect(pages[0]?.editUrl).toBe(
+      "https://github.com/example/mono/edit/main/packages/website/docs/guides/configuration.md",
+    );
+  });
 });

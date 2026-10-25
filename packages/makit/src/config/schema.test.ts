@@ -65,6 +65,24 @@ describe("makitConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a relative GitHub directory", () => {
+    const result = makitConfigSchema.safeParse({
+      title: "My Docs",
+      github: { repository: "example/mono", directory: "packages/website" },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a GitHub directory that is absolute or escapes the repository", () => {
+    for (const directory of ["/packages/website", "../website", "packages/../../website"]) {
+      const result = makitConfigSchema.safeParse({
+        title: "My Docs",
+        github: { repository: "example/mono", directory },
+      });
+      expect(result.success, directory).toBe(false);
+    }
+  });
+
   it("rejects an invalid locale dir value", () => {
     const result = makitConfigSchema.safeParse({
       title: "My Docs",
