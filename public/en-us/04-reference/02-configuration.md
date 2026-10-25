@@ -113,6 +113,8 @@ i18n: {
 },
 ```
 
+Every page under a locale's URL prefix is written with that locale's `lang` (default: its `locale`) and `dir` on `<html>`, so screen readers and the site search treat it as that language. `/`, locale-less paths, and the 404 page use the top-level `lang`.
+
 Fallback behavior is `render`, `redirect`, or `not-found`; a missing collection can also be `hidden`. Root behavior is `default`, `detect`, or `select`; a missing-page locale switcher may use `fallback`, `locale-root`, or `disabled`.
 
 `root.behavior` also governs paths that carry no locale at all. A link to `/getting-started` on a site whose pages live at `/en-us/getting-started` and `/ja-jp/getting-started` is answered with the same language gateway `/` uses: `detect` sends the visitor to the locale they last read in, or to the closest match for their browser languages; `default` goes to `root.locale` (or `defaultLocale`); `select` offers the choice. Locales that do not have the page are left out, a path already starting with a locale prefix is still a 404, and the gateway pages themselves are excluded from the sitemap and site search.

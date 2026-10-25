@@ -95,7 +95,15 @@ ${entries.join("\n")}
 `;
 }
 
-export function rootLayoutTemplate(config: ResolvedConfig): string {
+/**
+ * Generates `.makit/app/document.js`: the `<html>` document every route is
+ * rendered into (spec §41). It is a component rather than the root layout
+ * itself because a root layout never sees the params of the segments below
+ * it, so it cannot know which locale a page belongs to. With i18n on, the
+ * `[locale]` layout renders it with the page's URL locale, and the routes
+ * outside `[locale]` (`/` and the 404 page) render it without one.
+ */
+export function documentTemplate(config: ResolvedConfig): string {
   // The dev-refresh token must be *rendered*, not just imported for side
   // effects: Turbopack tree-shakes an unused export, so both versions of the
   // marker compile to the same empty module and no HMR update ever reaches
@@ -104,9 +112,6 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
   // `<html>`/`<body>` themselves belong to the RootLayout slot (THEME §10.3);
   // what stays here is everything the rest of the pipeline depends on —
   // the attributes it must carry and the nodes it must render first.
-  // The site metadata is exported here so its `metadataBase` resolves every
-  // route's canonical, hreflang and OGP URLs against `siteUrl`, matching the
-  // absolute URLs in sitemap.xml and llms.txt.
   // `LocaleMemory` renders here rather than inside a page slot so that every
   // localized route records the visitor's locale for the gateway (spec §35.7),
   // even when a theme replaces DocsPage/PortalHomePage wholesale.
@@ -118,26 +123,28 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
 
   return `import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
-import { AnalyticsScripts, ${config.i18n.enabled ? "LocaleMemory, " : ""}buildSiteMetadata, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, ${config.i18n.enabled ? "LocaleMemory, " : ""}getLocalesData, getSiteData } from "@natsuneko-laboratory/makit-runtime";
 import { themeComponents } from "./theme.js";
 
 const analytics = ${JSON.stringify(config.analytics)};
 
-export async function generateMetadata() {
-  return buildSiteMetadata(await getSiteData());
-}
-
-export default async function RootLayout({ children }) {
-  const site = await getSiteData();
+export async function MakitDocument({ urlLocale, children }) {
+  const [site, i18n] = await Promise.all([getSiteData(), getLocalesData()]);
+  // \`[locale]\` also catches locale-less paths (spec §35.7), so a URL locale
+  // that matches no configured locale is treated as no locale at all.
+  const locale =
+    urlLocale === undefined ? undefined : i18n.locales.find((entry) => entry.urlLocale === urlLocale);
   const colorScheme = site.theme.colorScheme;
   const { RootLayout: Layout, ThemeVariables, ThemeScript } = themeComponents;
 
   return (
     <Layout
       site={site}
+      locale={locale}
       components={themeComponents}
       htmlProps={{
-        lang: site.lang,
+        lang: locale?.lang ?? site.lang,
+        dir: locale?.dir,
         "data-theme": colorScheme !== "system" ? colorScheme : undefined,
         suppressHydrationWarning: true,
       }}
@@ -160,32 +167,104 @@ export default async function RootLayout({ children }) {
 `;
 }
 
+export function rootLayoutTemplate(config: ResolvedConfig): string {
+  // The site metadata is exported here so its `metadataBase` resolves every
+  // route's canonical, hreflang and OGP URLs against `siteUrl`, matching the
+  // absolute URLs in sitemap.xml and llms.txt. It has to stay in the root
+  // layout, not document.js: Next.js only reads metadata from route files.
+  const metadataImport = `import { buildSiteMetadata, getSiteData } from "@natsuneko-laboratory/makit-runtime";`;
+  const metadataExport = `export async function generateMetadata() {
+  return buildSiteMetadata(await getSiteData());
+}`;
+
+  if (!config.i18n.enabled) {
+    return `${metadataImport}
+import { MakitDocument } from "./document.js";
+
+${metadataExport}
+
+export default function RootLayout({ children }) {
+  return <MakitDocument>{children}</MakitDocument>;
+}
+`;
+  }
+
+  // With i18n on, \`<html lang>\` depends on the page's locale, which only the
+  // \`[locale]\` layout can see. The root layout therefore renders nothing of
+  // its own, and every route renders MakitDocument exactly once: through
+  // \`[locale]/layout.js\`, or directly from \`page.js\`/\`not-found.js\`. A
+  // \`notFound()\` thrown under \`[locale]\` is caught by the root not-found
+  // boundary, which sits outside \`[locale]/layout.js\`, so a 404 never ends up
+  // with two documents.
+  return `${metadataImport}
+
+${metadataExport}
+
+export default function RootLayout({ children }) {
+  return children;
+}
+`;
+}
+
+/** `.makit/app/[locale]/layout.js`: the document for every localized route. */
+export function localeLayoutTemplate(): string {
+  return `import { MakitDocument } from "../document.js";
+
+export default async function LocaleLayout({ children, params }) {
+  const { locale } = await params;
+  return <MakitDocument urlLocale={locale}>{children}</MakitDocument>;
+}
+`;
+}
+
 /**
  * Generated page data lives in \`.makit/generated/*.json\` and is read with
  * \`fs.readFile\` at request time — outside Turbopack's module graph — so
- * editing content alone never tells the browser anything changed. The root
- * layout imports this marker module instead: \`makit dev\` rewrites it after
- * every successful content regeneration, which invalidates the server
- * component graph and makes Next.js refresh the browser (spec §43). Static
- * builds keep the initial token, so \`makit build\` output is unaffected.
+ * editing content alone never tells the browser anything changed. The
+ * generated \`document.js\` imports this marker module instead: \`makit dev\`
+ * rewrites it after every successful content regeneration, which invalidates
+ * the server component graph and makes Next.js refresh the browser
+ * (spec §43). Static builds keep the initial token, so \`makit build\` output
+ * is unaffected.
  */
 export function devRefreshTemplate(token: string): string {
   return `export const devRefreshToken = ${JSON.stringify(token)};
 `;
 }
 
-export function notFoundTemplate(): string {
-  return `import { themeComponents } from "./theme.js";
+/**
+ * With i18n on, the root layout is a pass-through (see `rootLayoutTemplate`),
+ * so the 404 page has to render its own document.
+ */
+export function notFoundTemplate(i18nEnabled: boolean): string {
+  if (!i18nEnabled) {
+    return `import { themeComponents } from "./theme.js";
 
 export default function NotFound() {
   const { NotFoundPage } = themeComponents;
   return <NotFoundPage components={themeComponents} />;
 }
 `;
+  }
+
+  return `import { MakitDocument } from "./document.js";
+import { themeComponents } from "./theme.js";
+
+export default function NotFound() {
+  const { NotFoundPage } = themeComponents;
+  return (
+    <MakitDocument>
+      <NotFoundPage components={themeComponents} />
+    </MakitDocument>
+  );
+}
+`;
 }
 
+/** Only generated with i18n on, so it renders its own document (see `rootLayoutTemplate`). */
 export function rootPageTemplate(): string {
   return `import { getHomeRoute, getLocalesData, getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { MakitDocument } from "./document.js";
 import { themeComponents } from "./theme.js";
 
 export default async function Page() {
@@ -210,7 +289,9 @@ export default async function Page() {
   const { RootPage } = themeComponents;
 
   return (
-    <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} defaultLocale={i18n.defaultLocale} siteTitle={site.title} components={themeComponents} />
+    <MakitDocument>
+      <RootPage behavior={i18n.root.behavior} locales={locales} defaultHref={defaultHref} defaultLocale={i18n.defaultLocale} siteTitle={site.title} components={themeComponents} />
+    </MakitDocument>
   );
 }
 `;

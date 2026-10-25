@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { resolveConfig } from "../../config/normalize.js";
 import type { ResolvedThemeConfig } from "../../types/resolved-config.js";
 import {
+  documentTemplate,
   globalsCssTemplate,
+  localeLayoutTemplate,
   nextConfigTemplate,
   notFoundTemplate,
   rootLayoutTemplate,
+  rootPageTemplate,
   slugPageTemplate,
   staticPagesModuleTemplate,
   themeModuleTemplate,
@@ -13,6 +16,18 @@ import {
 import type { GeneratedStaticPage } from "../../types/static-page.js";
 
 const APP_DIR = "/project/.makit/app";
+
+const I18N_CONFIG = resolveConfig(
+  {
+    title: "Test",
+    lang: "en",
+    i18n: {
+      defaultLocale: "en",
+      locales: [{ locale: "en" }, { locale: "ja", lang: "ja-JP" }],
+    },
+  },
+  { root: "/project", configPath: "/project/makit.config.ts" },
+);
 
 function themeConfig(overrides: Partial<ResolvedThemeConfig> = {}): ResolvedThemeConfig {
   return {
@@ -30,8 +45,8 @@ function themeConfig(overrides: Partial<ResolvedThemeConfig> = {}): ResolvedThem
   };
 }
 
-describe("rootLayoutTemplate", () => {
-  it("adds production-only analytics to the generated layout", () => {
+describe("documentTemplate", () => {
+  it("adds production-only analytics to the generated document", () => {
     const config = resolveConfig(
       {
         title: "Test",
@@ -43,13 +58,63 @@ describe("rootLayoutTemplate", () => {
       { root: "/project", configPath: "/project/makit.config.ts" },
     );
 
-    const template = rootLayoutTemplate(config);
+    const template = documentTemplate(config);
 
     expect(template).toContain(
       'const analytics = {"googleAnalytics":{"measurementId":"G-123"},"scripts":[{"src":"https://analytics.example.com/script.js","strategy":"lazyOnload"}]};',
     );
     expect(template).toContain('process.env.NODE_ENV === "production"');
     expect(template).toContain("<AnalyticsScripts config={analytics} />");
+  });
+
+  it("takes lang and dir from the page locale, falling back to site.lang", () => {
+    const template = documentTemplate(I18N_CONFIG);
+
+    expect(template).toContain("export async function MakitDocument({ urlLocale, children })");
+    expect(template).toContain("i18n.locales.find((entry) => entry.urlLocale === urlLocale)");
+    expect(template).toContain("locale={locale}");
+    expect(template).toContain("lang: locale?.lang ?? site.lang,");
+    expect(template).toContain("dir: locale?.dir,");
+    expect(template).not.toMatch(/^\s+lang: site\.lang,$/m);
+  });
+});
+
+describe("rootLayoutTemplate", () => {
+  it("renders the document directly on a single-locale site", () => {
+    const template = rootLayoutTemplate(
+      resolveConfig(
+        { title: "Test" },
+        { root: "/project", configPath: "/project/makit.config.ts" },
+      ),
+    );
+
+    expect(template).toContain('import { MakitDocument } from "./document.js";');
+    expect(template).toContain("return <MakitDocument>{children}</MakitDocument>;");
+  });
+
+  it("leaves the document to the routes below it when i18n is on", () => {
+    const template = rootLayoutTemplate(I18N_CONFIG);
+
+    expect(template).not.toContain("MakitDocument");
+    expect(template).toContain("return children;");
+  });
+});
+
+describe("i18n document routes", () => {
+  it("renders each localized route with its URL locale", () => {
+    const template = localeLayoutTemplate();
+
+    expect(template).toContain('import { MakitDocument } from "../document.js";');
+    expect(template).toContain("const { locale } = await params;");
+    expect(template).toContain("<MakitDocument urlLocale={locale}>{children}</MakitDocument>");
+  });
+
+  it("renders the root page and the 404 page in a locale-less document", () => {
+    for (const template of [rootPageTemplate(), notFoundTemplate(true)]) {
+      expect(template).toContain('import { MakitDocument } from "./document.js";');
+      expect(template).toContain("<MakitDocument>");
+    }
+    expect(notFoundTemplate(false)).not.toContain("MakitDocument");
   });
 });
 
@@ -147,12 +212,12 @@ describe("themeModuleTemplate", () => {
 });
 
 describe("generated entries", () => {
-  it("routes the layout through the RootLayout slot", () => {
+  it("routes the document through the RootLayout slot", () => {
     const config = resolveConfig(
       { title: "Test" },
       { root: "/project", configPath: "/project/makit.config.ts" },
     );
-    const template = rootLayoutTemplate(config);
+    const template = documentTemplate(config);
 
     expect(template).toContain('import { themeComponents } from "./theme.js";');
     expect(template).toContain("const { RootLayout: Layout, ThemeVariables, ThemeScript } =");
@@ -168,10 +233,13 @@ describe("generated entries", () => {
       ),
     );
 
-    expect(template).toContain("buildSiteMetadata, getSiteData }");
-    expect(template).toContain(
-      "export async function generateMetadata() {\n  return buildSiteMetadata(await getSiteData());\n}",
-    );
+    for (const layout of [template, rootLayoutTemplate(I18N_CONFIG)]) {
+      expect(layout).toContain("buildSiteMetadata, getSiteData }");
+      expect(layout).toContain(
+        "export async function generateMetadata() {\n  return buildSiteMetadata(await getSiteData());\n}",
+      );
+    }
+    expect(documentTemplate(I18N_CONFIG)).not.toContain("generateMetadata");
   });
 
   it("lets the portal home inherit the layout's site metadata", () => {
@@ -197,7 +265,7 @@ describe("generated entries", () => {
     expect(template).toContain('import { themeComponents } from "../../theme.js";');
     expect(template).toContain("const { DocsPage } = themeComponents;");
     expect(template).toContain("components={themeComponents}");
-    expect(notFoundTemplate()).toContain("<NotFoundPage components={themeComponents} />");
+    expect(notFoundTemplate(false)).toContain("<NotFoundPage components={themeComponents} />");
   });
 
   it("serves an unmatched path as a locale gateway when i18n is enabled", () => {
@@ -231,14 +299,14 @@ describe("generated entries", () => {
     expect(template).toContain("return params.map((param) => ({ slug: param.slug }));");
   });
 
-  it("records the visitor's locale from the layout only when i18n is enabled", () => {
-    const single = rootLayoutTemplate(
+  it("records the visitor's locale from the document only when i18n is enabled", () => {
+    const single = documentTemplate(
       resolveConfig(
         { title: "Test" },
         { root: "/project", configPath: "/project/makit.config.ts" },
       ),
     );
-    const localized = rootLayoutTemplate(
+    const localized = documentTemplate(
       resolveConfig(
         {
           title: "Test",
