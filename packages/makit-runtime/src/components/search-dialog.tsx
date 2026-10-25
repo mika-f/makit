@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { SearchEntry } from "../data/types.js";
 import { RouteLink } from "./route-link.js";
+import { decodePagefindExcerpt } from "./search-excerpt.js";
 
 interface PagefindResultData {
   url: string;
@@ -107,7 +108,7 @@ export function SearchDialog({ entries, pagefindEnabled, pagefindBundlePath }: S
             data.map((result) => ({
               title: result.meta.title ?? result.url,
               route: result.url,
-              excerpt: result.plain_excerpt,
+              excerpt: decodePagefindExcerpt(result.plain_excerpt),
             })),
           );
         }
