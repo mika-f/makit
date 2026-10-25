@@ -5,16 +5,25 @@ import { createPortal } from "react-dom";
 import type { SearchEntry } from "../data/types.js";
 import { RouteLink } from "./route-link.js";
 import { decodePagefindExcerpt } from "./search-excerpt.js";
+import { createPagefindLoader, type PagefindModule } from "./search-pagefind.js";
 
-interface PagefindResultData {
-  url: string;
-  plain_excerpt: string;
-  meta: { title?: string };
-}
+// The browser keeps each imported bundle — and Pagefind's instance inside it —
+// for the life of the page, so the loader lives at module level too: a
+// dialog remounted by a client-side navigation must still notice that the
+// language changed since another dialog initialized the bundle.
+const pagefindLoaders = new Map<string, () => Promise<PagefindModule>>();
 
-interface PagefindModule {
-  init(): Promise<void>;
-  search(query: string): Promise<{ results: { data(): Promise<PagefindResultData> }[] }>;
+function loadPagefind(bundlePath: string): Promise<PagefindModule> {
+  let load = pagefindLoaders.get(bundlePath);
+  if (!load) {
+    load = createPagefindLoader(
+      async () =>
+        (await import(/* webpackIgnore: true */ `${bundlePath}pagefind.js`)) as PagefindModule,
+      () => document.documentElement.lang,
+    );
+    pagefindLoaders.set(bundlePath, load);
+  }
+  return load();
 }
 
 interface SearchResult {
@@ -57,7 +66,6 @@ export function SearchDialog({ entries, pagefindEnabled, pagefindBundlePath }: S
   const [pagefindResults, setPagefindResults] = useState<SearchResult[] | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const pagefindRef = useRef<PagefindModule | null>(null);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -94,13 +102,7 @@ export function SearchDialog({ entries, pagefindEnabled, pagefindBundlePath }: S
     setIsSearching(true);
     void (async () => {
       try {
-        const pagefind =
-          pagefindRef.current ??
-          ((await import(
-            /* webpackIgnore: true */ `${pagefindBundlePath}pagefind.js`
-          )) as PagefindModule);
-        pagefindRef.current = pagefind;
-        await pagefind.init();
+        const pagefind = await loadPagefind(pagefindBundlePath);
         const search = await pagefind.search(normalized);
         const data = await Promise.all(search.results.slice(0, 8).map((result) => result.data()));
         if (active) {
