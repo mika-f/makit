@@ -104,6 +104,9 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
   // `<html>`/`<body>` themselves belong to the RootLayout slot (THEME §10.3);
   // what stays here is everything the rest of the pipeline depends on —
   // the attributes it must carry and the nodes it must render first.
+  // The site metadata is exported here so its `metadataBase` resolves every
+  // route's canonical, hreflang and OGP URLs against `siteUrl`, matching the
+  // absolute URLs in sitemap.xml and llms.txt.
   // `LocaleMemory` renders here rather than inside a page slot so that every
   // localized route records the visitor's locale for the gateway (spec §35.7),
   // even when a theme replaces DocsPage/PortalHomePage wholesale.
@@ -115,10 +118,14 @@ export function rootLayoutTemplate(config: ResolvedConfig): string {
 
   return `import "../styles/globals.css";
 import { devRefreshToken } from "./dev-refresh.js";
-import { AnalyticsScripts, ${config.i18n.enabled ? "LocaleMemory, " : ""}getSiteData } from "@natsuneko-laboratory/makit-runtime";
+import { AnalyticsScripts, ${config.i18n.enabled ? "LocaleMemory, " : ""}buildSiteMetadata, getSiteData } from "@natsuneko-laboratory/makit-runtime";
 import { themeComponents } from "./theme.js";
 
 const analytics = ${JSON.stringify(config.analytics)};
+
+export async function generateMetadata() {
+  return buildSiteMetadata(await getSiteData());
+}
 
 export default async function RootLayout({ children }) {
   const site = await getSiteData();
@@ -261,7 +268,6 @@ export function slugPageTemplate({
   return `import { notFound } from "next/navigation";
 import {
   buildPageMetadata,
-  buildSiteMetadata,
   buildStaticPageMetadata,
   getAllStaticParams,
   getCollectionNavigation,
@@ -285,8 +291,10 @@ export async function generateMetadata({ params }) {
   const entry = await getRouteEntry(locale, params.slug ?? []);
   if (!entry) {${aliasMetadata}
   }
+  // The portal home inherits the root layout's site metadata as is; returning
+  // it again here would run its default title through the layout's template.
+  if (entry.kind === "portal") return {};
   const site = await getSiteData();
-  if (entry.kind === "portal") return buildSiteMetadata(site);
   if (entry.kind === "static") return buildStaticPageMetadata(await getStaticPage(locale, entry.id), site);
   const page = await getPageForRoute(locale, params.slug ?? []);
   if (!page) return {};
