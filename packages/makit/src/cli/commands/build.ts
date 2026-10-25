@@ -12,8 +12,14 @@ export const buildCommand = defineCommand({
   },
   args: {
     ...commonArgs,
-    clean: { type: "boolean", description: "Remove outDir before building" },
-    "no-clean": { type: "boolean", description: "Keep outDir contents before building" },
+    clean: {
+      type: "boolean",
+      description: "Remove outDir and the Next.js build cache before building",
+    },
+    "no-clean": {
+      type: "boolean",
+      description: "Keep outDir and the Next.js build cache before building",
+    },
     strict: { type: "boolean", description: "Promote warnings to errors" },
     profile: { type: "boolean", description: "Print build performance timings" },
   },

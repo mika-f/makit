@@ -1895,6 +1895,8 @@ route map のエントリには `static`（固定ページ）も含まれ、`Sta
 
 静的サイトを生成する。
 
+`build.clean`（既定 `true`）または `--clean` が有効な場合、ビルド前に出力ディレクトリと Next.js のビルドキャッシュ（`.makit/.next`、`.makit/out`）を削除する。`.makit/cache` は保持する。`--no-clean` で無効化できる。
+
 ## `makit preview`
 
 `outDir` を静的サーバーで配信する。

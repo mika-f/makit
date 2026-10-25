@@ -60,6 +60,26 @@ function runNextBuild(makitDir: string, silent: boolean): Promise<void> {
 }
 
 /**
+ * Removes the previous build's output before a clean build: `outDir`, plus
+ * Next.js's build cache (`.makit/.next`) and static export (`.makit/out`).
+ * A stale `.next` can otherwise make `next build` reuse compiled assets
+ * (e.g. theme CSS) from an earlier run. `.makit/cache` is kept on purpose:
+ * it is keyed by content/TTL, and wiping it would e.g. refetch Changelog
+ * releases on every build. `makit clean` removes everything.
+ */
+export async function cleanBuildOutput(config: ResolvedConfig): Promise<void> {
+  const makitDir = join(config.root, ".makit");
+  const targets = [
+    join(config.root, config.outDir),
+    join(makitDir, ".next"),
+    join(makitDir, "out"),
+  ];
+  for (const target of targets) {
+    await rm(target, { recursive: true, force: true });
+  }
+}
+
+/**
  * Runs the full production build pipeline (spec §9.4): scan, process
  * Markdown, resolve i18n fallbacks/alternates, generate navigation,
  * write `.makit/generated/`, (re)generate `.makit/app`, run `next build`,
@@ -76,7 +96,7 @@ export async function build(
   const strict = options.strict ?? config.validation.strict;
 
   if (shouldClean) {
-    await rm(outDirAbsolute, { recursive: true, force: true });
+    await cleanBuildOutput(config);
   }
 
   const jiti = createMetadataJiti();
