@@ -40,7 +40,10 @@ function githubEditUrl(config: ResolvedConfig, sourcePath: string): string | und
   if (!config.github) return undefined;
   const sourceRelativePath = relative(config.root, sourcePath).split(sep).join("/");
   if (sourceRelativePath === "" || sourceRelativePath.startsWith("../")) return undefined;
-  const encodedPath = sourceRelativePath.split("/").map(encodeURIComponent).join("/");
+  const repositoryPath = config.github.directory
+    ? `${config.github.directory}/${sourceRelativePath}`
+    : sourceRelativePath;
+  const encodedPath = repositoryPath.split("/").map(encodeURIComponent).join("/");
   return `https://github.com/${config.github.repository}/edit/${encodeURIComponent(config.github.branch)}/${encodedPath}`;
 }
 

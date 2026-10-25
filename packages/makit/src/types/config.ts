@@ -429,6 +429,11 @@ export interface GitHubConfig {
   repository: string;
   /** Branch containing the documentation source. @default "main" */
   branch?: string;
+  /**
+   * Path from the repository root to the project root, for sites that live in a
+   * subdirectory of a monorepo (e.g. `"packages/website"`). @default ""
+   */
+  directory?: string;
 }
 
 // #endregion

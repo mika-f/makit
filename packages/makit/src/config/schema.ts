@@ -334,6 +334,13 @@ const llmsConfigSchema = z.strictObject({
 const githubConfigSchema = z.strictObject({
   repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/, "repository must be in owner/repository form"),
   branch: z.string().min(1).optional(),
+  directory: z
+    .string()
+    .refine(
+      (value) => !/^([/\\]|[A-Za-z]:)/.test(value) && !value.split(/[/\\]/).includes(".."),
+      "directory must be a path relative to the repository root",
+    )
+    .optional(),
 });
 
 const changelogConfigSchema = z.strictObject({

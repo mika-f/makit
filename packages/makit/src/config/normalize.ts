@@ -53,6 +53,14 @@ export function normalizeRouteGroups(
   return routeGroups;
 }
 
+/** Normalizes `github.directory`: `/`-separated, no `.` segments or edge slashes, `""` for the repository root. */
+function normalizeRepositoryDirectory(directory: string): string {
+  return directory
+    .split(/[/\\]/)
+    .filter((segment) => segment !== "" && segment !== ".")
+    .join("/");
+}
+
 interface ResolveContext {
   root: string;
   configPath: string;
@@ -357,6 +365,7 @@ export function resolveConfig(parsed: MakitConfigParsed, ctx: ResolveContext): R
     github: parsed.github && {
       repository: parsed.github.repository,
       branch: parsed.github.branch ?? "main",
+      directory: normalizeRepositoryDirectory(parsed.github.directory ?? ""),
     },
     changelog: resolveChangelog(parsed),
     build: {

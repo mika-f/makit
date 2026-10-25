@@ -210,8 +210,31 @@ describe("resolveConfig defaults", () => {
       ctx,
     );
 
-    expect(configured.github).toEqual({ repository: "example/docs", branch: "production" });
-    expect(defaultBranch.github).toEqual({ repository: "example/docs", branch: "main" });
+    expect(configured.github).toEqual({
+      repository: "example/docs",
+      branch: "production",
+      directory: "",
+    });
+    expect(defaultBranch.github).toEqual({
+      repository: "example/docs",
+      branch: "main",
+      directory: "",
+    });
+  });
+
+  it("normalizes github.directory to a slash-free relative path", () => {
+    for (const directory of ["packages/website", "./packages/website/", "packages\\website"]) {
+      const resolved = resolveConfig(
+        { title: "My Docs", github: { repository: "example/mono", directory } },
+        ctx,
+      );
+      expect(resolved.github?.directory, directory).toBe("packages/website");
+    }
+    const root = resolveConfig(
+      { title: "My Docs", github: { repository: "example/mono", directory: "." } },
+      ctx,
+    );
+    expect(root.github?.directory).toBe("");
   });
 
   it("uses a custom titleTemplate when given", () => {
