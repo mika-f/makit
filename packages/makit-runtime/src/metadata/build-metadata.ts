@@ -22,7 +22,9 @@ function buildDocumentMetadata(input: DocumentMetadataInput, site: SiteData): Me
   const image = input.metadata.image ?? site.seo.defaultImage;
 
   return {
-    title,
+    // Already templated here, so it must bypass the root layout's
+    // `title.template` from `buildSiteMetadata` instead of being applied twice.
+    title: { absolute: title },
     description,
     robots: {
       index: !input.metadata.noindex,

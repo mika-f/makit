@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GeneratedStaticPage, SiteData } from "../data/types.js";
-import { buildStaticPageMetadata } from "./build-metadata.js";
+import { buildSiteMetadata, buildStaticPageMetadata } from "./build-metadata.js";
 
 const site = {
   title: "Site",
@@ -34,7 +34,8 @@ describe("buildStaticPageMetadata (STATIC-PAGES §12.3)", () => {
   it("applies the title template and falls back to the site description and image", () => {
     const metadata = buildStaticPageMetadata(staticPage(), site);
 
-    expect(metadata.title).toBe("Pricing | Site");
+    // Absolute, so the root layout's title template isn't applied a second time.
+    expect(metadata.title).toEqual({ absolute: "Pricing | Site" });
     expect(metadata.description).toBe("Site description");
     expect(metadata.openGraph?.images).toEqual([{ url: "/default.png" }]);
   });
@@ -80,5 +81,18 @@ describe("buildStaticPageMetadata (STATIC-PAGES §12.3)", () => {
     );
 
     expect(metadata.alternates?.canonical).toBe("/pricing/");
+  });
+});
+
+describe("buildSiteMetadata", () => {
+  it("resolves relative metadata URLs against siteUrl", () => {
+    const metadata = buildSiteMetadata({ ...site, siteUrl: "https://docs.example.com" });
+
+    expect(metadata.metadataBase).toEqual(new URL("https://docs.example.com"));
+    expect(metadata.title).toEqual({ default: "Site", template: "%s | Site" });
+  });
+
+  it("leaves metadataBase unset without a siteUrl", () => {
+    expect(buildSiteMetadata(site).metadataBase).toBeUndefined();
   });
 });

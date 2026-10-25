@@ -160,6 +160,32 @@ describe("generated entries", () => {
     expect(template).toContain("components={themeComponents}");
   });
 
+  it("exports the site metadata from the layout so metadataBase reaches every route", () => {
+    const template = rootLayoutTemplate(
+      resolveConfig(
+        { title: "Test", siteUrl: "https://docs.example.com" },
+        { root: "/project", configPath: "/project/makit.config.ts" },
+      ),
+    );
+
+    expect(template).toContain("buildSiteMetadata, getSiteData }");
+    expect(template).toContain(
+      "export async function generateMetadata() {\n  return buildSiteMetadata(await getSiteData());\n}",
+    );
+  });
+
+  it("lets the portal home inherit the layout's site metadata", () => {
+    const template = slugPageTemplate({
+      localeExpression: "params.locale",
+      themeModulePath: "../../theme.js",
+      staticPagesModulePath: "../../static-pages.js",
+      i18nEnabled: true,
+    });
+
+    expect(template).toContain('if (entry.kind === "portal") return {};');
+    expect(template).not.toContain("buildSiteMetadata");
+  });
+
   it("passes the slot map to the page slots", () => {
     const template = slugPageTemplate({
       localeExpression: "params.locale",
